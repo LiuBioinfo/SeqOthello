@@ -1,7 +1,5 @@
 #!/bin/bash
-make -C ../
-./clean.sh
-./datagen -f 102 -k 15000 > genlog
+../build/test/datagen -f 102 -k 15000 > genlog
 tail -n 1 genlog > testTT.fa
 tail -n 1 genlog | cut -c1-100 >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa

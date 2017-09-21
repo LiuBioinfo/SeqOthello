@@ -46,7 +46,7 @@ int main(int argc, char * argv[]) {
     
     ConstantLengthKmerHelper<uint64_t, uint32_t> iohelper(kmerlength,0);
 
-    vector<int32_t> VKmer;
+    vector<uint64_t> VKmer;
     FileReader<uint64_t, uint32_t> *freader;
     string finName = args::get(argInputname);
     string foutName = args::get(argOutputname);
@@ -68,7 +68,8 @@ int main(int argc, char * argv[]) {
     unsigned long long cnt = 1;
     for (unsigned int i = 1; i < VKmer.size(); i++ ) {
        if (VKmer[i] != VKmer[cnt-1]) {
-           VKmer[cnt] = VKmer[i]; 
+           VKmer[cnt] = VKmer[i];
+           printf("%llx\n", VKmer[cnt]);
            cnt++;
        }
     }

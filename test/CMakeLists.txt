@@ -1,2 +1,2 @@
 INCLUDE_DIRECTORIES(../lib ../include)
-ADD_EXECUTABLE(datagen datagen)
+ADD_EXECUTABLE(datagen datagen.cc)
