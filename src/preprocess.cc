@@ -1,11 +1,11 @@
 #include <cstdio>
-#include <io_helper.h>
 #include <vector>
 #include <algorithm>
 #include <cmath>
 #include <map>
 #include <args.hxx>
-
+#include <io_helper.hpp>
+#include <tinyxml2.h>
 
 using namespace std;
 int main(int argc, char * argv[]) {
@@ -53,7 +53,7 @@ int main(int argc, char * argv[]) {
     uint32_t cutoff = 0;
     if (nCutoff)
             cutoff = args::get(nCutoff);
-
+    printf("Read files from %s\n", finName.c_str());
     freader = new KmerFileReader< uint64_t,uint32_t > (finName.c_str(), &iohelper,false);
     uint32_t minInputExpression = 0x7FFFFFFF;
     uint64_t k; uint32_t v;
@@ -66,18 +66,29 @@ int main(int argc, char * argv[]) {
     printf("Sorting %lu keys\n", VKmer.size());
     sort(VKmer.begin(),VKmer.end());
     unsigned long long cnt = 1;
-    for (int i = 1; i < VKmer.size(); i++ ) {
+    for (unsigned int i = 1; i < VKmer.size(); i++ ) {
        if (VKmer[i] != VKmer[cnt-1]) {
            VKmer[cnt] = VKmer[i]; 
            cnt++;
        }
     }
-    printf("Got %lld keys\n", cnt);
+    printf("Writing %lld keys to %s\n", cnt, foutName.c_str());
     FILE *fout = fopen(foutName.c_str(),"wb");
     fwrite(&VKmer[0], cnt, sizeof(VKmer[0]), fout);
     fclose(fout);
-    printf("input filename: %s\n", finName.c_str());
-    printf("output filename: %s\n", foutName.c_str());
-    printf("min input %u, cutoff %u\n", minInputExpression, cutoff);
+
+    tinyxml2::XMLDocument xml;
+    auto pRoot = xml.NewElement("Root");
+    auto pElement = xml.NewElement("SampleInfo");
+    pElement->SetAttribute("KmerFile", finName.c_str());
+    pElement->SetAttribute("BinaryFile", foutName.c_str());
+    pElement->SetAttribute("Cutoff", cutoff);
+    pElement->SetAttribute("MinExpressionInKmerFile", minInputExpression);
+    pElement->SetAttribute("KmerCount", (unsigned int) VKmer.size());
+    pElement->SetAttribute("UniqueKmerCount",(unsigned int) cnt);
+    pRoot->InsertEndChild(pElement);
+    xml.InsertFirstChild(pRoot);
+    auto xmlName = foutName + ".xml";
+    xml.SaveFile(xmlName.c_str());
     return 0;
 }

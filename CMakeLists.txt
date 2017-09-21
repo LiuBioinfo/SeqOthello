@@ -12,5 +12,6 @@ find_package (Threads)
 find_package (ZLIB REQUIRED )
 add_definitions(-std=gnu++11)
 ADD_SUBDIRECTORY(lib)
+ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(src bin)
 

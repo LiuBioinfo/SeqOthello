@@ -2,9 +2,9 @@
 #include <cstdio>
 #include <vector>
 #include <args.hxx>
-#include <io_helper.h>
+#include <io_helper.hpp>
 #include <set>
-#include <othellotypes.h>
+#include <othellotypes.hpp>
 int main(int argc, char ** argv) {
 
     args::ArgumentParser parser("Generate a list of kmer data (k=20) for the purpose of testing.", "");
@@ -42,14 +42,12 @@ int main(int argc, char ** argv) {
     uint64_t start_state = 0x185abd8c71u;  /* Any nonzero start state will work. */
     uint64_t lfsr = start_state;
     uint64_t bit;                    /* Must be 16bit to allow bit<<15 later in the code */
-    unsigned period = 0;
 
 
 
 
     char buf[32];
     memset(buf,0,sizeof(buf));
-    uint32_t curr;
     uint64_t vv = 0;
     std::set<uint64_t> sss;
     std::vector<uint64_t> vkmer;
