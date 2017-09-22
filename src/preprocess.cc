@@ -69,7 +69,6 @@ int main(int argc, char * argv[]) {
     for (unsigned int i = 1; i < VKmer.size(); i++ ) {
        if (VKmer[i] != VKmer[cnt-1]) {
            VKmer[cnt] = VKmer[i];
-           printf("%llx\n", VKmer[cnt]);
            cnt++;
        }
     }
