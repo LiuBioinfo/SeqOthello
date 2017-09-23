@@ -81,6 +81,7 @@ int main(int argc, char * argv[]) {
     auto pRoot = xml.NewElement("Root");
     auto pElement = xml.NewElement("SampleInfo");
     pElement->SetAttribute("KmerFile", finName.c_str());
+    pElement->SetAttribute("KmerLength", kmerlength);
     pElement->SetAttribute("BinaryFile", foutName.c_str());
     pElement->SetAttribute("Cutoff", cutoff);
     pElement->SetAttribute("MinExpressionInKmerFile", minInputExpression);
