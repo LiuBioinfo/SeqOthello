@@ -10,6 +10,6 @@ add_library(libL2Node STATIC
 
 # Specify here the include directories exported
 # by this library
-target_include_directories(libL2Node PUBLIC
+include_directories(libL2Node PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
