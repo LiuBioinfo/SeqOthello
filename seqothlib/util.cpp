@@ -16,10 +16,10 @@ std::vector<std::string> split(const char * str, char deli) {
     return ret;
 }
 void printcurrtime() {
-        auto end = std::chrono::system_clock::now();
-        std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+    auto end = std::chrono::system_clock::now();
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 
-        printf("%s ::", std::ctime(&end_time));
+    printf("%s ::", std::ctime(&end_time));
 }
 
 

@@ -33,8 +33,8 @@ public:
     vector<uint64_t> keys;
     void constructOth();
     uint32_t valuecnt = 0;
-	uint32_t entrycnt = 0;
-	Othello<uint64_t> *oth = NULL;
+    uint32_t entrycnt = 0;
+    Othello<uint64_t> *oth = NULL;
 };
 
 class L2ShortValueListNode : public L2Node {
@@ -69,7 +69,7 @@ public:
 class L2EncodedValueListNode : public L2Node {
     vector<uint8_t> lines;
     uint32_t IOLengthInBytes, encodetype;
-    uint32_t keycnt  = 0;    
+    uint32_t keycnt  = 0;
 public:
     int getType() override {
         return encodetype;

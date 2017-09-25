@@ -15,11 +15,11 @@
 
 using namespace std;
 class SeqOthello {
-        
-typedef uint64_t keyType;
-typedef uint16_t freqOthValueT;
+
+    typedef uint64_t keyType;
+    typedef uint16_t freqOthValueT;
 public:
-    uint32_t high, EXP, splitbitFreqOth, kmerLength;
+    uint32_t kmerLength = 0;
     Othello<keyType> * freqOth = NULL;
     vector<std::shared_ptr<L2Node>> vNodes;
     uint32_t realhigh;
@@ -27,9 +27,8 @@ public:
 private:
     uint32_t concurentThreadsSupported;
     uint32_t inQlimit = 1048576*1024;
-    uint32_t L2limit = 1048576*110;
+    constexpr static uint32_t L2limit = 104857600;
     vector<uint32_t> freqToVnodeIdMap;
-
 public:
     SeqOthello() {}
 
@@ -50,20 +49,20 @@ public:
         gzread(fin, buf,sizeof(buf));
         freqOth = new Othello<uint64_t> (buf);
         L1LoadThread = new std::thread (
-                &Othello<uint64_t>::loadDataFromGzipFile,
-                freqOth,
-                fin);
+            &Othello<uint64_t>::loadDataFromGzipFile,
+            freqOth,
+            fin);
 
     }
     void startloadL2() {
         for (int thid = 0; thid < concurentThreadsSupported; thid++)
             L2LoadThreads.push_back(
-                    new thread(&SeqOthello::loadL2NodeBatch, this, thid,fname));
+                new thread(&SeqOthello::loadL2NodeBatch, this, thid,fname));
     }
     void waitloadL2() {
-            for (auto p : L2LoadThreads)
-                p->join();
-            L2LoadThreads.clear();
+        for (auto p : L2LoadThreads)
+            p->join();
+        L2LoadThreads.clear();
         printf("Load L2 finished \n");
     }
     void waitloadL1() {
@@ -161,8 +160,9 @@ public:
         gzclose(fin);
     }
 
-    
+
     void constructFromReader(KmerGroupComposer<keyType> *reader, string filename, uint32_t threadsLimit, vector<uint32_t> enclGrpmap) {
+        kmerLength = reader->getkmerlength();
         keyType k;
 
         printf("We will use at most %d threads to construct.\n", threadsLimit);
@@ -185,19 +185,20 @@ public:
         enclGrplen.resize(enclGrpmap.size());
         fill(enclGrpcnt.begin(), enclGrpcnt.end(), 0);
         for (int i = 0 ; i < enclGrpmap.size(); i++)
-              enclGrplen[enclGrpmap[i]] = i;
+            enclGrplen[enclGrpmap[i]] = i;
 
 
         for (int i = 2; i<=limitsingle; i++) {
             vNodes.push_back(std::make_shared<L2ShortValueListNode>(i, maxnl));
-            valshortIDmap[i] = vNodes.size()-1; 
+            valshortIDmap[i] = vNodes.size()-1;
         }
         for (int i = 0 ; i < enclGrpIDmap.size(); i++) {
             vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[i], L2NodeTypes::VALUE_INDEX_ENCODED));
             enclGrpIDmap[i] = vNodes.size()-1;
         }
 
-        int MAPPlength = high/8; if (high &7) MAPPlength++;
+        int MAPPlength = high/8;
+        if (high &7) MAPPlength++;
 
         vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength,L2NodeTypes::MAPP));
         uint32_t MAPPID = vNodes.size()-1;
@@ -233,14 +234,14 @@ public:
             vector<uint32_t> diff;
             diff.push_back(ret[0]);
             for (int i = 1; i < ret.size(); i++)
-                    diff.push_back(ret[i] - ret[i-1]);
+                diff.push_back(ret[i] - ret[i-1]);
             uint32_t encodelength = valuelistEncode(NULL, diff, false);
             // encode < mapp
             if (encodelength < MAPPlength) {
                 vector<uint8_t> enc(encodelength);
                 valuelistEncode(&enc[0], diff, true);
                 auto grpid = enclGrpmap[encodelength];
-     
+
                 if (enclGrpcnt[grpid] * enclGrplen[grpid] < L2limit) {
                     enclGrpcnt[grpid]++;
                 } else {
@@ -253,17 +254,17 @@ public:
                 continue;
             }
             if (MAPPcnt * MAPPlength > L2limit)  {
-                    MAPPcnt = 0;
-                    vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP));
-                    MAPPID = vNodes.size() - 1;
+                MAPPcnt = 0;
+                vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP));
+                MAPPID = vNodes.size() - 1;
             }
             MAPPcnt++;
             BinaryVarlenBitSet<keyType> kbitmap(k, MAPPlength);
             for (auto const &val: ret) {
-                    kbitmap.setvalue(val);
+                kbitmap.setvalue(val);
             }
             vNodes[MAPPID]->addMAPP(k,kbitmap.m);
-            vV.push_back(MAPPID+ L2IDShift); 
+            vV.push_back(MAPPID+ L2IDShift);
         }
 
         int LLfreq = 8;
@@ -297,8 +298,8 @@ public:
         for (auto &th : vthreadL1) th.join();
         vthreadL2.clear();
     }
-public:            
-    static vector<uint32_t> estimateParameters(KmerGroupComposer<keyType> *reader) {
+public:
+    static vector<uint32_t> estimateParameters(KmerGroupComposer<keyType> *reader, int kmerlimit) {
         int maxnl = 1;
         int high = reader->gethigh();
         while ((1<<maxnl)<high) maxnl++;
@@ -307,14 +308,13 @@ public:
         uint64_t cnt = 0;
         vector<uint32_t> cnthisto(16);
         vector<uint32_t> enchisto(high);
-		vector<uint32_t> ret;
-        int limit = ESTIMATE_KMER_CNT;
-        while (reader->getNextValueList(k, ret) && (limit--)) {
+        vector<uint32_t> ret;
+        while (reader->getNextValueList(k, ret) && (kmerlimit--)) {
             cnt ++;
             int keycnt = ret.size();
             if (keycnt <= limitsingle) {
-                    cnthisto[keycnt]++;
-            } 
+                cnthisto[keycnt]++;
+            }
             else {
                 vector<uint32_t> toenc;
                 toenc.reserve(ret.size());
@@ -323,31 +323,31 @@ public:
                     toenc.push_back(ret[i] - ret[i-1]);
                 int encodelength = valuelistEncode(NULL, toenc, false);
                 if (encodelength*8 > high)
-                        encodelength = (high/8)+(bool(high&7));
+                    encodelength = (high/8)+(bool(high&7));
                 enchisto[encodelength]++;
             }
         }
 
-        if (limit ==0) {
-                vector<uint64_t> curr, tot;
-                reader->getGroupStatus(curr, tot);
-                uint64_t currA = accumulate(curr.begin(), curr.end(), 0ULL);
-                uint64_t totA = accumulate(tot.begin(), tot.end(), 0ULL);
-                double rate = totA * 1.0 / currA;
-                for (auto &x : enchisto) 
-                        x = (uint64_t) (x * rate);
-                for (auto &x : cnthisto)
-                        x = (uint64_t) (x * rate);
-                cnt =  (uint64_t) (cnt * rate);
+        if (kmerlimit ==0) {
+            vector<uint64_t> curr, tot;
+            reader->getGroupStatus(curr, tot);
+            uint64_t currA = accumulate(curr.begin(), curr.end(), 0ULL);
+            uint64_t totA = accumulate(tot.begin(), tot.end(), 0ULL);
+            double rate = totA * 1.0 / currA;
+            for (auto &x : enchisto)
+                x = (uint64_t) (x * rate);
+            for (auto &x : cnthisto)
+                x = (uint64_t) (x * rate);
+            cnt =  (uint64_t) (cnt * rate);
         }
         vector<uint32_t> encodeLengthToL1ID(high/8+2);
         uint64_t sq = 0;
         uint64_t l1id = 0;
         for (int i = 1; i< high/8+2; i++) {
-                printf("%d:%d\n", i, enchisto[i]);
+            printf("%d:%d\n", i, enchisto[i]);
         }
         for (int i = 1 ; i < high/8+2; i++) {
-            if ((sq+ enchisto[i])*i > LIMT_PER_L2) {
+            if ((sq+ enchisto[i])*i > L2limit) {
                 sq = 0;
                 l1id ++;
             }

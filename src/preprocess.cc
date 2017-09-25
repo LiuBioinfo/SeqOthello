@@ -43,7 +43,7 @@ int main(int argc, char * argv[]) {
     }
 
     int kmerlength = args::get(argKmerlength);
-    
+
     ConstantLengthKmerHelper<uint64_t, uint32_t> iohelper(kmerlength,0);
 
     vector<uint64_t> VKmer;
@@ -52,15 +52,16 @@ int main(int argc, char * argv[]) {
     string foutName = args::get(argOutputname);
     uint32_t cutoff = 0;
     if (nCutoff)
-            cutoff = args::get(nCutoff);
+        cutoff = args::get(nCutoff);
     printf("Read files from %s\n", finName.c_str());
     freader = new KmerFileReader< uint64_t,uint32_t > (finName.c_str(), &iohelper,false);
     uint32_t minInputExpression = 0x7FFFFFFF;
-    uint64_t k; uint32_t v;
+    uint64_t k;
+    uint32_t v;
     while (freader->getNext(&k, &v)) {
-        if (v < minInputExpression) 
+        if (v < minInputExpression)
             minInputExpression = v;
-        if (v >= cutoff) 
+        if (v >= cutoff)
             VKmer.push_back(k);
     }
     if (VKmer.size() >0 ) {
@@ -72,13 +73,13 @@ int main(int argc, char * argv[]) {
     }
     unsigned long long cnt = 0;
     if (VKmer.size()) {
-    cnt ++;
-    for (unsigned int i = 1; i < VKmer.size(); i++ ) {
-       if (VKmer[i] != VKmer[cnt-1]) {
-           VKmer[cnt] = VKmer[i];
-           cnt++;
-       }
-    }
+        cnt ++;
+        for (unsigned int i = 1; i < VKmer.size(); i++ ) {
+            if (VKmer[i] != VKmer[cnt-1]) {
+                VKmer[cnt] = VKmer[i];
+                cnt++;
+            }
+        }
     }
     printf("Writing %lld keys to %s\n", cnt, foutName.c_str());
     FILE *fout = fopen(foutName.c_str(),"wb");
@@ -93,9 +94,9 @@ int main(int argc, char * argv[]) {
     pElement->SetAttribute("BinaryFile", foutName.c_str());
     pElement->SetAttribute("KmerCount", (unsigned int) VKmer.size());
     if (cnt) {
-    pElement->SetAttribute("Cutoff", cutoff);
-    pElement->SetAttribute("MinExpressionInKmerFile", minInputExpression);
-    pElement->SetAttribute("UniqueKmerCount",(unsigned int) cnt);
+        pElement->SetAttribute("Cutoff", cutoff);
+        pElement->SetAttribute("MinExpressionInKmerFile", minInputExpression);
+        pElement->SetAttribute("UniqueKmerCount",(unsigned int) cnt);
     }
     pRoot->InsertEndChild(pElement);
     xml.InsertFirstChild(pRoot);

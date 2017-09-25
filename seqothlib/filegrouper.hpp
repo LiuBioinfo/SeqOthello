@@ -19,9 +19,9 @@ class KmerGroupedReader { //: public FileReader <keyType, unsigned char [NNL/8] 
             return a.k>b.k;
         }
     };
-    public:
+public:
     int fnamecnt;
-    private:
+private:
     bool detailmap = false; //when detailmap == false, the read only returns the key, not the bitmap.
     vector<KmerReader<keyType> *> readers;
     vector<MultivalueFileReaderWriter<keyType, uint16_t> *> grpreaders; //must use 16-bit grpids.
@@ -57,11 +57,11 @@ protected:
             KIDpair kid = {key, (uint32_t) (idshift+readers.size()-1), false};
             PQN.push(kid);
         }
-        
+
         MultivalueFileReaderWriter<keyType,uint16_t> * writer;
         writer = new MultivalueFileReaderWriter<keyType,uint16_t> (fname.c_str(),8,2,false,filter);
 
-        
+
         // Loop key for these files;
         while (true) {
             keyType key = PQN.top().k;
@@ -130,12 +130,12 @@ public:
             char buf[1024];
             strcpy(buf, fnames[0].c_str());
             sscanf(buf+1,"%d",&fnamecnt);
-        } 
+        }
         else
             fnamecnt = fnames.size();
 #ifndef FILE_PER_GRP
 #define FILE_PER_GRP 500
-#endif        
+#endif
         int nn = FILE_PER_GRP;
         combineMode = (fnames.size()>nn) || combineFromIntermediate;
         if (combineMode) {
@@ -218,9 +218,9 @@ public:
         while (hasNext) {
             if (!getNextImpl(kvpair)) return hasNext = false;
             if (kvpair->k < nextPossibleKey)
-            while ((kvpair->k < nextPossibleKey)) {
-                if (!getNextImpl(kvpair)) return false;
-            }
+                while ((kvpair->k < nextPossibleKey)) {
+                    if (!getNextImpl(kvpair)) return false;
+                }
             if (kvpair->k == nextPossibleKey) {
                 hasNext = filter->getNext(&nextPossibleKey);
                 matchcount++;
@@ -230,7 +230,7 @@ public:
                 hasNext = filter->getNext(&nextPossibleKey);
             }
             if (kvpair->k == nextPossibleKey) {
-                if (hasNext) 
+                if (hasNext)
                     hasNext = filter->getNext(&nextPossibleKey);
                 matchcount++;
                 return true;
@@ -272,10 +272,10 @@ private:
             KIDpair kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
         }
-        updatekeycount(); 
+        updatekeycount();
         return true;
     }
-public:        
+public:
     virtual bool getNextImpl( BinaryBitSet<keyType, NNL> *kvpair)
     {
         vector<int> ret;
@@ -296,9 +296,9 @@ public:
         while (hasNext) {
             if (!getNextValueListImpl(k,v)) return hasNext = false;
             if (*k < nextPossibleKey)
-            while ((*k < nextPossibleKey)) {
-                if (!getNextValueListImpl(k,v)) return false;
-            }
+                while ((*k < nextPossibleKey)) {
+                    if (!getNextValueListImpl(k,v)) return false;
+                }
             if (*k == nextPossibleKey) {
                 hasNext = filter->getNext(&nextPossibleKey);
                 matchcount++;
@@ -308,13 +308,13 @@ public:
                 hasNext = filter->getNext(&nextPossibleKey);
             }
             if (*k == nextPossibleKey) {
-                if (hasNext) 
+                if (hasNext)
                     hasNext = filter->getNext(&nextPossibleKey);
                 matchcount++;
                 return true;
             }
         }
-        
+
     }
 protected:
     virtual void updatekeycount() {
@@ -324,7 +324,7 @@ protected:
                 printcurrtime();
                 printf("Got %lld keys\n", keycount);
                 if (filter!=NULL)
-                printf("Passed %lld keys\n", matchcount);
+                    printf("Passed %lld keys\n", matchcount);
                 if (combineMode) {
                     printf("Currpos:\t");
                     for (auto a: grpreaders)
@@ -353,14 +353,14 @@ class KmerExpressionGroupedReader : KmerGroupedReader<keyType, NNL*VALUEBIT> {
     priority_queue<KVID3> PQ;
     vector<SinglevalueFileReaderWriter<keyType,uint16_t> *> readers;
 //    combinemode not suported yet.
-public:    
+public:
     KmerExpressionGroupedReader(const char * NCBIfname, const char * fnameprefix, const char * tmpFileDirectory, uint32_t _KmerLength, bool useBinaryKmerFile = true, ValueConverter * valueConverter = NULL, KmerReader<keyType> * _filter = NULL  ) {
         KmerGroupedReader<keyType,NNL*VALUEBIT>:: KmerLength = _KmerLength;
         ConstantLengthKmerHelper<keyType,uint8_t> helper(_KmerLength,-1);
         FILE * fNCBI;
         string prefix ( fnameprefix);
         fNCBI = fopen(NCBIfname, "r");
-        //Assuming each line of the file contains a filename. 
+        //Assuming each line of the file contains a filename.
         char buf[4096];
         readers.clear();
         vector<string> fnames;
@@ -381,17 +381,17 @@ public:
             return;
         }
         for (int i = 0 ; i < fnames.size(); i++) {
-                string fname = prefix + fnames[i] ;
-                readers.push_back(new SinglevalueFileReaderWriter<keyType,uint16_t>(fname.c_str(),true, valueConverter));
-                keyType key;
-                uint16_t value;
-                readers[readers.size()-1]->getNext(&key,&value);
-                KVID3 kid = {key, value, (uint32_t) (readers.size()-1), false};
-                PQ.push(kid);
+            string fname = prefix + fnames[i] ;
+            readers.push_back(new SinglevalueFileReaderWriter<keyType,uint16_t>(fname.c_str(),true, valueConverter));
+            keyType key;
+            uint16_t value;
+            readers[readers.size()-1]->getNext(&key,&value);
+            KVID3 kid = {key, value, (uint32_t) (readers.size()-1), false};
+            PQ.push(kid);
         }
         fclose(fNCBI);
     }
-     
+
     virtual bool getNextImpl( BinaryBitSet<uint64_t, NNL*VALUEBIT> *kvpair) override {
         keyType key = PQ.top().k;
         vector<pair<int,uint16_t>> ret;
@@ -416,7 +416,7 @@ public:
         kvpair -> reset();
         kvpair -> k = key;
         for (auto &a: ret) {
-            if (VALUEBIT == 1) 
+            if (VALUEBIT == 1)
                 kvpair->setvalue(a.first);
             if (VALUEBIT > 1) {
                 int id = (a.first);

@@ -5,17 +5,26 @@
 #include <algorithm>
 #include <bitset>
 #include <chrono>
-#include <inttypes.h>
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <set>
+#include <inttypes.h>
 #include <args.hxx>
 #include <io_helper.hpp>
 #include <tinyxml2.h>
 
 using namespace std;
 
-
+int getKmerLengthfromxml(string fname) {
+        fname += ".xml";
+        tinyxml2::XMLDocument doc;
+        doc.LoadFile( fname.c_str() );
+        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
+        int ret = 0;
+        pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        return ret;
+}
 int main(int argc, char ** argv) {
     args::ArgumentParser parser("Preprocess binary files to grouped files. \n"
                                 "Each line of the file must contain exactly one file name, e.g, xxxx.bin\n"
@@ -69,8 +78,25 @@ int main(int argc, char ** argv) {
         std::cerr << "Too many files in the group." << std::endl;
         return 1;
     }
+
+    //check kmer length consistent;
+    set<int> kmerlengthset;
+    for (auto s:fnames) {
+        int kl = getKmerLengthfromxml(s);
+        kmerlengthset.insert(kl);
+    }
+    if (kmerlengthset.size() > 1) {
+        std::cerr << "Kmer length not consistent." << std::endl;
+        return 1;
+    }
+    if (fnames.size() == 0) {
+        std::cerr << "fail to get kmer filelist." << std::endl;
+        return 1;
+
+    }
+    int KmerLength = *kmerlengthset.begin();
     auto const reader = new KmerGroupReader<
-        uint64_t, BinaryKmerReader<uint64_t>
+    uint64_t, BinaryKmerReader<uint64_t>
     >(fnames);
     uint64_t k;
     vector<uint32_t> ret;
@@ -82,14 +108,15 @@ int main(int argc, char ** argv) {
     while (reader->getNextValueList(k, ret) && (limit -- >0)) {
         vhistogram[ret.size()] ++;
         sort(ret.begin(), ret.end());
-        vector<uint8_t> res; res.reserve(ret.size());
+        vector<uint8_t> res;
+        res.reserve(ret.size());
         for (auto &x: ret) res.push_back(x);
         writer->write(&k,res);
         /*for (auto &r: ret)
             r.first+= from;
         writer->write(k, ret);*/
         /*printf("%llx\t", k);
-        for (auto &x: ret) 
+        for (auto &x: ret)
                 printf("%d ", x);
         printf("\n");*/
         cnt++;
@@ -106,13 +133,14 @@ int main(int argc, char ** argv) {
         const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
         string str;
         const auto attr = pSampleInfo->FindAttribute("KmerFile");
-        if (attr) 
-                printf("query: %s\n", attr->Value());
+        if (attr)
+            printf("query: %s\n", attr->Value());
         tinyxml2::XMLNode * cpyNode = pSampleInfo->DeepClone(&xml);
         pSamples->InsertEndChild(cpyNode);
     }
     auto pGroupInfo = xml.NewElement("GroupInfo");
     pGroupInfo->SetAttribute("TotalSamples", (uint32_t) fnames.size());
+    pGroupInfo->SetAttribute("KmerLength", (uint32_t) KmerLength);
     pGroupInfo->SetAttribute("GroupFile", args::get(argOut).c_str() );
     pGroupInfo->SetAttribute("Keycount", (int64_t) cnt);
     pRoot->InsertFirstChild(pGroupInfo);

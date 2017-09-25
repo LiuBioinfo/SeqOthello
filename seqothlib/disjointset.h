@@ -2,11 +2,11 @@
 #include <vector>
 using namespace std;
 /*! \file disjointset.h
- *  Disjoint Set data structure.  
+ *  Disjoint Set data structure.
  */
 /*!
- * \brief Disjoint Set data structure. Helps to test the acyclicity of the graph during construction. 
- * */ 
+ * \brief Disjoint Set data structure. Helps to test the acyclicity of the graph during construction.
+ * */
 class DisjointSet {
     int siz;
     vector<int32_t> *fa =NULL;
@@ -27,9 +27,9 @@ public:
         if (fa != NULL) {
             fa->resize(n);
             clear();
-        } 
+        }
         else
-        fa = new vector<int32_t> (n,-1);
+            fa = new vector<int32_t> (n,-1);
     }
     //! re-initilize the disjoint sets.
     void clear() {

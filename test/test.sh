@@ -12,12 +12,12 @@ mv *.grp grp/
 mv *.grp.xml grp/
 #echo Count
 #../countkey --flist=grplist --folder=./grp/ -e > keycountlog
-#rm -rf mapOut
-#mkdir mapOut
+rm -rf mapOut
+mkdir mapOut
 #echo Build
 ../build/bin/Build --flist=grplist --folder=./grp/ --out=mapOut/map --count-only> Buildlog
 ../build/bin/Build --flist=grplist --folder=./grp/ --out=mapOut/map > Buildlog.tt
 #echo Query
-#../Query --map=mapOut/map --transcript=testTT.fa --noreverse --detail --output queryresult > querylog
-#../Query --map=mapOut/map --transcript=testTT.fa --noreverse --qthread=4 --output queryresultAgg > querylogAgg
+../build/bin/Query --map=mapOut/map --transcript=testTT.fa --noreverse --detail --output queryresult > querylog
+../build/bin/Query --map=mapOut/map --transcript=testTT.fa --noreverse --qthread=4 --output queryresultAgg > querylogAgg
 
