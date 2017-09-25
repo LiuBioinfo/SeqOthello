@@ -6,7 +6,6 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <iomanip>
 #include <cstdio>
 #include <errno.h>
 #include <cstring>
@@ -15,7 +14,9 @@
 #include <cstring>
 #include <bitset>
 #include <ctime>
-#include <chrono>
+#include <tinyxml2.h>
+#include "util.h"
+
 using namespace std;
 /*!
  * \brief interface for converting a key from its raw format to a keyTypeype. Split key into groups.
@@ -160,33 +161,6 @@ public:
 
 
 
-//! convert a 64-bit Integer to human-readable format in K/M/G. e.g, 102400 is converted to "100K".
-std::string human(uint64_t word) {
-    std::stringstream ss;
-    if (word <= 1024) ss << word;
-    else if (word <= 10240) ss << std::setprecision(2) << word*1.0/1024<<"K";
-    else if (word <= 1048576) ss << word/1024<<"K";
-    else if (word <= 10485760) ss << word*1.0/1048576<<"M";
-    else if (word <= (1048576<<10)) ss << word/1048576<<"M";
-    else ss << word*1.0/(1<<30) <<"G";
-    std::string s;
-    ss >>s;
-    return s;
-}
-
-//! split a c-style string with delimineter chara.
-std::vector<std::string> split(const char * str, char deli) {
-    std::istringstream ss(str);
-    std::string token;
-    std::vector<std::string> ret;
-    while(std::getline(ss, token, deli)) {
-        if (token.size()>=1)
-            ret.push_back(token);
-    }
-    return ret;
-}
-#include <cstring>
-
 template <typename keyType, typename valueType>
 class KmerFileReader : public FileReader<keyType,valueType> {
     FILE *f;
@@ -223,12 +197,6 @@ public:
         return FileReader<keyType,valueType>::helper->convert(buf,T,V);
     }
 };
-void printcurrtime() {
-        auto end = std::chrono::system_clock::now();
-        std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-
-        printf("%s ::", std::ctime(&end_time));
-}
 
 template <typename keyType>
 class KmerReader {
@@ -238,19 +206,23 @@ public:
     virtual void reset() = 0;
 };
 
-template <typename keyType, class KmerReader> 
-class KmerGroupReader {
-    struct KIDpair {
+template <typename keyType>
+struct KIDpair {
         keyType k;
         uint32_t id;
         bool finished;
         bool friend operator <( const KIDpair &a, const KIDpair &b) {
             if (a.finished != b.finished) return (((int) a.finished) > ((int) b.finished));
-            return a.k>b.k;
+            if (a.k != b.k) 
+                return a.k>b.k;
+            return a.id > b.id;
         }
-    };
+};
+
+template <typename keyType, class KmerReader> 
+class KmerGroupReader {
     vector<KmerReader *> readers;
-    priority_queue<KIDpair> PQ;
+    priority_queue<KIDpair<keyType>> PQ;
 protected:
     bool hasNext = true;
 
@@ -261,7 +233,7 @@ public:
             readers.push_back(new KmerReader(fname.c_str()));
             keyType k;
             readers[readers.size()-1]->getNext(&k);
-            KIDpair kid = {k, (uint32_t) (readers.size()-1), false};
+            KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1), false};
             PQ.push(kid);
         }
     }
@@ -285,7 +257,7 @@ public:
             ret.push_back(tid);
             bool finish = !readers[tid]->getNext(&nextk);
             PQ.pop();
-            KIDpair kid = {nextk, (uint32_t) tid, finish};
+            KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
         }
         return true;
@@ -404,7 +376,7 @@ class MultivalueFileReaderWriter : public FileReader <keyType, valueType> {
     unsigned long long keycount = 0;
 public:
     static const valueType EMPTYVALUE = ~0;
-    bool valid(uint32_t value) {
+    bool valid(valueType value) {
         if (vl == 1) return value!=0xFF;
         if (vl == 2) return value!=0xFFFF;
         if (vl == 4) return value!=0xFFFFFFFFUL;
@@ -560,6 +532,105 @@ public:
 
     }
 };
+
+
+
+template <typename keyType> 
+class KmerGroupComposer {
+    vector<MultivalueFileReaderWriter<uint64_t,uint8_t> *> readers;
+    priority_queue<KIDpair<keyType>> PQ;
+protected:
+    bool hasNext = true;
+    vector<vector<uint8_t>> tmpval;
+    vector<uint32_t> shift;
+    vector<uint64_t> totkeycount;
+    vector<uint64_t> readkeys;
+public:
+    KmerGroupComposer() {}
+    KmerGroupComposer(vector<string> & fnames) {
+        tmpval.resize(fnames.size());
+        shift.push_back(0);
+        for (int i = 0 ; i < fnames.size(); i++) {
+            auto const fname = fnames[i];
+            auto const fnamexml = fname + ".xml";
+            tinyxml2::XMLDocument xml;
+            xml.LoadFile( fnamexml.c_str());
+            int tmpint;
+            xml.FirstChildElement("Root")->FirstChildElement("GroupInfo")->QueryIntAttribute("TotalSamples", &tmpint);
+            int64_t tmpi64;
+            xml.FirstChildElement("Root")->FirstChildElement("GroupInfo")->QueryInt64Attribute("Kmercount", &tmpi64);
+            totkeycount.push_back(tmpi64);
+            tmpval[i].resize(tmpint+1);
+            shift.push_back(tmpint + *shift.rbegin());
+            readers.push_back(new MultivalueFileReaderWriter<uint64_t, uint8_t>(fname.c_str(), sizeof(uint64_t), sizeof(uint8_t), true));
+            keyType k;
+            readers[readers.size()-1]->getNext(&k, &tmpval[i][0]);
+            KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1), false};
+            PQ.push(kid);
+            readkeys.push_back(1);
+        }
+    }
+    ~KmerGroupComposer() {
+        for (int i = 0 ; i < readers.size(); i++)
+            delete readers[i];
+    }
+
+    bool verbose = false;
+    uint64_t keycount = 0;
+    bool getNextValueList(keyType &k, vector<uint32_t> &ret) {
+        k = PQ.top().k;
+        if (PQ.top().finished) {
+            return false;
+        }
+        ret.clear();
+        while (PQ.top().k == k && !PQ.top().finished) {
+            int tid;
+            tid = PQ.top().id;
+            keyType nextk;
+
+            for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
+                ret.push_back(shift[tid] + tmpval[tid][i]);
+            }
+            bool finish = !readers[tid]->getNext(&nextk, &tmpval[tid][0]);
+            readkeys[tid]++;
+            PQ.pop();
+            KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
+            PQ.push(kid);
+        }
+        return true;
+    }
+    uint32_t gethigh() {
+            return *shift.rbegin();
+    }
+    void getGroupStatus(vector<uint64_t> &curr, vector<uint64_t> &tot) {
+         curr = readkeys;
+         tot = totkeycount;
+    }
+    void reset() {
+        fill(readkeys.begin(), readkeys.end(), 1);
+        for (auto &x: readers) 
+             x->reset();
+        keycount = 0;
+        uint64_t k;
+        for (int i = 0; i < readers.size(); i++) {
+            readers[i]->getNext(&k, &tmpval[i][0]);
+            KIDpair<keyType> kid = {k, i, false};
+            PQ.push(kid);
+            readkeys[i] = 1;
+        }
+    }
+protected:
+    void updatekeycount() {
+        keycount ++;
+        if (keycount > 100000 && verbose)
+            if ((keycount & (keycount-1))==0) {
+                printcurrtime();
+                printf("Got %lld keys\n", keycount);
+            }
+    }
+};
+
+
 
 
 template <typename KVpair>

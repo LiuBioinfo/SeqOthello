@@ -111,8 +111,177 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
     }
     if (really) {
         put4b(pp, filledhalf, 8);
-        return (p-p0)*2 + (filledhalf);
+        return (p-p0) + (filledhalf);
     }
     ans ++;
-    return ans;
+    return (ans>>1) + (ans & 1);
 }
+
+void L2Node::constructOth() {
+    int L = 8;
+    while ((1<<L)<entrycnt+10) L++;
+    printf("construct L2Node with %lld keys. Using type %s. with %d-Othello, entrycnt %d.\n", keys.size(), L2NodeTypes::typestr.at(this->getType()).c_str(), L, entrycnt);
+    oth = new Othello<keyType> (L, keys,values, true, 0);
+    for (auto &k: oth->removedKeys) {
+        printf("Removed key vNode %llx\n", k);
+    }
+}
+
+
+
+bool L2ShortValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) {
+    uint64_t index = L2Node::oth->queryInt(*k);
+    ret.clear();
+    if (index >= uint64list.size()) return true;
+    uint64_t vl = uint64list[index];
+    uint32_t valcnt = valuecnt;
+    while (valcnt -- ) {
+        uint32_t pq = vl & mask;
+        vl >>= maxnl;
+        ret.push_back(pq);
+    }
+    return true;
+}
+bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) {
+     uint64_t index = L2Node::oth->queryInt(*k);
+     if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
+        vector<uint32_t> decode;
+        valuelistDecode(&lines[IOLengthInBytes*index], decode, IOLengthInBytes);
+        ret.clear();
+        uint32_t last; 
+        ret.push_back(last = decode[0]);
+        for (int i = 1; i< decode.size(); i++) {
+            last += decode[i];
+            ret.push_back(last);
+        }
+        return true;
+     }
+     else {
+        //MAPP
+        retmap = vector<uint8_t> (lines.begin()+IOLengthInBytes * index , lines.begin() + IOLengthInBytes * (index+1));
+        return false;
+     }
+}
+
+void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
+    keycnt++;
+    uint64_t value = 0ULL;
+    for (auto pval = valuelist.rbegin(); pval!=valuelist.rend(); pval++) {
+        value <<= maxnl;
+        value |= (*pval & mask);
+    }
+    if (valuemap.count(value) == 0) {
+        //we always prepend one  to avoid \tau result = 0;
+        if (uint64list.size() ==0)
+            uint64list.push_back(value);
+
+        valuemap[value] = valuemap.size();
+        uint64list.push_back(value);
+		entrycnt = uint64list.size();
+    }
+    values.push_back(valuemap[value]);
+    keys.push_back(k);
+    return;
+
+}
+
+void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // this valuelist is diff.
+   if (encodetype!= L2NodeTypes::VALUE_INDEX_ENCODED)
+       throw invalid_argument("can not add value list L2EncodedValueListNode");
+    keys.push_back(k);
+    vector<uint8_t> buff(IOLengthInBytes);
+    if (lines.size() == 0)
+         lines.resize(IOLengthInBytes);
+    uint32_t curr = lines.size();
+    lines.resize(IOLengthInBytes + curr);
+    valuelistEncode(&lines[curr], valuelist, true);
+    keycnt++;
+    entrycnt++;
+    values.push_back(keycnt);
+
+}
+
+void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
+   if (encodetype!= L2NodeTypes::MAPP)
+       throw invalid_argument("can not add bitmap to L2EncodedValueListNode");
+   keys.push_back(k);
+   values.push_back(keycnt);
+   keycnt++;
+   entrycnt++;
+   if (mapp.size() != IOLengthInBytes) {
+       throw invalid_argument("can not add bitmap to L2ShortValuelist type");
+   }
+   lines.insert(lines.end(), mapp.begin(), mapp.end());
+}
+
+void L2ShortValueListNode::writeDataToGzipFile(gzFile fout) {
+    unsigned char buf[0x20];
+    memset(buf,0,sizeof(buf));
+    memcpy(buf, &valuecnt, 4);
+    memcpy(buf+4, &maxnl, 4);
+    uint32_t siz = uint64list.size();
+    memcpy(buf+8, &siz, 4);
+    gzwrite(fout, buf,sizeof(buf));
+    L2Node::oth->exportInfo(buf);
+    gzwrite(fout, buf,sizeof(buf));
+    L2Node::oth->writeDataToGzipFile(fout);
+    for (auto const & vl: uint64list) {
+        uint64_t rvl = vl;
+        gzwrite(fout, &rvl, IOLengthInBytes);
+    }
+}
+
+void L2EncodedValueListNode::writeDataToGzipFile(gzFile fout) {
+    unsigned char buf[0x20];
+    memset(buf,0,sizeof(buf));
+    memcpy(buf, &IOLengthInBytes, 4);
+    memcpy(buf+4, &encodetype, 4);
+    uint32_t siz = lines.size();
+    memcpy(buf+8, &siz, 4);
+    gzwrite(fout, buf,sizeof(buf));
+    L2Node::oth->exportInfo(buf);
+    gzwrite(fout, buf,sizeof(buf));
+    L2Node::oth->writeDataToGzipFile(fout);
+    gzwrite(fout, &lines[0], lines.size());
+}
+
+
+void L2ShortValueListNode::loadDataFromGzipFile(gzFile fin) {
+    unsigned char buf[0x20];
+    gzread(fin, buf,sizeof(buf));
+    void *p;
+    p = &buf;
+    memcpy(&valuecnt, p, 4);
+    memcpy(&maxnl, p+0x4, 4);
+    uint32_t siz;
+    memcpy(&siz, p+0x8, 4);
+
+    gzread(fin, buf,sizeof(buf));
+    L2Node::oth = new Othello<uint64_t> (buf);
+    L2Node::oth->loadDataFromGzipFile(fin);
+    uint64list.resize(0);//ShortVLcount);
+    for (int i = 0 ; i < siz; i++) {
+        uint64_t vl = 0ULL;
+        gzread(fin, &vl, IOLengthInBytes);
+        uint64list.push_back(vl);
+    }
+}
+
+
+void L2EncodedValueListNode::loadDataFromGzipFile(gzFile fin) {
+    unsigned char buf[0x20];
+    gzread(fin, buf,sizeof(buf));
+    void *p;
+    p = &buf;
+    memcpy(&IOLengthInBytes, p, 4);
+    memcpy(&encodetype, p+0x4, 4);
+    uint32_t siz;
+    memcpy(&siz, p+0x8, 4);
+
+    gzread(fin, buf,sizeof(buf));
+    L2Node::oth = new Othello<uint64_t> (buf);
+    L2Node::oth->loadDataFromGzipFile(fin);
+    lines.resize(siz);//ShortVLcount);
+    gzread(fin, &lines[0], siz);
+}
+

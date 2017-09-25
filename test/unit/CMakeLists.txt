@@ -8,6 +8,7 @@ TARGET_LINK_LIBRARIES(testL2Node
     libL2Node
     libgtest
     libgmock
+    z
 )
 
 add_test(NAME testfoo

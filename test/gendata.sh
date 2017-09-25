@@ -1,5 +1,5 @@
 #!/bin/bash
-../build/test/datagen -f 102 -k 15000 > genlog
+../build/test/datagen -f 77 -k 15000 > genlog
 tail -n 1 genlog > testTT.fa
 tail -n 1 genlog | cut -c1-100 >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa
@@ -15,10 +15,10 @@ mv *.Kmer raw/
 mv *.bin bin.64/
 mv *.bin.xml bin.64/
 rm -f flistA flistB
-for i in {1..50}; do
+for i in {0..49}; do
     echo F$i.Kmer.bin >> flistA
 done
-for i in {51..102}; do
+for i in {50..76}; do
     echo F$i.Kmer.bin >> flistB
 done
 

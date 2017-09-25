@@ -114,6 +114,7 @@ int main(int argc, char ** argv) {
     auto pGroupInfo = xml.NewElement("GroupInfo");
     pGroupInfo->SetAttribute("TotalSamples", (uint32_t) fnames.size());
     pGroupInfo->SetAttribute("GroupFile", args::get(argOut).c_str() );
+    pGroupInfo->SetAttribute("Keycount", (int64_t) cnt);
     pRoot->InsertFirstChild(pGroupInfo);
     auto pHistogram = xml.NewElement("Histogram");
     for (int i = 1; i< 255; i++)

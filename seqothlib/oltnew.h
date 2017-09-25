@@ -10,15 +10,14 @@
 #include <stdexcept>
 #include <othellotypes.hpp>
 #include <string>
+#include <L2Node.hpp>
 
 
-static const int VALUE_INDEX_SHORT = 16;
-static const int VALUE_INDEX_LONG = 17;
-static const int MAPP = 4;
-const map<int, string> typestr= { {VALUE_INDEX_SHORT, "ShortValueList"}, {VALUE_INDEX_LONG,"LongValuelist"}, {MAPP,"Bitmap"}};
 using namespace std;
-template<typename keyType>
+/*
 class vNodeNew {
+typedef uint64_t keyType;
+typedef uint16_t freqOthValueT;
 
 public:
     uint32_t high, valuecnt, type, EXP, maxnl, IOLengthInBytes, mask, keycnt;
@@ -82,15 +81,6 @@ public:
         uint64_t index = oth->queryInt(*k);
         vector<uint32_t> pq;
         if (type == VALUE_INDEX_SHORT) {
-            ret.clear();
-            if (index >= valuelistlist_short.size()) return true;
-            uint64_t vl = valuelistlist_short[index];
-            while (vl) {
-                uint32_t pq = vl & (( 1 << maxnl) -1);
-                vl >>= maxnl;
-                ret.push_back(pq);
-            }
-            return true;
         }
         if (type == VALUE_INDEX_LONG) {
             ret.clear();
@@ -113,25 +103,6 @@ public:
     add(keyType &k, vector<uint16_t> & valuelist) {
         keycnt++;
         if (type == VALUE_INDEX_SHORT) {
-            uint64_t value = 0ULL;
-            for (auto const val : valuelist) {
-                value <<= maxnl;
-                value |= (val & mask);
-            }
-            if (valuelist.size()) 
-                if ((valuelist[0] & mask ) == 0)
-                    value <<= maxnl; // we got a '0' in the valuelist.
-            if (valuemap.count(value) == 0) {
-                //we always prepend one  to avoid \tau result = 0;
-                if (valuelistlist_short.size() ==0)
-                    valuelistlist_short.push_back(value);
-
-                valuemap[value] = valuemap.size();
-                valuelistlist_short.push_back(value);
-            }
-            values.push_back(valuemap[value]);
-            keys.push_back(k);
-            return;
         }
 
         if (type == MAPP) {
@@ -274,12 +245,15 @@ public:
     }
 };
 
-template<typename keyType, typename freqOthValueT = uint16_t>
+*/
 class SeqOthello {
+        /*
+typedef uint64_t keyType;
+typedef uint16_t freqOthValueT;
 public:
     uint32_t high, EXP, splitbitFreqOth, kmerLength;
     Othello<keyType> * freqOth = NULL;
-    vector<std::shared_ptr<vNodeNew<keyType>>> vNodes;
+    vector<std::shared_ptr<vNode>> vNodes;
     uint32_t realhigh;
 private:
     uint32_t concurentThreadsSupported;
@@ -298,11 +272,11 @@ private:
         //These values are designed for the 2562 human data!
         //
         for (int i = 1; i< 165 && i < high; i++) {
-            vNodes.push_back(std::make_shared<vNodeNew<uint64_t>>(high, i, EXP));
+            vNodes.push_back(std::make_shared<vNodeNew>(high, i, EXP));
         }
         for (int i = 165; i< 1600 && i < high; i+=5)
-            vNodes.push_back(std::make_shared<vNodeNew<uint64_t>>(high, i, EXP));
-        vNodes.push_back(std::make_shared<vNodeNew<uint64_t>>(high, high, EXP));
+            vNodes.push_back(std::make_shared<vNodeNew>(high, i, EXP));
+        vNodes.push_back(std::make_shared<vNodeNew>(high, high, EXP));
         for (int i = 1; i<= high; i++) {
             int j = 1;
             while (vNodes[j]->valuecnt < i) j++;
@@ -311,16 +285,9 @@ private:
     }
 
 public:
-    SeqOthello(uint32_t _EXP, uint32_t _splitbitL1Oth, uint32_t _kmerLength) :
-        EXP(_EXP), splitbitL1Oth(_splitbitL1Oth), kmerLength(_kmerLength) {
-        if (EXP>1)
-            if ((high<<EXP)>=(1<<16)) {
-                throw std::runtime_error("do not support EXP+value longer than 16bit. ");
-            }
-    }
+    SeqOthello() {}
 
     void loadL2NodeBatch(int thid, string fname) {
-
         printf("Starting to load L2 nodes of grop %d/%d from disk\n", thid, concurentThreadsSupported);
         for (int i = 1; i < vNodes.size(); i++)
             if ( i % concurentThreadsSupported == thid)
@@ -450,11 +417,13 @@ public:
         vNodes[id]->loadDataFromGzipFile(fin);
         gzclose(fin);
     }
+    */
 
+    /*
     void constructFromReader(GrpReader<keyType> *reader, string filename, uint32_t allocate=1048576*32) {
         keyType k;
         vector< pair<uint32_t, uint32_t> > ret;
-        high = gethigh();
+        high = reader->gethigh();
         preparevNodes();
         printf("We will use at most %d threads to construct. At most %d keys(valuelists) at the same time.\n", concurentThreadsSupported, inQlimit);
         vector<keyType> kV;
@@ -514,6 +483,67 @@ public:
         vthreadL2.clear();
         SeqOthello<keyType> cmp(filename);
         printf("here to compare\n");
+    }
+	*/
+public:            
+    static vector<uint32_t> estimateParameters(KmerGroupComposer<keyType> *reader) {
+        int maxnl = 8;
+        int high = reader->gethigh();
+        while ((1<<maxnl)<high) maxnl++;
+        uint32_t limitsingle = 64/maxnl;
+        uint64_t k = 0;
+        int64_t cnt = 0;
+        vector<uint32_t> cnthisto(16);
+        vector<uint32_t> enchisto(high);
+		vector<uint32_t> ret;
+        int limit = ESTIMATE_KMER_CNT;
+        while (reader->getNextValueList(k, ret) && (limit--)) {
+            cnt ++;
+            int keycnt = ret.size();
+            if (keycnt <= limitsingle) {
+                    cnthisto[keycnt]++;
+            } 
+            else {
+                vector<uint32_t> toenc;
+                toenc.reserve(ret.size());
+                toenc.push_back(ret[0]+1);
+                for (int i = 1; i< ret.size(); i++)
+                    toenc.push_back(ret[i] - ret[i-1]);
+                int encodelength = valuelistEncode(NULL, toenc, false);
+                if (encodelength*8 > high)
+                        encodelength = (high/8)+(bool(high&7));
+                enchisto[encodelength]++;
+            }
+        }
+
+        if (limit ==0) {
+                vector<uint64_t> curr, tot;
+                reader->getGroupStatus(curr, tot);
+                uint64_t currA = accumulate(curr.begin(), curr.end(), 0ULL);
+                uint64_t totA = accumulate(tot.begin(), tot.end(), 0ULL);
+                double rate = totA * 1.0 / currA;
+                for (auto &x : enchisto) 
+                        x = (uint64_t) (x * rate);
+                for (auto &x : cnthisto)
+                        x = (uint64_t) (x * rate);
+                cnt =  (uint64_t) (cnt * rate);
+        }
+        vector<uint32_t> encodeLengthToL1ID(high/8+2);
+        uint64_t sq = 0;
+        uint64_t l1id = 0;
+        for (int i = 1; i< high/8+2; i++) {
+                printf("%d:%d\n", i, enchisto[i]);
+        }
+        for (int i = 1 ; i < high/8+2; i++) {
+            if ((sq+ enchisto[i])*i > LIMT_PER_L2) {
+                sq = 0;
+                l1id ++;
+            }
+            sq += enchisto[i];
+            encodeLengthToL1ID[i] = l1id;
+        }
+        reader->reset();
+        return encodeLengthToL1ID;
     }
 };
 

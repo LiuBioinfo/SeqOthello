@@ -52,9 +52,10 @@ int main(int argc, char ** argv) {
     std::set<uint64_t> sss;
     std::vector<uint64_t> vkmer;
     std::string str;
+    std::vector<std::set<int>> vp;
     char fname[30];
     memset(fname,0,sizeof(fname));
-    for (uint64_t i = 1; i< kmers+files; i++) {
+    for (uint64_t i = 1; i< kmers; i++) {
         // x^40 + x ^ 38 + x^ 21 + x^9
         bit  = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 19) ^ (lfsr >> 21) ) & 1;
         lfsr =  (lfsr >> 1) | (bit << 39);
@@ -74,18 +75,33 @@ int main(int argc, char ** argv) {
             vkmer.push_back(vv);
         }
     }
-    for (int i = 1; i<= files; i++) {
+    for (int i = 0; i < kmers; i++) {
+        set<int> sint;
+        for (int j = 0; j<= (i%files); j++) {
+             sint.insert(j);
+        }
+        set<int> bak(sint);
+        for (auto &x: bak) {
+            int p = rand() % files;
+            if (sint.count(p) == 0 && sint.count(x)!=0) {
+                sint.insert(p);
+                sint.erase(x);
+            }
+        }
+        vp.push_back(sint);
+    }
+    for (int i = 0; i< files; i++) {
         char fname[30];
         memset(fname,0,sizeof(fname));
         sprintf(fname,"F%d.Kmer", i);
         FILE *fout = fopen(fname ,"w");
         char buf[30];
         memset(buf,0,sizeof(buf));
-        for (int j = i-1; j<i+kmers-1; j++) {
-            if ((j+i)%(i*i/50+3)<=1) continue;
-            helper->convertstring(buf,&vkmer[j]);
-            fprintf(fout, "%s %d\n", buf, (j-i+2)*i);
-        }
+        for (int j = 0 ; j < kmers; j++) 
+            if (vp[j].count(i)){
+                helper->convertstring(buf,&vkmer[j]);
+                fprintf(fout, "%s %d\n", buf, (j-i+2)*i);
+            }
         fclose(fout);
     }
     printf("%lud %d\n", sss.size(), kmers+files);

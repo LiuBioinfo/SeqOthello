@@ -1,18 +1,20 @@
 #include <iostream>
+#define ESTIMATE_KMER_CNT 100
+#define LIMT_PER_L2 1024
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
 #include <bitset>
-#include <filegrouper.hpp>
-#include <oltnew.h>
 #include <chrono>
 #include <inttypes.h>
 #include <string>
 #include <map>
 #include <unordered_map>
 #include <args.hxx>
-#include <othellotypes.hpp>
+#include <memory>
+#include <io_helper.hpp>
+#include <oltnew.h>
 
 using namespace std;
 
@@ -24,6 +26,7 @@ int main(int argc, char ** argv) {
     args::ValueFlag<string> argFolder(parser, "string", "where to find this file", {"folder"});
     args::ValueFlag<string> argOutputname(parser, "string", "filename (including path) for the output files", {"out"});
     args::ValueFlag<int> argThread(parser, "int", "number of parallel threads to build SeqOthello", {"thread"});
+    args::Flag argCountOnly(parser, "count-only", "only count the keys and the histogram, do not build the seqOthello.", {"count-only"});
 //    args::ValueFlag<int> argEXP(parser, "int", "Expression bits, optional: None, 1, 2, 4", {"exp"});
 
 
@@ -54,10 +57,70 @@ int main(int argc, char ** argv) {
     }
 
     int EXP;
+    vector<uint64_t> keyHisto, encodeHisto;
 
-    auto reader = make_shared<GrpReader<uint64_t>> (args::get(argInputname), args::get(argFolder));
-    auto seqoth = make_shared<SeqOthello<uint64_t>> (args::get(argfcnt), 1, D_SPLITBIT, D_KMERLENGTH);
+    string prefix = args::get(argFolder);
+    string fname =  args::get(argInputname);
+    FILE * ffnames = fopen(args::get(argInputname).c_str(), "r");
+    char buf[4096];
+    vector<string> fnames;
+    while (true) {
+        if (fgets(buf, 4096, ffnames) == NULL) break;
+        string fname(buf);
+        if (*fname.rbegin() == '\n') fname = fname.substr(0,fname.size()-1);
+        fnames.push_back(prefix+fname);
+    }
+    auto reader = make_shared<KmerGroupComposer<uint64_t>>(fnames);
+    vector<uint32_t> ret;
+    vector<uint8_t> encodebuf;
 
-    seqoth->constructFromReader(reader.get(), args::get(argOutputname), nThreads);
+    uint32_t samplecount = reader->gethigh();
+    printf("samplecount = %d\n", samplecount);
+    keyHisto.resize(samplecount+5);
+    encodeHisto.resize(samplecount+5);
+    tinyxml2::XMLDocument * xml = new tinyxml2::XMLDocument();
+
+    if (argCountOnly) {
+        uint64_t k= 0;
+        int64_t cnt = 0;
+        while (reader->getNextValueList(k, ret)) {
+            int keycnt = ret.size();
+            if (keycnt > samplecount) {
+                    printf("%d \n", keycnt);
+                    for (auto &x: ret) 
+                            printf("%d ", x);
+                         
+                    printf("\n");
+            }
+            keyHisto[keycnt]++;
+            cnt ++;
+        }
+        auto pRoot = xml->NewElement("Root");
+        
+        auto pcountInfo = xml->NewElement("KeyDistributionInfo"); 
+        pcountInfo->SetAttribute("TotalKeycount", cnt);
+        for (int i = 0; i < reader->gethigh(); i++)
+             if (keyHisto[i]) {
+                 auto pHisNode = xml->NewElement("entry");
+                 pHisNode->SetAttribute("freq", i);
+                 pHisNode->SetAttribute("value", (uint32_t) keyHisto[i]);
+                 pcountInfo->InsertEndChild(pHisNode);
+             }
+        pRoot->InsertEndChild(pcountInfo);
+        
+        xml->InsertFirstChild(pRoot);
+        xml->SaveFile("keydistribut.xml");
+        return 0;
+    }
+
+    auto distr = SeqOthello::estimateParameters(reader.get());
+    for (int i = 0 ; i < distr.size(); i++) {
+            printf("%d->%d\n", i, distr[i]);
+    }
+    
+//    auto reader = make_shared<GrpReader<uint64_t>> (args::get(argInputname), args::get(argFolder));
+//    auto seqoth = make_shared<SeqOthello<uint64_t>> (args::get(argfcnt), 1, D_SPLITBIT, D_KMERLENGTH);
+
+//    seqoth->constructFromReader(reader.get(), args::get(argOutputname), nThreads);
     return 0;
 }
