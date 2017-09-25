@@ -63,14 +63,22 @@ int main(int argc, char * argv[]) {
         if (v >= cutoff) 
             VKmer.push_back(k);
     }
-    printf("Sorting %lu keys\n", VKmer.size());
-    sort(VKmer.begin(),VKmer.end());
-    unsigned long long cnt = 1;
+    if (VKmer.size() >0 ) {
+        printf("Sorting %lu keys\n", VKmer.size());
+        sort(VKmer.begin(),VKmer.end());
+    }
+    else {
+        printf("Empty kmer files\n");
+    }
+    unsigned long long cnt = 0;
+    if (VKmer.size()) {
+    cnt ++;
     for (unsigned int i = 1; i < VKmer.size(); i++ ) {
        if (VKmer[i] != VKmer[cnt-1]) {
            VKmer[cnt] = VKmer[i];
            cnt++;
        }
+    }
     }
     printf("Writing %lld keys to %s\n", cnt, foutName.c_str());
     FILE *fout = fopen(foutName.c_str(),"wb");
@@ -83,10 +91,12 @@ int main(int argc, char * argv[]) {
     pElement->SetAttribute("KmerFile", finName.c_str());
     pElement->SetAttribute("KmerLength", kmerlength);
     pElement->SetAttribute("BinaryFile", foutName.c_str());
+    pElement->SetAttribute("KmerCount", (unsigned int) VKmer.size());
+    if (cnt) {
     pElement->SetAttribute("Cutoff", cutoff);
     pElement->SetAttribute("MinExpressionInKmerFile", minInputExpression);
-    pElement->SetAttribute("KmerCount", (unsigned int) VKmer.size());
     pElement->SetAttribute("UniqueKmerCount",(unsigned int) cnt);
+    }
     pRoot->InsertEndChild(pElement);
     xml.InsertFirstChild(pRoot);
     auto xmlName = foutName + ".xml";
