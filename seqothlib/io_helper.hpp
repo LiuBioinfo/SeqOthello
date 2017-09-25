@@ -316,7 +316,7 @@ template <typename keyType, typename valueType>
 class compressFileReader : public FileReader <keyType, valueType> {
     FILE *f;
     bool fIsSorted;
-    static const int buflen = 1024;
+    static const int buflen = 1024*8;
     int curr = 0;
     int  max = 0;
     unsigned char buf[1024*64];
@@ -420,6 +420,10 @@ public:
     }
     void reset() {
         rewind(f);
+        memset(buf,0,sizeof(buf));
+        curr = 0;
+        max = 0;
+
     }
     virtual bool getFileIsSorted() {
         return false;
@@ -554,6 +558,7 @@ public:
             auto const fname = fnames[i];
             auto const fnamexml = fname + ".xml";
             tinyxml2::XMLDocument xml;
+            printf("load xml info from %s\n", fnamexml.c_str()); 
             xml.LoadFile( fnamexml.c_str());
             int tmpint;
             xml.FirstChildElement("Root")->FirstChildElement("GroupInfo")->QueryIntAttribute("TotalSamples", &tmpint);
@@ -612,6 +617,8 @@ public:
              x->reset();
         keycount = 0;
         uint64_t k;
+        PQ = priority_queue<KIDpair<keyType>>();
+
         for (int i = 0; i < readers.size(); i++) {
             readers[i]->getNext(&k, &tmpval[i][0]);
             KIDpair<keyType> kid = {k, i, false};

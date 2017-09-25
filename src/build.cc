@@ -55,7 +55,9 @@ int main(int argc, char ** argv) {
         std::cerr << "must specify args" << std::endl;
         return 1;
     }
-
+    int nThreads = 1;
+    if (argThread) 
+            nThreads = args::get(argThread);
     int EXP;
     vector<uint64_t> keyHisto, encodeHisto;
 
@@ -79,11 +81,13 @@ int main(int argc, char ** argv) {
     keyHisto.resize(samplecount+5);
     encodeHisto.resize(samplecount+5);
     tinyxml2::XMLDocument * xml = new tinyxml2::XMLDocument();
-
+    
     if (argCountOnly) {
         uint64_t k= 0;
         int64_t cnt = 0;
+        set<uint64_t> kset;    
         while (reader->getNextValueList(k, ret)) {
+                kset.insert(k);
             int keycnt = ret.size();
             if (keycnt > samplecount) {
                     printf("%d \n", keycnt);
@@ -110,17 +114,17 @@ int main(int argc, char ** argv) {
         
         xml->InsertFirstChild(pRoot);
         xml->SaveFile("keydistribut.xml");
+        printf("keyset = %d\n", kset.size());
         return 0;
     }
-
     auto distr = SeqOthello::estimateParameters(reader.get());
     for (int i = 0 ; i < distr.size(); i++) {
             printf("%d->%d\n", i, distr[i]);
     }
-    
+    reader->reset(); 
 //    auto reader = make_shared<GrpReader<uint64_t>> (args::get(argInputname), args::get(argFolder));
-//    auto seqoth = make_shared<SeqOthello<uint64_t>> (args::get(argfcnt), 1, D_SPLITBIT, D_KMERLENGTH);
+    auto seqoth = make_shared<SeqOthello> ();
 
-//    seqoth->constructFromReader(reader.get(), args::get(argOutputname), nThreads);
+    seqoth->constructFromReader(reader.get(), args::get(argOutputname), nThreads, distr);
     return 0;
 }
