@@ -5,6 +5,8 @@
 #include <zlib.h>
 #include "othello.h"
 #include "util.h"
+#include <tinyxml2.h>
+#include <memory>
 
 using namespace std;
 
@@ -28,13 +30,14 @@ public:
     virtual void addMAPP(keyType &k, vector<uint8_t> &mapp) = 0;
     virtual void writeDataToGzipFile(gzFile fout) = 0;
     virtual void loadDataFromGzipFile(gzFile fin) = 0;
-    uint32_t keycnt;
+    uint32_t keycnt = 0;
     vector<uint32_t> values;
     vector<uint64_t> keys;
     void constructOth();
-    uint32_t valuecnt = 0;
     uint32_t entrycnt = 0;
     Othello<uint64_t> *oth = NULL;
+    virtual void putInfoToXml(tinyxml2::XMLElement *) = 0;
+    static std::shared_ptr<L2Node> loadL2Node( tinyxml2::XMLElement *p);
 };
 
 class L2ShortValueListNode : public L2Node {
@@ -59,11 +62,12 @@ public:
 
     bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) override;
     void add(keyType &k, vector<uint32_t> &) override;
-    void addMAPP(keyType &k, vector<uint8_t> &mapp) override {
+    void addMAPP(keyType &, vector<uint8_t> &) override {
         throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
     void writeDataToGzipFile(gzFile fout) override;
     void loadDataFromGzipFile(gzFile fin) override;
+    void putInfoToXml(tinyxml2::XMLElement *) override;
 };
 
 class L2EncodedValueListNode : public L2Node {
@@ -84,6 +88,6 @@ public:
     void addMAPP(keyType &k, vector<uint8_t> &mapp) override;
     void writeDataToGzipFile(gzFile fout) override;
     void loadDataFromGzipFile(gzFile fin) override;
+    void putInfoToXml(tinyxml2::XMLElement *) override;
 };
-
 

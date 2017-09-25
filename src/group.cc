@@ -17,13 +17,13 @@
 using namespace std;
 
 int getKmerLengthfromxml(string fname) {
-        fname += ".xml";
-        tinyxml2::XMLDocument doc;
-        doc.LoadFile( fname.c_str() );
-        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
-        int ret = 0;
-        pSampleInfo->QueryIntAttribute("KmerLength", &ret);
-        return ret;
+    fname += ".xml";
+    tinyxml2::XMLDocument doc;
+    doc.LoadFile( fname.c_str() );
+    const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
+    int ret = 0;
+    pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+    return ret;
 }
 int main(int argc, char ** argv) {
     args::ArgumentParser parser("Preprocess binary files to grouped files. \n"

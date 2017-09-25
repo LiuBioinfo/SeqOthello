@@ -13,7 +13,7 @@ inline uint8_t get4b(uint8_t **pp, bool &hasvalue, uint8_t &buff) {
         return (**pp) & 0xF;
     }
 }
-inline uint8_t put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
+inline void put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
     if (filledhalf) {
         (**pp) |= ((val & 0xF)<<4);
         (*pp)++;
@@ -285,4 +285,46 @@ void L2EncodedValueListNode::loadDataFromGzipFile(gzFile fin) {
     lines.resize(siz);//ShortVLcount);
     gzread(fin, &lines[0], siz);
 }
+
+void L2ShortValueListNode::putInfoToXml(tinyxml2::XMLElement * pe){
+  string typestr = L2NodeTypes::typestr.at(this->getType());
+  pe->SetAttribute("Type", typestr.c_str()); 
+  pe->SetAttribute("ValueCnt", valuecnt); 
+  pe->SetAttribute("BitsPerValue", maxnl); 
+  pe->SetAttribute("Keycount", keycnt); 
+  pe->SetAttribute("EntryCount", entrycnt); 
+}
+
+void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe){
+  string typestr = L2NodeTypes::typestr.at(this->getType());
+  pe->SetAttribute("Type", typestr.c_str()); 
+  pe->SetAttribute("IOLengthInBytes", IOLengthInBytes); 
+  pe->SetAttribute("Keycount", keycnt); 
+  pe->SetAttribute("EntryCount", entrycnt); 
+}
+
+std::shared_ptr<L2Node> 
+L2Node::loadL2Node( tinyxml2::XMLElement *p) {
+    if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {
+       int valuecnt = p->IntAttribute("ValueCnt");
+       int maxnl = p->IntAttribute("BitsPerValue");
+       return make_shared<L2ShortValueListNode>(valuecnt, maxnl); 
+    }
+
+    if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_ENCODED).c_str()) == 0) {
+       int IOL = p->IntAttribute("IOLengthInBytes");
+       int type = L2NodeTypes::VALUE_INDEX_ENCODED;
+       return make_shared<L2EncodedValueListNode>(IOL, type);
+    }
+
+    if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::MAPP).c_str()) == 0) {
+       int IOL = p->IntAttribute("IOLengthInBytes");
+       int type = L2NodeTypes::MAPP;
+       return make_shared<L2EncodedValueListNode>(IOL, type);
+    }
+    
+    return NULL;
+
+}
+
 

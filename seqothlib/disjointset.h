@@ -33,7 +33,7 @@ public:
     }
     //! re-initilize the disjoint sets.
     void clear() {
-        for (auto a : *fa)
+        for (auto &a : *fa)
             a = -1;
     }
     void merge(int a, int b) {

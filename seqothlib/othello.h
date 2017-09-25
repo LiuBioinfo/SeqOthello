@@ -164,7 +164,7 @@ private:
         va <<=28;
         va ^= rand();
         va <<=28;
-        v = (va ^ rand());
+        return v = (va ^ rand());
     }
 
     void newHash() {

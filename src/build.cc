@@ -57,7 +57,6 @@ int main(int argc, char ** argv) {
     int nThreads = 1;
     if (argThread)
         nThreads = args::get(argThread);
-    int EXP;
     vector<uint64_t> keyHisto, encodeHisto;
 
     string prefix = args::get(argFolder);
