@@ -78,13 +78,12 @@ TEST_F(L2NodeTest, TestL2Short) {
         EXPECT_EQ(vret, v);
     }
 
-    gzFile fout = gzopen("test.gz", "wb");
-    N->writeDataToGzipFile(fout);
-    gzclose(fout);
-    gzFile fin = gzopen("test.gz", "rb");
+    N->gzfname = "test.gz";
+    N->writeDataToGzipFile();
 
     L2Node *N2 = new L2ShortValueListNode (5,8);
-    N2->loadDataFromGzipFile(fin);
+    N2->gzfname = "test.gz";
+    N2->loadDataFromGzipFile();
     for (uint64_t i = 0; i < NN; i++) {
         uint64_t k = vK[i];
         vector<uint32_t> v,vret;
@@ -123,12 +122,13 @@ TEST_F(L2NodeTest, TestL2MAPP) {
     }
     N->constructOth();
 
-    gzFile fout = gzopen("test.gz", "wb");
-    N->writeDataToGzipFile(fout);
-    gzclose(fout);
+    N->gzfname = "test.gz";
+    N->writeDataToGzipFile();
+
     gzFile fin = gzopen("test.gz", "rb");
     L2Node *N2 = new L2ShortValueListNode (4,6);
-    N2->loadDataFromGzipFile(fin);
+    N2->gzfname = "test.gz";
+    N2->loadDataFromGzipFile();
 
     for (uint64_t i=0; i<totN; i++) {
         uint64_t k = vK[i];
@@ -193,11 +193,13 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
     N->constructOth();
 
     gzFile fout = gzopen("test.gz", "wb");
-    N->writeDataToGzipFile(fout);
+    N->gzfname = "test.gz";
+    N->writeDataToGzipFile();
     gzclose(fout);
     gzFile fin = gzopen("test.gz", "rb");
 	L2Node *N2 = new L2EncodedValueListNode (maxlength,L2NodeTypes::VALUE_INDEX_ENCODED);
-    N2->loadDataFromGzipFile(fin);
+    N2->gzfname = "test.gz";
+    N2->loadDataFromGzipFile();
 
     for (uint64_t i=0; i<totN; i++) {
         uint64_t k = vK[i];

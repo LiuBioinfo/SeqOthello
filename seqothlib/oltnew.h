@@ -27,14 +27,14 @@ public:
 	uint32_t sampleCount;
 private:
     uint32_t inQlimit = 1048576*1024;
-    constexpr static uint32_t L2limit = 20480;
+    constexpr static uint32_t L2limit = 104857600;
     vector<uint32_t> freqToVnodeIdMap;
 public:
     SeqOthello() {}
 
     void loadL2NodeBatch(int thid, string fname, int nthread) {
         printf("Starting to load L2 nodes of grop %d/%d from disk\n", thid, nthread);
-        for (int i = 1; i < vNodes.size(); i++)
+        for (int i = 0; i < vNodes.size(); i++)
             if ( i % nthread == thid)
                 loadL2Node(i, fname);
     }
@@ -168,10 +168,8 @@ public:
         ss<<".L2."<<id;
         string fname2;
         ss >> fname2;
-        gzFile fout = gzopen(fname2.c_str(), "wb");
         vNodes[id]->constructOth();
-        vNodes[id]->writeDataToGzipFile(fout);
-        gzclose(fout);
+        vNodes[id]->writeDataToGzipFile();
     }
 
     void loadL2Node(int id, string fname) {
@@ -180,10 +178,7 @@ public:
         ss<<".L2."<<id;
         string fname2;
         ss >> fname2;
-        printf("Load L2 Node %s\n", fname2.c_str());
-        gzFile fin = gzopen(fname2.c_str(), "rb");
-        vNodes[id]->loadDataFromGzipFile(fin);
-        gzclose(fin);
+        vNodes[id]->loadDataFromGzipFile();
     }
 
 
@@ -240,7 +235,7 @@ public:
 
             //cnt = 1
             if (valcnt == 1) {
-                vV.push_back(ret[0]);
+                vV.push_back(ret[0]+1);
                 continue;
             }
 
@@ -277,7 +272,7 @@ public:
                     enclGrpIDmap[grpid] = vNodes.size() - 1;
                 }
                 vNodes[enclGrpIDmap[grpid]]->add(k, diff);
-                vV.push_back(enclGrpmap[grpid] + L2IDShift);
+                vV.push_back(enclGrpIDmap[grpid] + L2IDShift);
                 continue;
             }
             if (MAPPcnt * MAPPlength > L2limit)  {
@@ -293,7 +288,8 @@ public:
             vNodes[MAPPID]->addMAPP(k,kbitmap.m);
             vV.push_back(MAPPID+ L2IDShift);
         }
-
+        for (uint32_t i = 0 ; i < vNodes.size(); i++)
+            vNodes[i]->gzfname = filename+"L2."+to_string(i);
         int LLfreq = 8;
         while ((1<<LLfreq)<vNodes.size()+L2IDShift+5) LLfreq++;
         printf("Constructing L1 Node \n");
@@ -311,7 +307,7 @@ public:
         }
         vthreadL1.push_back(std::thread(&SeqOthello::writeLayer1ToFileAndReleaseMemory,this,filename));
         uint32_t currentInQ = 0;
-        for (int i = vNodes.size()-1; i>=1; i--) {
+        for (int i = vNodes.size()-1; i>=0; i--) {
             if (currentInQ > inQlimit || vthreadL2.size()>=threadsLimit) {
                 for (auto &th : vthreadL2) th.join();
                 vthreadL2.clear();

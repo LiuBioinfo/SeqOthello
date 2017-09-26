@@ -55,7 +55,7 @@ int main(int argc, char ** argv) {
     std::vector<std::set<int>> vp;
     char fname[30];
     memset(fname,0,sizeof(fname));
-    for (uint64_t i = 1; i< kmers; i++) {
+    for (uint64_t i = 0; i< kmers; i++) {
         // x^40 + x ^ 38 + x^ 21 + x^9
         bit  = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 19) ^ (lfsr >> 21) ) & 1;
         lfsr =  (lfsr >> 1) | (bit << 39);
@@ -77,17 +77,14 @@ int main(int argc, char ** argv) {
     }
     for (int i = 0; i < kmers; i++) {
         set<int> sint;
-        for (int j = 0; j<= (i%files); j++) {
-             sint.insert(j);
+        for (int j = 0; j<= i/files; j++) {
+            sint.insert((i+j)%files);
+            // sint.insert((i/files+(i/files+3)*j)%files);
         }
-        set<int> bak(sint);
-        for (auto &x: bak) {
-            int p = rand() % files;
-            if (sint.count(p) == 0 && sint.count(x)!=0) {
-                sint.insert(p);
-                sint.erase(x);
-            }
-        }
+        //sint.insert(i*3 % files);
+        for (int j = 0; j<=10; j++) 
+            if (i & (1<<j))
+                sint.insert(j+10);
         vp.push_back(sint);
     }
     for (int i = 0; i< files; i++) {
