@@ -260,6 +260,7 @@ public:
             PQ.pop();
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
+            updatekeycount();
         }
         return true;
     }
@@ -500,7 +501,7 @@ public:
             if (nextPossibleKey > *k) return false;
         }
         passcount ++;
-        if (keycount > 1048576) if ((keycount & (keycount - 1)) ==0) {
+        if (keycount > 1024) if ((keycount & (keycount - 1)) ==0) {
                 printcurrtime();
                 printf("Got %lld, passed %lld keys\n", keycount, passcount);
             }
@@ -632,6 +633,7 @@ public:
             PQ.pop();
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
+            updatekeycount();
         }
         return true;
     }
@@ -660,7 +662,7 @@ public:
 protected:
     void updatekeycount() {
         keycount ++;
-        if (keycount > 100000 && verbose)
+        if ((0==(keycount & 32767)) && verbose)
             if ((keycount & (keycount-1))==0) {
                 printcurrtime();
                 printf("Got %lld keys\n", keycount);
