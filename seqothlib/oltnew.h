@@ -26,8 +26,8 @@ public:
     uint32_t L2IDShift;
 	uint32_t sampleCount;
 private:
-    uint32_t inQlimit = 1048576*1024;
-    constexpr static uint32_t L2limit = 104857600;
+    uint32_t inQlimit = 1048576*512;
+    constexpr static uint32_t L2limit = 1048576*32;
     vector<uint32_t> freqToVnodeIdMap;
 public:
     SeqOthello() {}
