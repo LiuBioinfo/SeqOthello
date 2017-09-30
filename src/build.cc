@@ -71,6 +71,7 @@ int main(int argc, char ** argv) {
         fnames.push_back(prefix+fname);
     }
     auto reader = make_shared<KmerGroupComposer<uint64_t>>(fnames);
+    reader->verbose = true;
     vector<uint32_t> ret;
     vector<uint8_t> encodebuf;
 
@@ -83,9 +84,7 @@ int main(int argc, char ** argv) {
     if (argCountOnly) {
         uint64_t k= 0;
         int64_t cnt = 0;
-        set<uint64_t> kset;
         while (reader->getNextValueList(k, ret)) {
-            kset.insert(k);
             int keycnt = ret.size();
             if (keycnt > samplecount) {
                 printf("%d \n", keycnt);
@@ -111,8 +110,8 @@ int main(int argc, char ** argv) {
         pRoot->InsertEndChild(pcountInfo);
 
         xml->InsertFirstChild(pRoot);
-        xml->SaveFile("keydistribut.xml");
-        printf("keyset = %d\n", kset.size());
+        string output = args::get(argOutputname);
+        xml->SaveFile(output.c_str());
         return 0;
     }
     int limit = 10485760;

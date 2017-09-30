@@ -261,12 +261,13 @@ public:
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
         }
+        updatekeycount();
         return true;
     }
 protected:
     void updatekeycount() {
         keycount ++;
-        if (keycount > 100000 && verbose)
+        if ((keycount & 0xFFFF) ==0 )
             if ((keycount & (keycount-1))==0) {
                 printcurrtime();
                 printf("Got %lld keys\n", keycount);
@@ -633,6 +634,7 @@ public:
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
         }
+        updatekeycount();
         return true;
     }
     uint32_t gethigh() {
@@ -663,7 +665,10 @@ protected:
         if (keycount > 100000 && verbose)
             if ((keycount & (keycount-1))==0) {
                 printcurrtime();
-                printf("Got %lld keys\n", keycount);
+                printf("Got %lld keys\n Bytes read from groups: ", keycount);
+                for (int i = 0 ; i < readers.size(); i++)
+                    printf("%d: %lldM\t", i, readers[i]->getpos()/1048576); 
+                printf("\n");
             }
     }
 };
