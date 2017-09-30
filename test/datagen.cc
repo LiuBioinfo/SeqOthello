@@ -77,7 +77,7 @@ int main(int argc, char ** argv) {
     }
     for (int i = 0; i < kmers; i++) {
         set<int> sint;
-        for (int j = 0; j<= i/files; j++) {
+        for (int j = 0; j<= (i/files)%20 + 1; j++) {
             sint.insert((i+j)%files);
             // sint.insert((i/files+(i/files+3)*j)%files);
         }
