@@ -370,7 +370,7 @@ public:
 template <typename keyType, typename valueType>
 class MultivalueFileReaderWriter : public FileReader <keyType, valueType> {
     FILE *f;
-    static const int buflen = 8192;
+    static const int buflen = 8192*4;
     int curr = 0;
     int max = 0;
     unsigned char buf[buflen * 2];
@@ -667,7 +667,7 @@ protected:
                 printcurrtime();
                 printf("Got %lld keys\n Bytes read from groups: ", keycount);
                 for (int i = 0 ; i < readers.size(); i++)
-                    printf("%d: %lldM\t", i, readers[i]->getpos()/1048576); 
+                    printf("%d:%5lldM\t", i, readers[i]->getpos()/1048576); 
                 printf("\n");
             }
     }
