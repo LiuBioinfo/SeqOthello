@@ -233,9 +233,9 @@ public:
         for (auto const fname : fnames) {
             readers.push_back(new KmerReader(fname.c_str()));
             keyType k;
-            readers[readers.size()-1]->getNext(&k);
+            bool finished = !readers[readers.size()-1]->getNext(&k);
             KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1), false};
-            PQ.push(kid);
+            if (!finished) PQ.push(kid);
         }
     }
     ~KmerGroupReader() {
@@ -257,6 +257,9 @@ public:
             keyType nextk;
             ret.push_back(tid);
             bool finish = !readers[tid]->getNext(&nextk);
+            if (nextk <= k) {
+                   throw std::invalid_argument("error getting nextk!");
+            }
             PQ.pop();
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
@@ -607,14 +610,14 @@ public:
             readkeys.push_back(1);
         }
     }
-    ~KmerGroupComposer() {
+    virtual ~KmerGroupComposer() {
         for (int i = 0 ; i < readers.size(); i++)
             delete readers[i];
     }
 
     bool verbose = false;
     uint64_t keycount = 0;
-    bool getNextValueList(keyType &k, vector<uint32_t> &ret) {
+    virtual bool getNextValueList(keyType &k, vector<uint32_t> &ret) {
         k = PQ.top().k;
         if (PQ.top().finished) {
             return false;
@@ -624,17 +627,22 @@ public:
             int tid;
             tid = PQ.top().id;
             keyType nextk;
-
             for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
                 ret.push_back(shift[tid] + tmpval[tid][i]);
             }
-            bool finish = !readers[tid]->getNext(&nextk, &tmpval[tid][0]);
-            readkeys[tid]++;
             PQ.pop();
+            if (PQ.top().finished) 
+                 continue;
+            bool finish = !readers[tid]->getNext(&nextk, &tmpval[tid][0]);
+            if (nextk <= k) {
+                   throw std::invalid_argument("error getting nextk!");
+            }
+            readkeys[tid]++;
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
         }
         updatekeycount();
+            printf("%d: %llx %d\n", keycount, k, ret.size());
         return true;
     }
     uint32_t gethigh() {
@@ -672,7 +680,26 @@ protected:
             }
     }
 };
+/*
+template <typename keyType> 
+class KmerGroupComposerGenerato  : KmerGroupComposer<keyType> {
+        int nn, ll;
+        uint64_t cur = 0, cnt = 0;
+public: 
+      KmerGroupComposerGenerator(int n, int l): nn(n), ll(l), KmerGroupComposer<keyType>(vector<string>()){}
+      virtual ~KmerGroupComposerGenerator() {}
+      bool getNextValueList(keyType &k, vector<uint32_t> &ret) {
+           cnt ++;
+           if (cnt >= nn) return false;
+           cur += random()%1024;
+           ret.clear();
+           for (int i = 0 ; i < ll; i++)
+                 ret.push_back(i);
+           return true;
+      }
 
+};
+*/
 
 
 

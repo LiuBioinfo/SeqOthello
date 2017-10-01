@@ -1,10 +1,12 @@
 #!/bin/bash
-../build/test/datagen -f 179 -k 1500 > genlog
+../build/test/datagen -f 179 -k 153 > genlog
 tail -n 1 genlog > testTT.fa
 tail -n 1 genlog | cut -c1-100 >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa
 tail -n 1 genlog | cut -c1-50 >> testTT.fa
 tail -n 1 genlog | cut -c1-25 >> testTT.fa
+rm 16.Kmer
+touch 16.Kmer
 for i in *.Kmer; do
     ../build/bin/PreProcess --in=$i --out=$i.bin --k=20;
 done
