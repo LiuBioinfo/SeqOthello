@@ -642,7 +642,6 @@ public:
             PQ.push(kid);
         }
         updatekeycount();
-            printf("%d: %llx %d\n", keycount, k, ret.size());
         return true;
     }
     uint32_t gethigh() {

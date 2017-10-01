@@ -62,6 +62,8 @@ int main(int argc, char ** argv) {
     string prefix = args::get(argFolder);
     string fname =  args::get(argInputname);
     FILE * ffnames = fopen(args::get(argInputname).c_str(), "r");
+    if (ffnames == NULL) 
+        throw std::invalid_argument("Error reading file"+argInputname);
     char buf[4096];
     vector<string> fnames;
     while (true) {
