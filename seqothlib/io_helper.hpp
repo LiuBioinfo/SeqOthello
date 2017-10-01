@@ -618,29 +618,31 @@ public:
     bool verbose = false;
     uint64_t keycount = 0;
     virtual bool getNextValueList(keyType &k, vector<uint32_t> &ret) {
-        k = PQ.top().k;
-        if (PQ.top().finished) {
+        if (PQ.empty()) {
             return false;
         }
+        k = PQ.top().k;
         ret.clear();
         while (PQ.top().k == k && !PQ.top().finished) {
             int tid;
             tid = PQ.top().id;
             keyType nextk;
+            readkeys[tid]++;
             for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
                 ret.push_back(shift[tid] + tmpval[tid][i]);
             }
             PQ.pop();
-            if (PQ.top().finished) 
-                 continue;
+            if (PQ.empty()) break;
             bool finish = !readers[tid]->getNext(&nextk, &tmpval[tid][0]);
+            if (!finish) {
             if (nextk <= k) {
                    throw std::invalid_argument("error getting nextk!");
             }
-            readkeys[tid]++;
             KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
             PQ.push(kid);
+            }
         }
+
         updatekeycount();
         return true;
     }
