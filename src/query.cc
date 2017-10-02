@@ -41,7 +41,7 @@ void getL1Result(shared_ptr<SeqOthello>seqoth, const vector<string> & seq, const
                     key =  helper.minSelfAndRevcomp(key);
                 }
                 kmers.push_back(key);
-                result.push_back(seqoth->freqOth->queryInt(key));
+                result.push_back(seqoth->l1Node->queryInt(key));
                 TID.push_back(seqID[id]);
             }
     }
@@ -171,10 +171,7 @@ int main(int argc, char ** argv) {
     FILE *fout = fopen(fnameout.c_str(), "w");
 
     if (argShowDedatils) {
-        seqoth->startloadL1();
-        seqoth->startloadL2(nqueryThreads);
-        seqoth->waitloadL1();
-        seqoth->waitloadL2();
+	    seqoth->loadall(nqueryThreads);
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
         vector<uint64_t>  requests;
         set<uint32_t> skipped;
@@ -226,7 +223,7 @@ int main(int argc, char ** argv) {
         return 0;
     }
 
-    seqoth->startloadL1();
+    seqoth->loadL1(kmerLength);
     vector<vector<string>> vtSeq(nqueryThreads);
     vector<vector<int>> vtTID(nqueryThreads);
     for (int id = 0; id< vSeq.size(); id++) {
@@ -234,7 +231,6 @@ int main(int argc, char ** argv) {
         vtTID[id % nqueryThreads].push_back(id);
     }
     vSeq.clear();
-    seqoth->waitloadL1();
     vector<vector<uint64_t>> vKmer(nqueryThreads);
     vector<vector<uint16_t>> vL1Result(nqueryThreads);
     vector<vector<uint32_t>> vkTID(nqueryThreads);

@@ -120,14 +120,17 @@ int main(int argc, char ** argv) {
     if (argLimit)
         limit = args::get(argLimit);
     printf("Estimate the distribution with the first %d Kmers. \n", limit);
-    auto distr = SeqOthello::estimateParameters(reader.get(), limit);
+	uint64_t keycount;
+    auto distr = SeqOthello::estimateParameters(reader.get(), limit, keycount);
+	/*
     for (int i = 0 ; i < distr.size(); i++) {
         printf("%d->%d\n", i, distr[i]);
-    }
+    }*/
+	printf("We estimate there are %lld keys\n", keycount);
     reader->reset();
 //    auto reader = make_shared<GrpReader<uint64_t>> (args::get(argInputname), args::get(argFolder));
     auto seqoth = make_shared<SeqOthello> ();
 
-    seqoth->constructFromReader(reader.get(), args::get(argOutputname), nThreads, distr);
+    seqoth->constructFromReader(reader.get(), args::get(argOutputname), nThreads, distr, keycount);
     return 0;
 }
