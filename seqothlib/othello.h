@@ -118,7 +118,7 @@ public:
     static double getrate(uint32_t ma, uint32_t mb, uint32_t da, uint32_t db);
 private:
     bool autoclear = false; //!<  clears the memory allocated during construction automatically.
-    keyType *keys;
+    const keyType *keys;
     /*!
      * \brief Get the consecutive L bits starting from location loc*L bit.
      * \warning May return garbage info on the higher bits, needs (& LMASK) afterwards.
@@ -192,8 +192,8 @@ private:
      \note  When *values* is NULL, mark edges as 0 or 1 according to their direction.
 
     */
-    void fillvalue(void *values, uint32_t keycount, size_t valuesize);
-    bool trybuild(void *values, uint32_t keycount, size_t valuesize) {
+    void fillvalue(const void *values, uint32_t keycount, size_t valuesize);
+    bool trybuild(const void *values, uint32_t keycount, size_t valuesize) {
         bool succ;
         disj.setLength(ma+mb);
         printf("Tot number of keys %d\n", keycount);
@@ -217,7 +217,7 @@ public:
      \n when *_values* is empty, classify keys into two sets X and Y, defined as follow: for each connected compoenents in G, select a node as the root, mark all edges in this connected compoenent as pointing away from the root. for all edges from U to V, query result is 1 (k in Y), for all edges from V to u, query result is 0 (k in X).
 
     */
-    Othello(uint8_t _L, keyType *_keys,  uint32_t keycount, bool _autoclear = true, void *_values = NULL, size_t _valuesize = 0, int32_t _allowed_conflicts = -1 ) {
+    Othello(uint8_t _L, const keyType *_keys,  uint32_t keycount, bool _autoclear = true, const void *_values = NULL, size_t _valuesize = 0, int32_t _allowed_conflicts = -1 ) {
         cout << "Construct Othello with "<< keycount<<"keys \n";
         allowed_conflicts = _allowed_conflicts;
         L = _L;
@@ -276,7 +276,7 @@ public:
     }
     //!\brief Construct othello with vectors.
     template<typename VT>
-    Othello(uint8_t _L, vector<keyType> &keys, vector<VT> &values, bool _autoclear = true, int32_t allowed_conflicts = -1) :
+    Othello(uint8_t _L, const vector<keyType> &keys, const vector<VT> &values, bool _autoclear = true, int32_t allowed_conflicts = -1) :
         Othello(_L, & (keys[0]),keys.size(), _autoclear, &(values[0]), sizeof(VT), allowed_conflicts)
     {
     }
@@ -479,7 +479,7 @@ bool Othello<keyType>::testHash(uint32_t keycount) {
 }
 
 template< class keyType>
-void Othello<keyType>::fillvalue(void *values, uint32_t keycount, size_t valuesize) {
+void Othello<keyType>::fillvalue(const void *values, uint32_t keycount, size_t valuesize) {
     list<uint32_t> Q;
     vector<int32_t> *nxt;
     filled.resize(ma+mb);

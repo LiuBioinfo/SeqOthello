@@ -7,3 +7,5 @@ mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER='g++'
 make -j4
+cd ..
+echo 'ADD_SUBDIRECTORY(test)' >> CMakeLists.txt

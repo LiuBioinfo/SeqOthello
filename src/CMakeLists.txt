@@ -13,7 +13,7 @@ ADD_EXECUTABLE(Group ${GROUP_SRC})
 TARGET_LINK_LIBRARIES(Group tinyxml2 libUtil)
 
 ADD_EXECUTABLE(Build ${BUILD_SRC})
-TARGET_LINK_LIBRARIES(Build tinyxml2 z libL2Node libL1Node pthread)
+TARGET_LINK_LIBRARIES(Build tinyxml2 z pthread libL2Node libL1Node)
 
 ADD_EXECUTABLE(Query ${QUERY_SRC})
-TARGET_LINK_LIBRARIES(Query tinyxml2 z libL2Node libL1Node pthread)
+TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node)
