@@ -17,3 +17,6 @@ TARGET_LINK_LIBRARIES(Build tinyxml2 z pthread libL2Node libL1Node)
 
 ADD_EXECUTABLE(Query ${QUERY_SRC})
 TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node)
+
+ADD_EXECUTABLE(Test testL1Node.cpp)
+TARGET_LINK_LIBRARIES(Test tinyxml2 z pthread libL2Node libL1Node)

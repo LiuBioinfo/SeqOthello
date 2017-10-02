@@ -4,7 +4,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -pg ")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 PROJECT(SeqOthello)
@@ -14,4 +14,3 @@ add_definitions(-std=gnu++11 -march=native)
 ADD_SUBDIRECTORY(lib)
 ADD_SUBDIRECTORY(seqothlib)
 ADD_SUBDIRECTORY(src bin)
-ADD_SUBDIRECTORY(test)
