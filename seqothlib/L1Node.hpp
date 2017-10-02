@@ -13,10 +13,10 @@ private:
 public:
     uint32_t kmerLength;
     vector<Othello<uint64_t> *> othellos;
-    vector<vector<uint64_t>> kV;
-    vector<vector<uint16_t>> vV;
+    vector<vector<uint64_t> *> kV;
+    vector<vector<uint16_t> *> vV;
     uint32_t grpidlimit;
-    constexpr static uint64_t L1Partlimit = 1048576*128;
+    constexpr static uint64_t L1Partlimit = 1048576*10;
     constexpr static uint64_t L1InQlimit = 1048576*512;
     L1Node() {}
     L1Node(uint64_t estimatedKmerCount, int _kmerlength) : kmerLength(_kmerlength) {
@@ -27,8 +27,12 @@ public:
             throw std::invalid_argument("invalid parameter for L1Node");
         setsplitbit(kmerLength, splitbit);
         grpidlimit = (1<< splitbit);
-        kV.resize(grpidlimit);
-        vV.resize(grpidlimit);
+        kV.clear();
+        vV.clear();
+        for (unsigned int i = 0 ; i < grpidlimit; i++) {
+            kV.push_back(new vector<uint64_t>());
+            vV.push_back(new vector<uint16_t>());
+        }
         othellos.resize(grpidlimit);
     }
 
