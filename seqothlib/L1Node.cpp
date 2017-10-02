@@ -8,10 +8,12 @@ using namespace std;
 L1Node::~L1Node() {
     for (uint32_t i = 0 ; i < othellos.size(); i++) {
         delete othellos[i];
+    }
+    othellos.clear();
+    for (uint32_t i = 0 ; i <kV.size(); i++) {
         delete kV[i];
         delete vV[i];
     }
-    othellos.clear();
     kV.clear();
     vV.clear();
 }
@@ -53,7 +55,7 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
 
     gzclose(fout);
     delete othello;
-    printf("%s : Consturction finished.\n", get_thid().c_str(), id);
+    printf("%s : L1 part %u consturction finished.\n", get_thid().c_str(), id);
 }
 void L1Node::constructAndWrite(uint32_t L, uint32_t threads, string fname) {
     vector<thread> vthreadL1;
