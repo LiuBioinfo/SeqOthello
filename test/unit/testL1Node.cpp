@@ -28,7 +28,7 @@ TEST_F(L1NodeTest, TestL1BuildQuery) {
     int splitbit = p->getsplitbit();
     printf("%d", splitbit);
     L1Node *q = new L1Node(0,12);
-    q->setsplitbit(splitbit);
+    q->setsplitbit(12, splitbit);
     q->loadFromFile("test");
     int uneq = 0;
     for (int i = 0 ; i < n; i++) {

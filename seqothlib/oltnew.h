@@ -46,8 +46,7 @@ public:
     vector<thread *> L2LoadThreads;
     void loadL1(uint32_t kmerLength) {
         l1Node = new L1Node();
-        l1Node->setsplitbit(L1Splitbit);
-        l1Node->kmerLength = kmerLength;
+        l1Node->setsplitbit(kmerLength,L1Splitbit);
         l1Node->loadFromFile(fname);
             /*
         printf("Starting to load L1 from disk\n");
@@ -107,9 +106,7 @@ public:
         fclose(fin);
 */
         if (loadall) {
-            loadL1(kmerLength);
-            startloadL2(nthread);
-            waitloadL2();
+            loadAll(nthread);
         }
     }
 
@@ -187,6 +184,11 @@ public:
         vNodes[id]->loadDataFromGzipFile();
     }
 
+	void loadAll(int nqueryThreads) {
+        loadL1(kmerLength);
+        startloadL2(nqueryThreads);
+        waitloadL2();
+	}
 
     void constructFromReader(KmerGroupComposer<keyType> *reader, string filename, uint32_t threadsLimit, vector<uint32_t> enclGrpmap, uint64_t estimatedKmerCount) {
         kmerLength = reader->getKmerLength();
@@ -391,10 +393,5 @@ public:
         reader->reset();
         return encodeLengthToL1ID;
     }
-	void loadall(int nqueryThreads) {
-        loadL1(kmerLength);
-        startloadL2(nqueryThreads);
-        waitloadL2();
-	}
 };
 

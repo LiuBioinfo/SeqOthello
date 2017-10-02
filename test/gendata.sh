@@ -1,5 +1,5 @@
 #!/bin/bash
-../build/test/datagen -f 179 -k 5300 > genlog
+../build/test/datagen -f 179 -k 15300 > genlog
 tail -n 1 genlog > testTT.fa
 tail -n 1 genlog | cut -c1-100 >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa

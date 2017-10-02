@@ -25,7 +25,7 @@ public:
 
         if (splitbit >= kmerLength)
             throw std::invalid_argument("invalid parameter for L1Node");
-        setsplitbit(splitbit);
+        setsplitbit(kmerLength, splitbit);
         grpidlimit = (1<< splitbit);
         kV.resize(grpidlimit);
         vV.resize(grpidlimit);
@@ -39,7 +39,8 @@ public:
     void constructAndWrite(uint32_t, uint32_t, string);
     void loadFromFile(string fname);
     void putInfoToXml(tinyxml2::XMLElement *pe);
-    void setsplitbit(uint32_t t) {
+    void setsplitbit(uint32_t _kmerlength, uint32_t t) {
+        kmerLength = _kmerlength;
         splitbit = t;
         shift = kmerLength*2 - splitbit;
     }

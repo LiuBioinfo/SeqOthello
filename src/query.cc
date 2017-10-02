@@ -171,7 +171,7 @@ int main(int argc, char ** argv) {
     FILE *fout = fopen(fnameout.c_str(), "w");
 
     if (argShowDedatils) {
-	    seqoth->loadall(nqueryThreads);
+	    seqoth->loadAll(nqueryThreads);
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
         vector<uint64_t>  requests;
         set<uint32_t> skipped;
