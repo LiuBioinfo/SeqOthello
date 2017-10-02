@@ -16,7 +16,7 @@ public:
     vector<vector<uint64_t> *> kV;
     vector<vector<uint16_t> *> vV;
     uint32_t grpidlimit;
-    constexpr static uint64_t L1Partlimit = 1048576*10;
+    constexpr static uint64_t L1Partlimit = 1048576*128;
     constexpr static uint64_t L1InQlimit = 1048576*512;
     L1Node() {}
     L1Node(uint64_t estimatedKmerCount, int _kmerlength) : kmerLength(_kmerlength) {

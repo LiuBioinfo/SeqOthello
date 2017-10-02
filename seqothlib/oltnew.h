@@ -28,7 +28,7 @@ public:
 	uint32_t sampleCount;
 	uint32_t L1Splitbit;
 private:
-    uint32_t L2InQKeyLimit = 1048576*32;
+    uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
     constexpr static uint32_t L2limit = 1048576;
     vector<uint32_t> freqToVnodeIdMap;
