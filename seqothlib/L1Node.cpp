@@ -31,7 +31,7 @@ uint64_t L1Node::queryInt(uint64_t k) {
 void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
     Othello<uint64_t> * othello = NULL;
     if (kV[id].size())
-        othello = new Othello<uint64_t>(L, kV[id], vV[id], true, 20);
+        othello = new Othello<uint64_t>(L, kV[id], vV[id], true, 200);
     char cbuf[0x400];
     memset(cbuf,0,sizeof(cbuf));
     sprintf(cbuf,"%s.L1.p%d",fname.c_str(), id);
