@@ -359,4 +359,12 @@ L2Node::loadL2Node( tinyxml2::XMLElement *p) {
 
 }
 
+uint64_t 
+L2EncodedValueListNode:: getvalcnt() {
+	return lines.size();
+}
 
+uint64_t
+L2ShortValueListNode::getvalcnt() {
+	return uint64list.size() * IOLengthInBytes; 
+}
