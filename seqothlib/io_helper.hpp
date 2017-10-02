@@ -598,7 +598,7 @@ public:
             int tmpint;
             xml.FirstChildElement("Root")->FirstChildElement("GroupInfo")->QueryIntAttribute("TotalSamples", &tmpint);
             int64_t tmpi64;
-            xml.FirstChildElement("Root")->FirstChildElement("GroupInfo")->QueryInt64Attribute("Kmercount", &tmpi64);
+            xml.FirstChildElement("Root")->FirstChildElement("GroupInfo")->QueryInt64Attribute("Keycount", &tmpi64);
             totkeycount.push_back(tmpi64);
             tmpval[i].resize(tmpint+1);
             shift.push_back(tmpint + *shift.rbegin());

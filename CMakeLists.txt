@@ -14,6 +14,5 @@ add_definitions(-std=gnu++11 -march=native)
 ADD_SUBDIRECTORY(lib)
 ADD_SUBDIRECTORY(seqothlib)
 ADD_SUBDIRECTORY(src bin)
-ADD_SUBDIRECTORY(test)
 
 

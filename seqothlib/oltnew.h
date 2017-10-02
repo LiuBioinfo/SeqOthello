@@ -29,8 +29,8 @@ public:
 	uint32_t L1Splitbit;
 private:
     uint32_t L2InQKeyLimit = 1048576*384;
-    uint64_t L2InQValLimit = 1048576*1024*4;
-    constexpr static uint32_t L2limit = 10485760;
+    uint64_t L2InQValLimit = 1048576*1024*32;
+    constexpr static uint32_t L2limit = 104857600;
     vector<uint32_t> freqToVnodeIdMap;
     string fname;
 public:
@@ -194,6 +194,13 @@ public:
         keyType k;
         l1Node = new L1Node(estimatedKmerCount, kmerLength);
         printf("We will use at most %d threads to construct.\n", threadsLimit);
+        printf("Use encode length to split L2 nodes at: ");
+        for (int i = 1; i < enclGrpmap.size(); i++) {
+            if (enclGrpmap[i] != enclGrpmap[i-1]) {
+                printf("%d \t",i);
+            }
+        }
+        printf("\n");
         vector<uint32_t> ret;
         int maxnl = 1;
         int high = reader->gethigh();
@@ -348,13 +355,15 @@ public:
                 enchisto[encodelength]++;
             }
         }
-
-        if (kmerlimit ==0) {
+        //printf("%d\n",kmerlimit); 
+        if (kmerlimit <=0) {
             vector<uint64_t> curr, tot;
             reader->getGroupStatus(curr, tot);
             uint64_t currA = accumulate(curr.begin(), curr.end(), 0ULL);
             uint64_t totA = accumulate(tot.begin(), tot.end(), 0ULL);
+          
             double rate = totA * 1.0 / currA;
+            //printf("---> %llf %lld %lld\n", rate, totA, currA);
             for (auto &x : enchisto)
                 x = (uint64_t) (x * rate);
             for (auto &x : cnthisto)
@@ -364,9 +373,13 @@ public:
         vector<uint32_t> encodeLengthToL1ID(high/8+2);
         uint64_t sq = 0;
         uint64_t l1id = 0;
+        
+        printf("Estimated histogram for encode lengths:"); 
         for (int i = 1; i< high/8+2; i++) {
-            printf("%d:%d\n", i, enchisto[i]);
+            printf("%d:%d\t", i, enchisto[i]);
         }
+        printf("\n");
+       
         for (int i = 1 ; i < high/8+2; i++) {
             if ((sq+ enchisto[i])*i > L2limit) {
                 sq = 0;
