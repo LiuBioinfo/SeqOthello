@@ -6,19 +6,22 @@
 using namespace std;
 
 L1Node::~L1Node() {
+    for (uint32_t i = 0 ; i < othellos.size(); i++) {
+        delete othellos[i];
+        delete kV[i];
+        delete vV[i];
+    }
+    othellos.clear();
     kV.clear();
     vV.clear();
-    for (uint32_t i = 0 ; i < othellos.size(); i++)
-        delete othellos[i];
-    othellos.clear();
 }
 
 void L1Node::add(uint64_t &k, uint16_t v) {
     uint32_t grp = (k)>>(shift);
     if (grp >= grpidlimit)
         throw std::invalid_argument("invalid key to put in L1");
-    kV[grp].push_back(k);
-    vV[grp].push_back(v);
+    kV[grp]->push_back(k);
+    vV[grp]->push_back(v);
 }
 
 uint64_t L1Node::queryInt(uint64_t k) {
@@ -30,15 +33,17 @@ uint64_t L1Node::queryInt(uint64_t k) {
 
 void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
     Othello<uint64_t> * othello = NULL;
-    if (kV[id].size())
-        othello = new Othello<uint64_t>(L, kV[id], vV[id], true, 20);
+    printf("%s : start to construct L1 Node part %u\n", get_thid().c_str(), id);
+    if (kV[id]->size())
+        othello = new Othello<uint64_t>(L, *kV[id], *vV[id], true, 20);
+    printf("%s : Write to Gzip File %s\n", get_thid().c_str(),fname.c_str());
     char cbuf[0x400];
     memset(cbuf,0,sizeof(cbuf));
     sprintf(cbuf,"%s.L1.p%d",fname.c_str(), id);
     gzFile fout = gzopen(cbuf, "wb");
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
-    if (kV[id].size()) {
+    if (kV[id]->size()) {
         othello->exportInfo(buf);
         gzwrite(fout, buf, sizeof(buf));
         othello->writeDataToGzipFile(fout);
@@ -48,6 +53,7 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
 
     gzclose(fout);
     delete othello;
+    printf("%s : Consturction finished.\n", get_thid().c_str(), id);
 }
 void L1Node::constructAndWrite(uint32_t L, uint32_t threads, string fname) {
     vector<thread> vthreadL1;
@@ -60,7 +66,7 @@ void L1Node::constructAndWrite(uint32_t L, uint32_t threads, string fname) {
             vthreadL1.clear();
             curreintInQ = 0;
         }
-        curreintInQ += kV[i].size();
+        curreintInQ += kV[i]->size();
         vthreadL1.push_back(std::thread(&L1Node::constructothello, this, i, L, fname));
     }
     for (auto &th : vthreadL1)
@@ -91,13 +97,13 @@ void L1Node::loadFromFile(string fname) {
 
 void L1Node::putInfoToXml(tinyxml2::XMLElement *pe, string fname) {
     for (unsigned int i = 0 ; i < grpidlimit; i++) 
-        if (kV[i].size()) {
+        if (kV[i]->size()) {
             auto pNode = pe->GetDocument()->NewElement("L1NodePart");
             char cbuf[0x400];
             memset(cbuf,0,sizeof(cbuf));
             sprintf(cbuf,"%s.L1.p%d",fname.c_str(), i);
             pNode->SetAttribute("Filename", cbuf);
-            pNode->SetAttribute("KeyCount", (uint32_t) kV[i].size());
+            pNode->SetAttribute("KeyCount", (uint32_t) kV[i]->size());
             pe->InsertEndChild(pNode);
         }
 }

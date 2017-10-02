@@ -226,6 +226,7 @@ void L2ShortValueListNode::writeDataToGzipFile() {
     if (gzfname.size()<=0) {
         throw invalid_argument("Must specify filename first");
     }
+    printf("%s : writing to L2 Gzip File %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fout = gzopen(gzfname.c_str(), "wb");
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
