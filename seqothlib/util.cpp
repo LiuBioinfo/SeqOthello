@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
+
 
 //! split a c-style string with delimineter chara.
 std::vector<std::string> split(const char * str, char deli) {
@@ -37,4 +39,10 @@ std::string human(uint64_t word) {
     return s;
 }
 
-
+std::string get_thid() {
+    std::stringstream ss;
+    ss <<"Thread_" <<std::hex<< std::this_thread::get_id();
+    std::string s;
+    ss >> s;
+    return s;
+}

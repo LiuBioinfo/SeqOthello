@@ -8,7 +8,7 @@ using namespace std;
 L1Node::~L1Node() {
     kV.clear();
     vV.clear();
-    for (int i = 0 ; i < othellos.size(); i++)
+    for (uint32_t i = 0 ; i < othellos.size(); i++)
         delete othellos[i];
     othellos.clear();
 }
@@ -53,7 +53,7 @@ void L1Node::constructAndWrite(uint32_t L, uint32_t threads, string fname) {
     vector<thread> vthreadL1;
     uint64_t curreintInQ = 0;
 
-    for (int i = 0 ; i < grpidlimit; i++) {
+    for (uint32_t i = 0 ; i < grpidlimit; i++) {
         if (curreintInQ  > L1InQlimit || vthreadL1.size()>= threads) {
             for (auto &th : vthreadL1)
                 th.join();
@@ -69,7 +69,7 @@ void L1Node::constructAndWrite(uint32_t L, uint32_t threads, string fname) {
 void L1Node::loadFromFile(string fname) {
     grpidlimit = (1<<splitbit);
     othellos.resize(grpidlimit);
-    for (int i = 0 ; i < grpidlimit; i++) {
+    for (uint32_t i = 0 ; i < grpidlimit; i++) {
         char cbuf[0x400];
         memset(cbuf,0,sizeof(cbuf));
         sprintf(cbuf,"%s.L1.p%d",fname.c_str(), i);
@@ -89,6 +89,15 @@ void L1Node::loadFromFile(string fname) {
     }
 }
 
-void L1Node::putInfoToXml(tinyxml2::XMLElement *pe) {
-//
+void L1Node::putInfoToXml(tinyxml2::XMLElement *pe, string fname) {
+    for (unsigned int i = 0 ; i < grpidlimit; i++) 
+        if (kV[i].size()) {
+            auto pNode = pe->GetDocument()->NewElement("L1NodePart");
+            char cbuf[0x400];
+            memset(cbuf,0,sizeof(cbuf));
+            sprintf(cbuf,"%s.L1.p%d",fname.c_str(), i);
+            pNode->SetAttribute("Filename", cbuf);
+            pNode->SetAttribute("KeyCount", (uint32_t) kV[i].size());
+            pe->InsertEndChild(pNode);
+        }
 }

@@ -84,6 +84,7 @@ protected:
     }
 };
 
+/*
 template <typename keyType>
 class GrpReader {
 public:
@@ -132,8 +133,9 @@ public:
         return res & (maxlimit-- > 0);
     }
 };
+*/
 
-int encodelengths(const vector<uint32_t> &data, int &bestk) {
+inline int encodelengths(const vector<uint32_t> &data, int &bestk) {
     //encode this as:
     //4 bits: k (max = 16, min=2)
     //next k*n bits:
@@ -146,7 +148,7 @@ int encodelengths(const vector<uint32_t> &data, int &bestk) {
     //             at the end: all F.
 
     vector<int> cnt(17,0);
-    for (int i = 0 ; i < data.size(); i++) {
+    for (uint32_t i = 0 ; i < data.size(); i++) {
         int x;
         if (i ==0) x= data[i];
         else x=data[i]-data[i-1]-1;
@@ -155,11 +157,14 @@ int encodelengths(const vector<uint32_t> &data, int &bestk) {
         }
     }
     int ans = 0x7FFFF;
-    const vector<int> candi({2,4,8,12});
-    for (int k : candi)
+    const vector<uint32_t> candi({2,4,8,12});
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+    for (auto k : candi)
         if (4 + k*(data.size() + cnt[k]) < ans) {
             ans = 4+ k*(data.size() + cnt[k]);
             bestk = k;
         }
     return ans;
+#pragma GCC diagnostic pop
 }

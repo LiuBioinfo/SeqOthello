@@ -87,7 +87,7 @@ int main(int argc, char ** argv) {
         uint64_t k= 0;
         int64_t cnt = 0;
         while (reader->getNextValueList(k, ret)) {
-            int keycnt = ret.size();
+            uint32_t keycnt = ret.size();
             if (keycnt > samplecount) {
                 printf("%d \n", keycnt);
                 for (auto &x: ret)
@@ -102,7 +102,7 @@ int main(int argc, char ** argv) {
 
         auto pcountInfo = xml->NewElement("KeyDistributionInfo");
         pcountInfo->SetAttribute("TotalKeycount", cnt);
-        for (int i = 0; i < reader->gethigh(); i++)
+        for (unsigned int i = 0; i < reader->gethigh(); i++)
             if (keyHisto[i]) {
                 auto pHisNode = xml->NewElement("entry");
                 pHisNode->SetAttribute("freq", i);
@@ -126,7 +126,7 @@ int main(int argc, char ** argv) {
     for (int i = 0 ; i < distr.size(); i++) {
         printf("%d->%d\n", i, distr[i]);
     }*/
-	printf("We estimate there are %lld keys\n", keycount);
+	printf("We estimate there are %lu keys\n", keycount);
     reader->reset();
 //    auto reader = make_shared<GrpReader<uint64_t>> (args::get(argInputname), args::get(argFolder));
     auto seqoth = make_shared<SeqOthello> ();

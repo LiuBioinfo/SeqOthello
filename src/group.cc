@@ -73,7 +73,6 @@ int main(int argc, char ** argv) {
         if (*fname.rbegin() == '\n') fname = fname.substr(0,fname.size()-1);
         fnames.push_back(prefix+fname);
     }
-    int from = 0;
     if (fnames.size()>250) {
         std::cerr << "Too many files in the group." << std::endl;
         return 1;

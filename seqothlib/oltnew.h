@@ -14,7 +14,7 @@
 #include <set>
 #include <tinyxml2.h>
 #include <L1Node.hpp>
-
+#include <functional>
 using namespace std;
 class SeqOthello {
 
@@ -29,16 +29,17 @@ public:
 	uint32_t L1Splitbit;
 private:
     uint32_t L2InQKeyLimit = 1048576*384;
-    uint64_t L2InQValLimit = 1048576*1024*32;
+    uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
     constexpr static uint32_t L2limit = 104857600;
     vector<uint32_t> freqToVnodeIdMap;
     string fname;
 public:
     SeqOthello() {}
 
-    void loadL2NodeBatch(int thid, string fname, int nthread) {
-        printf("Starting to load L2 nodes of grop %d/%d from disk\n", thid, nthread);
-        for (int i = 0; i < vNodes.size(); i++)
+    void loadL2NodeBatch(uint32_t thid, string fname, uint32_t nthread) {
+        
+        printf("%s: Starting to load L2 nodes of grop %d/%d from disk\n", get_thid().c_str(), thid, nthread);
+        for (uint32_t i = 0; i < vNodes.size(); i++)
             if ( i % nthread == thid)
                 loadL2Node(i, fname);
     }
@@ -124,7 +125,7 @@ public:
         return vNodes[othquery - L2IDShift]->smartQuery(k, ret, retmap);
     }
 
-    void writeSeqOthelloInfo(string fname) {
+    void writeSeqOthelloInfo(string fname, function<void(tinyxml2::XMLElement *)> func, vector<uint64_t> &histogram) {
         tinyxml2::XMLDocument xml;
         auto pRoot = xml.NewElement("Root");
         auto pSeqOthello = xml.NewElement("SeqOthello");
@@ -134,7 +135,18 @@ public:
         pSeqOthello->SetAttribute("L1SplitBit", l1Node->getsplitbit());
         auto pL2Nodes = xml.NewElement("L2Nodes");
         auto pL1Node = xml.NewElement("L1Node");
-        l1Node->putInfoToXml(pL1Node);
+        auto pSamples = xml.NewElement("Samples");
+        auto pHistogram = xml.NewElement("Histogram");
+        for (unsigned int i = 0 ; i < histogram.size(); i++) 
+        if (histogram[i]) {
+            auto pHisNode = xml.NewElement("entry");
+            pHisNode->SetAttribute("freq", i);
+            pHisNode->SetAttribute("value", (uint32_t) histogram[i]);
+            pHistogram->InsertEndChild(pHisNode);
+            }
+
+        func(pSamples);
+        l1Node->putInfoToXml(pL1Node, fname);
         pL2Nodes->SetAttribute("Count", (int) vNodes.size());
         for (auto &p : vNodes) {
             auto pL2Node = xml.NewElement("L2Node");
@@ -143,29 +155,15 @@ public:
         }
         pSeqOthello->InsertEndChild(pL2Nodes);
         pSeqOthello->InsertEndChild(pL1Node);
+        pSeqOthello->InsertFirstChild(pSamples);
+        pSeqOthello->InsertEndChild(pHistogram);
         pRoot->InsertFirstChild(pSeqOthello);
         xml.InsertFirstChild(pRoot);
         auto xmlName = fname + ".xml";
         xml.SaveFile(xmlName.c_str());
     }
-    /*
-    void writeLayer1ToFileAndReleaseMemory(string fname) {
-        printf("Writing L1 Node to file %s\n", fname.c_str());
-        writeSeqOthelloInfo(fname);
-
-        fname += ".L1";
-        gzFile fout = gzopen(fname.c_str(), "wb");
-        unsigned char buf[0x20];
-        freqOth->exportInfo(buf);
-        gzwrite(fout, buf,sizeof(buf));
-        freqOth->writeDataToGzipFile(fout);
-
-        gzclose(fout);
-        delete freqOth;
-    }
-    */
     void constructL2Node(int id, string fname) {
-        printf("constructing L2 Node %d\n", id);
+        printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
         stringstream ss;
         ss<<fname;
         ss<<".L2."<<id;
@@ -197,7 +195,7 @@ public:
         l1Node = new L1Node(estimatedKmerCount, kmerLength);
         printf("We will use at most %d threads to construct.\n", threadsLimit);
         printf("Use encode length to split L2 nodes at: ");
-        for (int i = 1; i < enclGrpmap.size(); i++) {
+        for (uint32_t i = 1; i < enclGrpmap.size(); i++) {
             if (enclGrpmap[i] != enclGrpmap[i-1]) {
                 printf("%d \t",i);
             }
@@ -215,6 +213,7 @@ public:
         vector<uint32_t> enclGrpIDmap = vector<uint32_t> (1 + *max_element(enclGrpmap.begin(), enclGrpmap.end()));
         vector<uint32_t> enclGrpcnt;// = enclGrpmap;
         vector<uint32_t> enclGrplen;// = enclGrpmap;
+        vector<uint64_t> histogram(high+1);
         enclGrpcnt.resize(enclGrpmap.size());
         enclGrplen.resize(enclGrpmap.size());
         fill(enclGrpcnt.begin(), enclGrpcnt.end(), 0);
@@ -243,7 +242,7 @@ public:
         // high+2 .. : stored in vNode[tau - realhigh - 1]... -->real high= high <<EXP when exp>1.
         while (reader->getNextValueList(k, ret)) { //now we are getting a pair<id,expression>
             uint32_t valcnt = ret.size();
-
+            histogram[valcnt] ++; 
             //cnt = 1
             if (valcnt == 1) {
                 l1Node->add(k, ret[0]+1);
@@ -306,9 +305,13 @@ public:
         for (uint32_t i = 0 ; i < vNodes.size(); i++)
             vNodes[i]->gzfname = filename+"L2."+to_string(i);
         int LLfreq = 8;
+        
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
         while ((1<<LLfreq)<vNodes.size()+L2IDShift+5) LLfreq++;
+#pragma GCC diagnostic pop
         printf("Constructing L1 Node \n");
-        writeSeqOthelloInfo(fname);
+        writeSeqOthelloInfo(fname, bind(&KmerGroupComposer<keyType>::putSampleInfoToXml, reader, placeholders::_1 ), histogram);
         l1Node->constructAndWrite(LLfreq, threadsLimit, fname);
         delete l1Node;
         vector<thread> vthreadL2;
@@ -341,7 +344,7 @@ public:
         vector<uint32_t> ret;
         while (reader->getNextValueList(k, ret) && (kmerlimit--)) {
             cnt ++;
-            int keycnt = ret.size();
+            uint32_t keycnt = ret.size();
             if (keycnt <= limitsingle) {
                 cnthisto[keycnt]++;
             }
@@ -349,7 +352,7 @@ public:
                 vector<uint32_t> toenc;
                 toenc.reserve(ret.size());
                 toenc.push_back(ret[0]+1);
-                for (int i = 1; i< ret.size(); i++)
+                for (uint32_t i = 1; i< ret.size(); i++)
                     toenc.push_back(ret[i] - ret[i-1]);
                 int encodelength = valuelistEncode(NULL, toenc, false);
                 if (encodelength*8 > high)

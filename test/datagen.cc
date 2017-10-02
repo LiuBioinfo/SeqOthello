@@ -35,7 +35,7 @@ int main(int argc, char ** argv) {
     }
 
     int files = (nFiles)?(args::get(nFiles)):(20);
-    int kmers = (nKmers)?(args::get(nKmers)):(100);
+    unsigned kmers = (nKmers)?(args::get(nKmers)):(100);
     auto helper = new ConstantLengthKmerHelper<uint64_t, uint16_t>(20,0);
 
 
@@ -75,9 +75,9 @@ int main(int argc, char ** argv) {
             vkmer.push_back(vv);
         }
     }
-    for (int i = 0; i < kmers; i++) {
+    for (unsigned int i = 0; i < kmers; i++) {
         set<int> sint;
-        for (int j = 0; j<= i/files; j++) {
+        for (unsigned int j = 0; j<= i/files; j++) {
             sint.insert((i+j)%files);
             // sint.insert((i/files+(i/files+3)*j)%files);
         }
@@ -94,7 +94,7 @@ int main(int argc, char ** argv) {
         FILE *fout = fopen(fname ,"w");
         char buf[30];
         memset(buf,0,sizeof(buf));
-        for (int j = 0 ; j < kmers; j++) 
+        for (unsigned int j = 0 ; j < kmers; j++) 
             if (vp[j].count(i)){
                 helper->convertstring(buf,&vkmer[j]);
                 fprintf(fout, "%s %d\n", buf, (j-i+2)*i);

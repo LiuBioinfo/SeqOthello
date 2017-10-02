@@ -34,7 +34,7 @@ TEST_F(L1NodeTest, TestL1BuildQuery) {
     for (int i = 0 ; i < n; i++) {
         uint64_t res = q->queryInt(k[i]);
         if ((res ^ v[i])& 0xFFF) {
-                printf("query result for %llx : %x", k[i],  res,  v[i]);
+                printf("query result for %lx : %lx, %x", k[i],  res,  v[i]);
         uneq++;
         }
     }

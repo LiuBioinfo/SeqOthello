@@ -49,7 +49,7 @@ TEST_F(L2NodeTest, TestEncodeDecode) {
 TEST_F(L2NodeTest, TestL2Short) {
     
     L2Node *N = new L2ShortValueListNode (5,8);
-    int NN = 20;
+    unsigned int NN = 20;
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis(0, 0x6FFFFFFFULL);
@@ -102,12 +102,11 @@ TEST_F(L2NodeTest, TestL2MAPP) {
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis(0, 255);
     std::uniform_int_distribution<> dis2(0, 0x6FFFFFFFULL);
-	int totN = 101;
-	int totK = 256;
-    int L = 12;
+	unsigned int totN = 101;
+    unsigned int L = 12;
 	vector<uint8_t> buf;
     vector<uint64_t> vK;
-	for (int i = 0; i <= totN*L; i++) {
+	for (unsigned int i = 0; i <= totN*L; i++) {
 		buf.push_back(dis(gen));
 	}
     for (uint64_t i=0; i<totN; i++) {
@@ -125,7 +124,6 @@ TEST_F(L2NodeTest, TestL2MAPP) {
     N->gzfname = "test.gz";
     N->writeDataToGzipFile();
 
-    gzFile fin = gzopen("test.gz", "rb");
     L2Node *N2 = new L2ShortValueListNode (4,6);
     N2->gzfname = "test.gz";
     N2->loadDataFromGzipFile();
@@ -149,18 +147,16 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis(0, 255);
     std::uniform_int_distribution<> dis2(0, 0x6FFFFFFFULL);
-	int totN = 101;
-	int totK = 256;
-    int L = 12;
+	unsigned int totN = 101;
 	vector<vector<uint32_t>> vlists;
     vector<uint64_t> vK;
     uint32_t maxlength = 0;
-	for (int i = 0; i < totN; i++) {
+	for (unsigned int i = 0; i < totN; i++) {
        vector<uint32_t> vec;
        uint32_t last;
        vec.push_back(last = dis(gen));
        uint32_t upper = dis2(gen) % 15 + 1;
-       for (int i = 1 ; i<= upper; i++) {
+       for (unsigned int i = 1 ; i<= upper; i++) {
            last += (dis(gen) + 1);
            if (dis2(gen) & 1) 
                last += dis(gen);
@@ -170,7 +166,7 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
        }
        vlists.push_back(vec);
        vector<uint32_t> diff; diff.push_back(vec[0]);
-       for (int i = 1; i< vec.size(); i++)
+       for (unsigned int i = 1; i< vec.size(); i++)
            diff.push_back(vec[i] - vec[i-1]);
        uint32_t encodelength = valuelistEncode(NULL, diff, false);
        if (encodelength > maxlength) maxlength = encodelength + 1;
@@ -186,7 +182,7 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
         uint64_t k = vK[i];
 		vector<uint32_t> vec = vlists[i];
         vector<uint32_t> diff; diff.push_back(vec[0]);
-        for (int i = 1; i< vec.size(); i++)
+        for (unsigned int i = 1; i< vec.size(); i++)
            diff.push_back(vec[i] - vec[i-1]);
          N->add(k,diff);
     }
@@ -196,7 +192,6 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
     N->gzfname = "test.gz";
     N->writeDataToGzipFile();
     gzclose(fout);
-    gzFile fin = gzopen("test.gz", "rb");
 	L2Node *N2 = new L2EncodedValueListNode (maxlength,L2NodeTypes::VALUE_INDEX_ENCODED);
     N2->gzfname = "test.gz";
     N2->loadDataFromGzipFile();

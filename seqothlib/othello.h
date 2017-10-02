@@ -177,7 +177,7 @@ private:
         Ha.setMaskSeed(ma-1,s1);
         Hb.setMaskSeed(mb-1,s2);
         trycount++;
-        if (trycount>1) printf("NewHash for the %d time\n", trycount);
+        if (trycount>1) printf("%s: NewHash for the %d time\n", get_thid().c_str(), trycount);
     }
 
     vector<int32_t> *first, *nxt1, *nxt2;
@@ -192,13 +192,13 @@ private:
      \note  When *values* is NULL, mark edges as 0 or 1 according to their direction.
 
     */
-    void fillvalue(const void *values, uint32_t keycount, size_t valuesize);
+    void fillvalue(const void *values/*, uint32_t keycount*/, size_t valuesize);
     bool trybuild(const void *values, uint32_t keycount, size_t valuesize) {
         bool succ;
         disj.setLength(ma+mb);
-        printf("Tot number of keys %d\n", keycount);
-        if (succ = testHash(keycount)) {
-            fillvalue(values, keycount,valuesize);
+        printf("%s: Tot number of keys %d\n", get_thid().c_str(), keycount);
+        if ((succ = testHash(keycount))) {
+            fillvalue(values, valuesize);
         }
         if (autoclear || (!succ))
             finishBuild();
@@ -218,7 +218,7 @@ public:
 
     */
     Othello(uint8_t _L, const keyType *_keys,  uint32_t keycount, bool _autoclear = true, const void *_values = NULL, size_t _valuesize = 0, int32_t _allowed_conflicts = -1 ) {
-        cout << "Construct Othello with "<< keycount<<"keys \n";
+        printf("%s : Construct Othello with %u keys.\n", get_thid().c_str(), keycount);
         allowed_conflicts = _allowed_conflicts;
         L = _L;
         autoclear = _autoclear;
@@ -242,7 +242,6 @@ public:
             mem.push_back(0);
 
 
-        cout << "Building" <<endl;
         trycount = 0;
         while ( (!build) && (hl1<=31&&hl2<=31)) {
             while ((!build) && (trycount<MAX_REHASH)) {
@@ -263,16 +262,19 @@ public:
                 while ( ((uint64_t)mem.size())*sizeof(mem[0])*8ULL<(ma+mb)*((uint64_t)L) )
                     mem.push_back(0);
 
-                cout << "Extend Othello Length to" << human(keycount) <<" Keys, ma/mb = " << human(ma) <<"/"<<human(mb) <<" keyT"<< sizeof(keyType)*8<<"b  valueT" << sizeof(valueType)*8<<"b"<<" L="<<(int) L<<endl;
+                stringstream ss;
+                ss << "Extend Othello Length to" << human(keycount) <<" Keys, ma/mb = " << human(ma) <<"/"<<human(mb) <<" keyT"<< sizeof(keyType)*8<<"b  valueT" << sizeof(valueType)*8<<"b"<<" L="<<(int) L<<endl;
+                printf("%s :%s \n", get_thid().c_str(), ss.str().c_str());
                 trycount = 0;
             }
         }
-        printf("%08x %08x\n", Ha.s, Hb.s);
+        stringstream ss;
         if (build)
-            cout << "Succ " << human(keycount) <<" Keys, ma/mb = " << human(ma) <<"/"<<human(mb) <<" keyT"<< sizeof(keyType)*8<<"b  valueT" << sizeof(valueType)*8<<"b"<<" L="<<(int) L <<" After "<<trycount << "tries"<< endl;
+            ss << "Succ " << human(keycount) <<" Keys, ma/mb = " << human(ma) <<"/"<<human(mb) <<" keyT"<< sizeof(keyType)*8<<"b  valueT" << sizeof(valueType)*8<<"b"<<" L="<<(int) L <<" After "<<trycount << "tries"<< endl;
 
         else
-            cout << "Build Fail!" << endl;
+            ss << "Build Fail!" << endl;
+        printf("%s :%s \n", get_thid().c_str(), ss.str().c_str());
     }
     //!\brief Construct othello with vectors.
     template<typename VT>
@@ -359,9 +361,6 @@ public:
 
 
 
-    void printValueTSize() {
-        std::cout << sizeof(valueType) << std::endl;
-    }
 
 
     vector<uint32_t> getCnt(); //!< \brief returns vector, length = 2L. position x: the number of 1s on the x-th lowest bit, for array A, if x<L; otherwise, for arrayB.
@@ -459,8 +458,10 @@ bool Othello<keyType>::testHash(uint32_t keycount) {
     first = new vector<int32_t> (ma+mb, -1);
     removedKeys.clear();
     disj.clear();
-    for (int i = 0; i < keycount; i++) {
-        if (i>1048576) if ((i & (i-1)) == 0) printf("Tesing keys # %d\n",i);
+    for (uint32_t i = 0; i < keycount; i++) {
+        if ((i&1048575) ==0) 
+            if ((i & (i-1)) == 0) 
+                printf("%s: Tesing keys # %d\n",get_thid().c_str(), i);
         get_hash(keys[i], ha, hb);
 
         if (disj.sameset(ha,hb)) {
@@ -479,7 +480,7 @@ bool Othello<keyType>::testHash(uint32_t keycount) {
 }
 
 template< class keyType>
-void Othello<keyType>::fillvalue(const void *values, uint32_t keycount, size_t valuesize) {
+void Othello<keyType>::fillvalue(const void *values, /*uint32_t keycount,*/ size_t valuesize) {
     list<uint32_t> Q;
     vector<int32_t> *nxt;
     filled.resize(ma+mb);

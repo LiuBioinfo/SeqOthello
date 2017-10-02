@@ -38,7 +38,7 @@ public:
     ~L1Node();
     void constructAndWrite(uint32_t, uint32_t, string);
     void loadFromFile(string fname);
-    void putInfoToXml(tinyxml2::XMLElement *pe);
+    void putInfoToXml(tinyxml2::XMLElement *, string);
     void setsplitbit(uint32_t _kmerlength, uint32_t t) {
         kmerLength = _kmerlength;
         splitbit = t;

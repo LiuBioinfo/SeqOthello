@@ -61,6 +61,7 @@ public:
     }
 };
 
+
 /*!
  * \brief IOHelper for Constant-Length Kmers.
  * \note Each Kmer is a string of length KMERLENGTH, \n
@@ -159,7 +160,6 @@ public:
     }
 
 };
-
 
 
 template <typename keyType, typename valueType>
@@ -273,11 +273,12 @@ protected:
         if ((keycount & 0xFFFF) ==0 )
             if ((keycount & (keycount-1))==0) {
                 printcurrtime();
-                printf("Got %lld keys\n", keycount);
+                printf("Got %lu keys\n", keycount);
             }
     }
 };
 
+/*
 template <typename keyType, typename valueType>
 class KmerFilteredFileReader : public FileReader<keyType, valueType> {
     KmerFileReader<keyType, valueType> *freader;
@@ -307,6 +308,7 @@ public:
     }
 };
 
+*/
 
 template <typename keyType, typename valueType>
 struct KVpair {
@@ -539,6 +541,7 @@ public:
         a16 = 0xFFFF;
         a32 = 0xFFFFFFFF;//~0ULL;
         add (p,vl);
+        return true;
     }
     unsigned long long getKeycount() {
         return keycount;
@@ -561,6 +564,7 @@ protected:
     vector<uint32_t> shift;
     vector<uint64_t> totkeycount;
     vector<uint64_t> readkeys;
+    vector<string> fnames;
     int kmerlength;
     int getKmerLengthfromxml(string fname) {
         fname += ".xml";
@@ -574,7 +578,18 @@ protected:
 public:
     KmerGroupComposer() {}
     int32_t getKmerLength() {return kmerlength;}
-    KmerGroupComposer(vector<string> & fnames) {
+    void putSampleInfoToXml(tinyxml2::XMLElement * p) {
+        for (auto s:fnames) {
+            string grpfname = s + ".xml";
+            tinyxml2::XMLDocument doc;
+            doc.LoadFile(grpfname.c_str());
+            for (tinyxml2::XMLElement *q = doc.FirstChildElement("Root")->FirstChildElement("Samples")->FirstChildElement("SampleInfo"); q!= NULL; q=q->NextSiblingElement("SampleInfo")) {
+                tinyxml2::XMLNode *cpyNode = q->DeepClone(p->GetDocument());
+                p->InsertEndChild(cpyNode);
+            }
+        }
+    }
+    KmerGroupComposer(vector<string> & _fnames): fnames(_fnames) {
 
         //check kmer length consistent;
         set<int> kmerlengthset;
@@ -661,7 +676,7 @@ public:
         uint64_t k;
         PQ = priority_queue<KIDpair<keyType>>();
 
-        for (int i = 0; i < readers.size(); i++) {
+        for (uint32_t i = 0; i < readers.size(); i++) {
             readers[i]->getNext(&k, &tmpval[i][0]);
             KIDpair<keyType> kid = {k, i, false};
             PQ.push(kid);
@@ -674,7 +689,7 @@ protected:
         if (keycount > 100000 && verbose)
             if ((keycount & (keycount-1))==0) {
                 printcurrtime();
-                printf("Got %lld keys\n Bytes read from groups: ", keycount);
+                printf("Got %lu keys\n Bytes read from groups: ", keycount);
                 for (int i = 0 ; i < readers.size(); i++)
                     printf("%d:%5lldM\t", i, readers[i]->getpos()/1048576); 
                 printf("\n");
@@ -790,6 +805,7 @@ public:
     }
 };
 
+/*
 //! read kmer from unsorted txt file and sort .
 template <typename keyType>
 class SortedKmerTxtReader : public KmerReader<keyType> {
@@ -1159,7 +1175,8 @@ public:
 
 };
 
-
+*/
+/*
 class ValueConverter {
 public:
     virtual uint8_t convert(uint32_t)  = 0;
@@ -1177,6 +1194,8 @@ public:
         return 0;
     }
 };
+*/
+/*
 template <typename keyType, typename valueType>
 class SinglevalueFileReaderWriter : public MultivalueFileReaderWriter< keyType, valueType> {
 public:
@@ -1249,6 +1268,7 @@ public:
         return true;
     }
 };
+*/
 
 template <typename keyType, int NNL>
 struct BinaryBitSet {
@@ -1354,5 +1374,6 @@ public:
         }
         fprintf(fout,"\n");
     }
-} __attribute__((packed));
+};
+//__attribute__((packed));
 

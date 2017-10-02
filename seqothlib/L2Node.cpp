@@ -119,17 +119,21 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
 }
 
 void L2Node::constructOth() {
-    int L = 8;
+    uint32_t L = 8;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
     while ((1<<L)<entrycnt+10) L++;
-    printf("construct L2Node with %lld keys. Using type %s. with %d-Othello, entrycnt %d.\n", keys.size(), L2NodeTypes::typestr.at(this->getType()).c_str(), L, entrycnt);
+#pragma GCC diagnostic pop
+    printf("%s: construct L2Node with %lu keys. Using type %s. with %u-Othello, entrycnt %u.\n", get_thid().c_str(), keys.size(), L2NodeTypes::typestr.at(this->getType()).c_str(), L, entrycnt);
     oth = new Othello<keyType> (L, keys,values, true, 0);
     for (auto &k: oth->removedKeys) {
-        printf("Removed key vNode %llx\n", k);
+        printf("%s: Removed key vNode %lx\n", get_thid().c_str(), k);
     }
 }
 
-
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 bool L2ShortValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) {
     uint64_t index = L2Node::oth->queryInt(*k);
     ret.clear();
@@ -143,6 +147,8 @@ bool L2ShortValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, v
     }
     return true;
 }
+#pragma GCC diagnostic pop
+
 bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) {
     uint64_t index = L2Node::oth->queryInt(*k);
     if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
@@ -152,7 +158,7 @@ bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret,
         if (decode.size()==0) return true;
         uint32_t last;
         ret.push_back(last = decode[0]);
-        for (int i = 1; i< decode.size(); i++) {
+        for (uint32_t i = 1; i< decode.size(); i++) {
             last += decode[i];
             ret.push_back(last);
         }
@@ -242,7 +248,7 @@ void L2EncodedValueListNode::writeDataToGzipFile() {
     if (gzfname.size()<=0) {
         throw invalid_argument("Must specify filename first");
     }
-    printf("Write L2 Node %s\n", gzfname.c_str());
+    printf("%s: Write L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fout = gzopen(gzfname.c_str(), "wb");
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
@@ -263,23 +269,25 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
     if (gzfname.size()<=0) {
         throw invalid_argument("Must specify filename first");
     }
-    printf("Load L2 Node %s\n", gzfname.c_str());
+    printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
     void *p;
     p = &buf;
+#pragma GCC diagnostic push    
+#pragma GCC diagnostic ignored "-Wpointer-arith"    
     memcpy(&valuecnt, p, 4);
     memcpy(&maxnl, p+0x4, 4);
     uint32_t siz;
     memcpy(&siz, p+0x8, 4);
-
+#pragma GCC diagnostic pop
     gzread(fin, buf,sizeof(buf));
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
     uint64list.resize(0);//ShortVLcount);
-    for (int i = 0 ; i < siz; i++) {
+    for (uint32_t i = 0 ; i < siz; i++) {
         uint64_t vl = 0ULL;
         gzread(fin, &vl, IOLengthInBytes);
         uint64list.push_back(vl);
@@ -292,18 +300,20 @@ void L2EncodedValueListNode::loadDataFromGzipFile() {
     if (gzfname.size()<=0) {
         throw invalid_argument("Must specify filename first");
     }
-    printf("Load L2 Node %s\n", gzfname.c_str());
+    printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
     void *p;
     p = &buf;
+#pragma GCC diagnostic push    
+#pragma GCC diagnostic ignored "-Wpointer-arith"    
     memcpy(&IOLengthInBytes, p, 4);
     memcpy(&encodetype, p+0x4, 4);
     uint32_t siz;
     memcpy(&siz, p+0x8, 4);
-
+#pragma GCC diagnostic pop
     gzread(fin, buf,sizeof(buf));
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
