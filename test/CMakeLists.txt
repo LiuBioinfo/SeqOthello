@@ -3,9 +3,7 @@ INCLUDE_DIRECTORIES(../lib ../seqothlib)
 find_package(Threads REQUIRED)
 
 ADD_EXECUTABLE(datagen datagen.cc)
-ADD_EXECUTABLE(testL1 testL1Node.cpp)
 
-TARGET_LINK_LIBRARIES(testL1 tinyxml2 z pthread libL2Node libL1Node)
 
 # Enable ExternalProject CMake module
 include(ExternalProject)

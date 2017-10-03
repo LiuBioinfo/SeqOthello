@@ -5,6 +5,7 @@ tail -n 1 genlog | cut -c1-100 >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa
 tail -n 1 genlog | cut -c1-50 >> testTT.fa
 tail -n 1 genlog | cut -c1-25 >> testTT.fa
+for j in {1..50}; do rm -rf tmp; for i in A T G C; do echo $i >> tmp; done; echo `sort tmp -R | awk '{print}' ORS=''`; done  | awk '{print}' ORS='' >> testTT.fa
 rm 16.Kmer
 touch 16.Kmer
 for i in *.Kmer; do

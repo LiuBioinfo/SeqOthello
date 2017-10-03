@@ -152,9 +152,10 @@ bool L2ShortValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, v
 bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) {
     uint64_t index = L2Node::oth->queryInt(*k);
     if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
+        ret.clear();
+        if (IOLengthInBytes*index >= lines.size()) return true;
         vector<uint32_t> decode;
         valuelistDecode(&lines[IOLengthInBytes*index], decode, IOLengthInBytes);
-        ret.clear();
         if (decode.size()==0) return true;
         uint32_t last;
         ret.push_back(last = decode[0]);
@@ -166,6 +167,10 @@ bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret,
     }
     else {
         //MAPP
+        if (IOLengthInBytes*index >= lines.size()) {
+            ret.clear();
+            return true;
+        }
         retmap = vector<uint8_t> (lines.begin()+IOLengthInBytes * index , lines.begin() + IOLengthInBytes * (index+1));
         return false;
     }
