@@ -227,10 +227,7 @@ void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
     lines.insert(lines.end(), mapp.begin(), mapp.end());
 }
 
-void L2ShortValueListNode::writeDataToGzipFile() {
-    if (gzfname.size()<=0) {
-        throw invalid_argument("Must specify filename first");
-    }
+void L2ShortValueListNode::writeDataToGzipFile(string gzfname) {
     printf("%s : writing to L2 Gzip File %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fout = gzopen(gzfname.c_str(), "wb");
     unsigned char buf[0x20];
@@ -250,10 +247,7 @@ void L2ShortValueListNode::writeDataToGzipFile() {
     gzclose(fout);
 }
 
-void L2EncodedValueListNode::writeDataToGzipFile() {
-    if (gzfname.size()<=0) {
-        throw invalid_argument("Must specify filename first");
-    }
+void L2EncodedValueListNode::writeDataToGzipFile(string gzfname) {
     printf("%s: Write L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fout = gzopen(gzfname.c_str(), "wb");
     unsigned char buf[0x20];
@@ -271,10 +265,7 @@ void L2EncodedValueListNode::writeDataToGzipFile() {
 }
 
 
-void L2ShortValueListNode::loadDataFromGzipFile() {
-    if (gzfname.size()<=0) {
-        throw invalid_argument("Must specify filename first");
-    }
+void L2ShortValueListNode::loadDataFromGzipFile(string gzfname) {
     printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
     unsigned char buf[0x20];
@@ -302,10 +293,7 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
 }
 
 
-void L2EncodedValueListNode::loadDataFromGzipFile() {
-    if (gzfname.size()<=0) {
-        throw invalid_argument("Must specify filename first");
-    }
+void L2EncodedValueListNode::loadDataFromGzipFile(string gzfname) {
     printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
     unsigned char buf[0x20];
@@ -335,7 +323,6 @@ void L2ShortValueListNode::putInfoToXml(tinyxml2::XMLElement * pe){
   pe->SetAttribute("BitsPerValue", maxnl); 
   pe->SetAttribute("Keycount", keycnt); 
   pe->SetAttribute("EntryCount", entrycnt);
-  pe->SetAttribute("Filename", gzfname.c_str()); 
 }
 
 void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe){
@@ -344,11 +331,10 @@ void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe){
   pe->SetAttribute("IOLengthInBytes", IOLengthInBytes); 
   pe->SetAttribute("Keycount", keycnt); 
   pe->SetAttribute("EntryCount", entrycnt); 
-  pe->SetAttribute("Filename", gzfname.c_str()); 
 }
 
 std::shared_ptr<L2Node> 
-L2Node::loadL2Node( tinyxml2::XMLElement *p) {
+L2Node::createL2Node( tinyxml2::XMLElement *p) {
     std::shared_ptr<L2Node> ptr = nullptr;
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {
        int valuecnt = p->IntAttribute("ValueCnt");
@@ -366,10 +352,6 @@ L2Node::loadL2Node( tinyxml2::XMLElement *p) {
        int IOL = p->IntAttribute("IOLengthInBytes");
        int type = L2NodeTypes::MAPP;
        ptr = make_shared<L2EncodedValueListNode>(IOL, type);
-    }
-    if (ptr != nullptr) {
-        string fname = p->Attribute("Filename");
-        ptr->gzfname = fname;
     }
     return ptr;
 

@@ -17,9 +17,9 @@ mv *.grp.xml grp/
 rm -rf mapOut
 mkdir mapOut
 echo Build
-../build/bin/Build --flist=grplist --folder=./grp/ --out=mapOut/map --count-only> Buildlog
-../build/bin/Build --flist=grplist --folder=./grp/ --out=mapOut/map > Buildlog.tt
+../build/bin/Build --flist=grplist --folder=./grp/ --out-folder=mapOut/ --count-only> Buildlog
+../build/bin/Build --flist=grplist --folder=./grp/ --out-folder=mapOut/ > Buildlog.tt
 echo Query
-../build/bin/Query --map=mapOut/map --transcript=testTT.fa --noreverse --detail --output queryresult > querylog
-../build/bin/Query --map=mapOut/map --transcript=testTT.fa --noreverse --qthread=4 --output queryresultAgg > querylogAgg
+../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --noreverse --detail --output queryresult > querylog
+../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --noreverse --qthread=4 --output queryresultAgg > querylogAgg
 

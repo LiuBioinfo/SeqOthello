@@ -20,13 +20,13 @@ using namespace std;
 int main(int argc, char ** argv) {
     args::ArgumentParser parser("Build SeqOthello! \n");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argInputname(parser, "string", "a file containing the filenames, these files should be created by preprocess", {"flist"});
-    args::ValueFlag<string> argFolder(parser, "string", "where to find this file", {"folder"});
-    args::ValueFlag<string> argOutputname(parser, "string", "filename (including path) for the output files", {"out"});
-    args::ValueFlag<int> argThread(parser, "int", "number of parallel threads to build SeqOthello", {"thread"});
+    args::ValueFlag<string> argInputname(parser, "string", "a file containing the filenames of Grp files, these Grp files should be created by the Preprocess tool. Each line should contain one file name. ", {"flist"});
+    args::ValueFlag<string> argFolder(parser, "string", "where to find these Grp files. i.e. , a path that contains the Grp files. ", {"folder"});
+    args::ValueFlag<string> argOutputname(parser, "string", "a folder to put the generated SeqOthello map.", {"out-folder"});
+    //args::ValueFlag<int> argThread(parser, "int", "number of parallel threads to build SeqOthello", {"thread"});
     args::ValueFlag<int> argLimit(parser, "int", "read this number of Kmers to estimate the distribution.", {"estimate-limit"});
     args::Flag argCountOnly(parser, "count-only", "only count the keys and the histogram, do not build the seqOthello.", {"count-only"});
-//    args::ValueFlag<int> argEXP(parser, "int", "Expression bits, optional: None, 1, 2, 4", {"exp"});
+    //args::ValueFlag<int> argEXP(parser, "int", "Expression bits, optional: None, 1, 2, 4", {"exp"});
 
 
     try
@@ -55,11 +55,12 @@ int main(int argc, char ** argv) {
         return 1;
     }
     int nThreads = 1;
-    if (argThread)
-        nThreads = args::get(argThread);
+    //if (argThread)
+    //    nThreads = args::get(argThread);
     vector<uint64_t> keyHisto, encodeHisto;
 
-    string prefix = args::get(argFolder);
+    string prefix = "";
+    if (argFolder) prefix = args::get(argFolder);
     string fname =  args::get(argInputname);
     FILE * ffnames = fopen(args::get(argInputname).c_str(), "r");
     if (ffnames == NULL) 

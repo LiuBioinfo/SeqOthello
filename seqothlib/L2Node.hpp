@@ -28,8 +28,8 @@ public:
     virtual bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) = 0;
     virtual void add(keyType &k, vector<uint32_t> &) = 0;
     virtual void addMAPP(keyType &k, vector<uint8_t> &mapp) = 0;
-    virtual void writeDataToGzipFile() = 0;
-    virtual void loadDataFromGzipFile() = 0;
+    virtual void writeDataToGzipFile(string ) = 0;
+    virtual void loadDataFromGzipFile(string ) = 0;
     uint32_t keycnt = 0;
     vector<uint32_t> values;
     vector<uint64_t> keys;
@@ -38,8 +38,8 @@ public:
     Othello<uint64_t> *oth = NULL;
     virtual void putInfoToXml(tinyxml2::XMLElement *) = 0;
 	virtual uint64_t getvalcnt() = 0;
-    static std::shared_ptr<L2Node> loadL2Node( tinyxml2::XMLElement *p);
-    string gzfname;
+    static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p);
+    string fname;
 };
 
 class L2ShortValueListNode : public L2Node {
@@ -67,8 +67,8 @@ public:
     void addMAPP(keyType &, vector<uint8_t> &) override {
         throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
-    void writeDataToGzipFile() override;
-    void loadDataFromGzipFile() override;
+    void writeDataToGzipFile(string ) override;
+    void loadDataFromGzipFile(string ) override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
 	uint64_t getvalcnt() override;
 };
@@ -89,8 +89,8 @@ public:
     bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) override;
     void add(keyType &k, vector<uint32_t> &) override;
     void addMAPP(keyType &k, vector<uint8_t> &mapp) override;
-    void writeDataToGzipFile() override;
-    void loadDataFromGzipFile() override;
+    void writeDataToGzipFile(string ) override;
+    void loadDataFromGzipFile(string ) override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
 	uint64_t getvalcnt() override;
 };

@@ -106,7 +106,7 @@ void getL2Result(int32_t high, vector<shared_ptr<L2Node>> pvNodes, const vector<
 int main(int argc, char ** argv) {
     args::ArgumentParser parser("Query SeqOthello! \n");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argSeqOthName(parser, "string", "the path name of seqOthello", {"map"});
+    args::ValueFlag<string> argSeqOthName(parser, "string", "the path contains SeqOthello mapping file.", {"map-folder"});
     args::ValueFlag<string> argTranscriptName(parser, "string", "file containing transcripts", {"transcript"});
     args::ValueFlag<string> resultsName(parser, "string", "where to put the results", {"output"});
     args::Flag   argShowDedatils(parser, "", "Show the detailed query results for the transcripts", {"detail"});

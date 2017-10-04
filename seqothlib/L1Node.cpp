@@ -41,7 +41,7 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
     printf("%s : Write to Gzip File %s\n", get_thid().c_str(),fname.c_str());
     char cbuf[0x400];
     memset(cbuf,0,sizeof(cbuf));
-    sprintf(cbuf,"%s.L1.p%d",fname.c_str(), id);
+    sprintf(cbuf,"%s.%d",fname.c_str(), id);
     gzFile fout = gzopen(cbuf, "wb");
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
@@ -80,7 +80,7 @@ void L1Node::loadFromFile(string fname) {
     for (uint32_t i = 0 ; i < grpidlimit; i++) {
         char cbuf[0x400];
         memset(cbuf,0,sizeof(cbuf));
-        sprintf(cbuf,"%s.L1.p%d",fname.c_str(), i);
+        sprintf(cbuf,"%s.%d",fname.c_str(), i);
         gzFile fin = gzopen(cbuf, "rb");
         unsigned char buf[0x20];
         gzread(fin, buf,sizeof(buf));
@@ -103,7 +103,7 @@ void L1Node::putInfoToXml(tinyxml2::XMLElement *pe, string fname) {
             auto pNode = pe->GetDocument()->NewElement("L1NodePart");
             char cbuf[0x400];
             memset(cbuf,0,sizeof(cbuf));
-            sprintf(cbuf,"%s.L1.p%d",fname.c_str(), i);
+            sprintf(cbuf,"%s.%d",fname.c_str(), i);
             pNode->SetAttribute("Filename", cbuf);
             pNode->SetAttribute("KeyCount", (uint32_t) kV[i]->size());
             pe->InsertEndChild(pNode);

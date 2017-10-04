@@ -32,23 +32,26 @@ private:
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
     constexpr static uint32_t L2limit = 1048576;
     vector<uint32_t> freqToVnodeIdMap;
-    string fname;
+    string folder;
+    string L1NODE_PREFIX="map.L1.p";
+    string L2NODE_PREFIX="map.L2.";
+    string XML_FNAME="map.xml";
 public:
     SeqOthello() {}
 
-    void loadL2NodeBatch(uint32_t thid, string fname, uint32_t nthread) {
-        
+    void loadL2NodeBatch(uint32_t thid, string _folder, uint32_t nthread) {
+        folder = _folder;
         printf("%s: Starting to load L2 nodes of grop %d/%d from disk\n", get_thid().c_str(), thid, nthread);
         for (uint32_t i = 0; i < vNodes.size(); i++)
             if ( i % nthread == thid)
-                loadL2Node(i, fname);
+                loadL2Node(i);
     }
     thread * L1LoadThread;
     vector<thread *> L2LoadThreads;
     void loadL1(uint32_t kmerLength) {
         l1Node = new L1Node();
         l1Node->setsplitbit(kmerLength,L1Splitbit);
-        l1Node->loadFromFile(fname);
+        l1Node->loadFromFile(folder + L1NODE_PREFIX);
             /*
         printf("Starting to load L1 from disk\n");
         string ff = fname + ".L1";
@@ -65,7 +68,7 @@ public:
     void startloadL2(int nthread) {
         for (int thid = 0; thid < nthread; thid++)
             L2LoadThreads.push_back(
-                new thread(&SeqOthello::loadL2NodeBatch, this, thid,fname, nthread));
+                new thread(&SeqOthello::loadL2NodeBatch, this, thid,folder, nthread));
     }
     void waitloadL2() {
         for (auto p : L2LoadThreads)
@@ -76,17 +79,17 @@ public:
     void releaseL1() {
         delete l1Node;
     }
-    SeqOthello(string &_fname, int nthread, bool loadall = true) {
-        fname = _fname;
+    SeqOthello(string &_folder, int nthread, bool loadall = true) {
+        folder = _folder;
         tinyxml2::XMLDocument xml;
-        auto xmlName = fname + ".xml";
+        auto xmlName = folder + XML_FNAME;
         xml.LoadFile(xmlName.c_str());
         auto pSeq = xml.FirstChildElement("Root")->FirstChildElement("SeqOthello");
         auto pL2Nodes = pSeq->FirstChildElement("L2Nodes");
         vNodes.clear();
         auto L2Node = pL2Nodes->FirstChildElement("L2Node");
         while (L2Node != NULL) {
-            vNodes.push_back(L2Node::loadL2Node(L2Node));
+            vNodes.push_back(L2Node::createL2Node(L2Node));
             L2Node = L2Node->NextSiblingElement("L2Node");
         }
         pSeq->QueryIntAttribute("SampleCount", (int*) &sampleCount);
@@ -125,7 +128,7 @@ public:
         return vNodes[othquery - L2IDShift]->smartQuery(k, ret, retmap);
     }
 
-    void writeSeqOthelloInfo(string fname, function<void(tinyxml2::XMLElement *)> func, vector<uint64_t> &histogram) {
+    void writeSeqOthelloInfo(string folder, function<void(tinyxml2::XMLElement *)> func, vector<uint64_t> &histogram) {
         tinyxml2::XMLDocument xml;
         auto pRoot = xml.NewElement("Root");
         auto pSeqOthello = xml.NewElement("SeqOthello");
@@ -146,11 +149,12 @@ public:
             }
 
         func(pSamples);
-        l1Node->putInfoToXml(pL1Node, fname);
+        l1Node->putInfoToXml(pL1Node, L1NODE_PREFIX );
         pL2Nodes->SetAttribute("Count", (int) vNodes.size());
-        for (auto &p : vNodes) {
+        for (uint32_t i = 0 ; i < vNodes.size(); i++) {
             auto pL2Node = xml.NewElement("L2Node");
-            p->putInfoToXml(pL2Node);
+            vNodes[i]->putInfoToXml(pL2Node);
+            pL2Node->SetAttribute("L2NodeID", i);
             pL2Nodes->InsertEndChild(pL2Node);
         }
         pSeqOthello->InsertEndChild(pL2Nodes);
@@ -159,27 +163,29 @@ public:
         pSeqOthello->InsertEndChild(pHistogram);
         pRoot->InsertFirstChild(pSeqOthello);
         xml.InsertFirstChild(pRoot);
-        auto xmlName = fname + ".xml";
+        auto xmlName = folder + XML_FNAME;
         xml.SaveFile(xmlName.c_str());
     }
-    void constructL2Node(int id, string fname) {
+    void constructL2Node(int id) {
         printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
         stringstream ss;
-        ss<<fname;
-        ss<<".L2."<<id;
+        ss<<folder;
+        ss<<L2NODE_PREFIX<<id;
         string fname2;
         ss >> fname2;
         vNodes[id]->constructOth();
-        vNodes[id]->writeDataToGzipFile();
+        vNodes[id]->writeDataToGzipFile(fname2);
     }
 
-    void loadL2Node(int id, string fname) {
+    void loadL2Node(int id) {
         stringstream ss;
-        ss<<fname;
-        ss<<".L2."<<id;
+        ss<<folder;
+        ss<<L2NODE_PREFIX<<id;
         string fname2;
         ss >> fname2;
-        vNodes[id]->loadDataFromGzipFile();
+        printf("%s : Loading %s\n", get_thid().c_str(), fname2.c_str());
+        vNodes[id]->loadDataFromGzipFile(fname2);
+        printf("%s : Finished %s\n", get_thid().c_str(), fname2.c_str());
     }
 
 	void loadAll(int nqueryThreads) {
@@ -190,7 +196,7 @@ public:
 
     void constructFromReader(KmerGroupComposer<keyType> *reader, string filename, uint32_t threadsLimit, vector<uint32_t> enclGrpmap, uint64_t estimatedKmerCount) {
         kmerLength = reader->getKmerLength();
-        fname = filename;
+        folder = filename;
         keyType k;
         l1Node = new L1Node(estimatedKmerCount, kmerLength);
         printf("We will use at most %d threads to construct.\n", threadsLimit);
@@ -302,8 +308,6 @@ public:
             //vV.push_back(MAPPID+ L2IDShift);
             l1Node->add(k, MAPPID+ L2IDShift);
         }
-        for (uint32_t i = 0 ; i < vNodes.size(); i++)
-            vNodes[i]->gzfname = filename+"L2."+to_string(i);
         int LLfreq = 8;
         
 #pragma GCC diagnostic push
@@ -311,8 +315,8 @@ public:
         while ((1<<LLfreq)<vNodes.size()+L2IDShift+5) LLfreq++;
 #pragma GCC diagnostic pop
         printf("Constructing L1 Node \n");
-        writeSeqOthelloInfo(fname, bind(&KmerGroupComposer<keyType>::putSampleInfoToXml, reader, placeholders::_1 ), histogram);
-        l1Node->constructAndWrite(LLfreq, threadsLimit, fname);
+        writeSeqOthelloInfo(folder, bind(&KmerGroupComposer<keyType>::putSampleInfoToXml, reader, placeholders::_1 ), histogram);
+        l1Node->constructAndWrite(LLfreq, threadsLimit, folder+ L1NODE_PREFIX);
         delete l1Node;
         vector<thread> vthreadL2;
         uint64_t currL2InQKeycnt = 0;
@@ -325,7 +329,7 @@ public:
             }
             currL2InQKeycnt+= vNodes[i]->keycnt;
             currL2InQValcnt+= vNodes[i]->getvalcnt();
-            vthreadL2.push_back(std::thread(&SeqOthello::constructL2Node,this,i, filename));
+            vthreadL2.push_back(std::thread(&SeqOthello::constructL2Node,this,i));
         }
 
         for (auto &th : vthreadL2) th.join();
