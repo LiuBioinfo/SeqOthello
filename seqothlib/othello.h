@@ -459,8 +459,8 @@ bool Othello<keyType>::testHash(uint32_t keycount) {
     removedKeys.clear();
     disj.clear();
     for (uint32_t i = 0; i < keycount; i++) {
-        if ((i&4194303) ==0) 
-              printf("%s: Tesing keys # %d\n",get_thid().c_str(), i);
+        if ((i&4194303) ==0) if (i)
+              printf("%s: Testing keys # %d\n",get_thid().c_str(), i);
         get_hash(keys[i], ha, hb);
 
         if (disj.sameset(ha,hb)) {
