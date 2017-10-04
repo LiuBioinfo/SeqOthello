@@ -17,7 +17,7 @@ using namespace std;
 
 int nqueryThreads = 1;
 atomic<int> workers;
-void getL1Result(shared_ptr<SeqOthello>seqoth, const vector<string> & seq, const vector<int> & seqID,
+void getL1Result(SeqOthello * seqoth, const vector<string> & seq, const vector<int> & seqID,
                  vector<uint16_t> &result, vector<uint64_t> &kmers, vector<uint32_t> & TID, bool useReverseComp) {
     int32_t kmerLength = seqoth->kmerLength;
     ConstantLengthKmerHelper<uint64_t, uint16_t> helper(seqoth->kmerLength,0);
@@ -46,7 +46,7 @@ void getL1Result(shared_ptr<SeqOthello>seqoth, const vector<string> & seq, const
     }
     printf("%s: L1 finished. Got %lu kmers. \n", get_thid().c_str(), TID.size());
 };
-void getL2Result(int32_t high, vector<shared_ptr<L2Node>> pvNodes, const vector<shared_ptr<vector<uint64_t>>> & vpvkmer, const vector<shared_ptr<vector<uint32_t>>> &vTID, map<int, vector<int>> *pans) {
+void getL2Result(int32_t high, const vector<L2Node *> &pvNodes, const vector<shared_ptr<vector<uint64_t>>> & vpvkmer, const vector<shared_ptr<vector<uint32_t>>> &vTID, map<int, vector<int>> *pans) {
 
     int myid = workers.fetch_add(1);
     unsigned int totkmer = 0;
@@ -57,6 +57,7 @@ void getL2Result(int32_t high, vector<shared_ptr<L2Node>> pvNodes, const vector<
     pans->clear();
     for (unsigned int vpid = 0; vpid < vpvkmer.size(); vpid++) {
         auto const pvNode = pvNodes[vpid];
+        if (pvNode == NULL) continue;
         if (!vpvkmer[vpid]) continue;
         auto const &kmers = *vpvkmer[vpid].get();
         auto const &TID = *vTID[vpid].get();
@@ -146,9 +147,9 @@ int main(int argc, char ** argv) {
         nqueryThreads = args::get(argNQueryThreads);
     }
 
-    std::shared_ptr<SeqOthello> seqoth;
+    SeqOthello * seqoth;
     string filename = args::get(argSeqOthName);
-    seqoth = make_shared<SeqOthello> (filename, nqueryThreads ,false);
+    seqoth = new SeqOthello (filename, nqueryThreads ,false);
     int kmerLength = seqoth->kmerLength;
     FILE *fin;
     fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
@@ -277,12 +278,12 @@ int main(int argc, char ** argv) {
     response.reserve(vnodecnt);
     printf("Splitting into L2 groups\n");
     vector<shared_ptr<thread>> L2threads;
-    vector<vector<shared_ptr<L2Node>>> vvpNode(nqueryThreads);
+    vector<vector<L2Node*>> vvpNode(nqueryThreads);
     vector<vector<shared_ptr<vector<uint64_t>>>> vpkmergrp(nqueryThreads);
     vector<vector<shared_ptr<vector<uint32_t>>>> vpTIDgrp(nqueryThreads);
     for (unsigned int i = 0 ; i < vnodecnt; i++) {
         int tid = i % nqueryThreads;
-        vvpNode[tid].push_back( seqoth->vNodes[i]);
+        vvpNode[tid].push_back(seqoth->vNodes[i].get());
         vpkmergrp[tid].push_back(vL2kmer[i]);
         vpTIDgrp[tid].push_back(vL2TID[i]);
     }
@@ -291,7 +292,7 @@ int main(int argc, char ** argv) {
         //map<int, vector<int>> empty;
         response.push_back(make_shared<map<int,vector<int>>>());
         auto th = make_shared<thread>
-                  (getL2Result,seqoth->sampleCount, vvpNode[i], std::ref(vpkmergrp[i]), std::ref(vpTIDgrp[i]), response[i].get());
+                  (getL2Result,seqoth->sampleCount, std::ref(vvpNode[i]), std::ref(vpkmergrp[i]), std::ref(vpTIDgrp[i]), response[i].get());
         L2threads.push_back(th);
     }
     for (auto &th : L2threads)

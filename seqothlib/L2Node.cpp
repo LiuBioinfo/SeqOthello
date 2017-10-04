@@ -335,23 +335,29 @@ void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe){
 
 std::shared_ptr<L2Node> 
 L2Node::createL2Node( tinyxml2::XMLElement *p) {
-    std::shared_ptr<L2Node> ptr = nullptr;
+    std::shared_ptr<L2Node> ptr(NULL);
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {
        int valuecnt = p->IntAttribute("ValueCnt");
        int maxnl = p->IntAttribute("BitsPerValue");
-       ptr = make_shared<L2ShortValueListNode>(valuecnt, maxnl); 
+       int entrycnt = p->IntAttribute("EntryCount");
+       if (entrycnt)
+           ptr = make_shared<L2ShortValueListNode>(valuecnt, maxnl); 
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_ENCODED).c_str()) == 0) {
        int IOL = p->IntAttribute("IOLengthInBytes");
        int type = L2NodeTypes::VALUE_INDEX_ENCODED;
-       ptr =  make_shared<L2EncodedValueListNode>(IOL, type);
+       int entrycnt = p->IntAttribute("EntryCount");
+       if (entrycnt)
+            ptr =  make_shared<L2EncodedValueListNode>(IOL, type);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::MAPP).c_str()) == 0) {
        int IOL = p->IntAttribute("IOLengthInBytes");
        int type = L2NodeTypes::MAPP;
-       ptr = make_shared<L2EncodedValueListNode>(IOL, type);
+       int entrycnt = p->IntAttribute("EntryCount");
+       if (entrycnt)
+            ptr = make_shared<L2EncodedValueListNode>(IOL, type);
     }
     return ptr;
 

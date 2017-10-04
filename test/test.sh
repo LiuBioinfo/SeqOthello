@@ -22,4 +22,7 @@ echo Build
 echo Query
 ../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --noreverse --detail --output queryresult > querylog
 ../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --noreverse --qthread=4 --output queryresultAgg > querylogAgg
+rm ./mapOut/map.L2.7
 
+../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --noreverse --qthread=4 --output queryresultAgg.2 > querylogAgg.2
+../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --noreverse --detail --output queryresult.2 > querylog.2

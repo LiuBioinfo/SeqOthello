@@ -1,5 +1,5 @@
 #!/bin/bash
-../build/test/datagen -f 179 -k 15300 > genlog
+../build/test/datagen -f 182 -k 15300 > genlog
 tail -n 1 genlog > testTT.fa
 tail -n 1 genlog | cut -c1-100 >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa
@@ -29,6 +29,6 @@ for i in {100..149}; do
     echo F$i.Kmer.bin >> flistC
 done
 
-for i in {150..178}; do
+for i in {150..181}; do
     echo F$i.Kmer.bin >> flistD
 done

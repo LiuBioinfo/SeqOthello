@@ -92,6 +92,10 @@ void L1Node::loadFromFile(string fname) {
         else {
             othellos[i] = new Othello<uint64_t> (buf);
             othellos[i]->loadDataFromGzipFile(fin);
+            if (!othellos[i]->loaded) {
+                delete othellos[i];
+                othellos[i] = NULL;
+            }
         }
         gzclose(fin);
     }

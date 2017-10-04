@@ -405,11 +405,19 @@ public:
      \brief load the array from file.
      \note only the arrayA and B are loaded. This must be called after using constructor Othello<keyType>::Othello(unsigned char *)
      */
+    bool loaded = false;
     void loadDataFromBinaryFile(FILE *pF) {
-        fread(&(mem[0]),sizeof(mem[0]), mem.size(), pF);
+        if (mem.size()==0) return ; 
+        auto resp = fread(&(mem[0]),sizeof(mem[0]), mem.size(), pF);
+        if (resp == mem.size()*sizeof(mem[0]))
+            loaded = true;
+
     }
     void loadDataFromGzipFile(gzFile f) {
-        gzread(f, &(mem[0]), sizeof(mem[0]) * mem.size());
+        if (mem.size()==0) return ; 
+        auto resp = gzread(f, &(mem[0]), sizeof(mem[0]) * mem.size());
+        if (resp == mem.size()*sizeof(mem[0]))
+            loaded = true;
     }
     /*!
      \brief write array to binary file.

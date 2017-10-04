@@ -125,6 +125,7 @@ public:
             return true;
         }
         if (othquery - L2IDShift >= vNodes.size()) return true;
+        if (!vNodes[othquery-L2IDShift]) return true;
         return vNodes[othquery - L2IDShift]->smartQuery(k, ret, retmap);
     }
 
@@ -186,6 +187,11 @@ public:
         printf("%s : Loading %s\n", get_thid().c_str(), fname2.c_str());
         vNodes[id]->loadDataFromGzipFile(fname2);
         printf("%s : Finished %s\n", get_thid().c_str(), fname2.c_str());
+        if (vNodes[id]->oth)
+            if (vNodes[id]->oth->loaded) 
+                return;
+        printf("Empty L2 Node %d.\n", id);
+        vNodes[id].reset();
     }
 
 	void loadAll(int nqueryThreads) {
