@@ -179,6 +179,9 @@ public:
     }
 
     void loadL2Node(int id) {
+        if (!vNodes[id]) {
+            printf("%s : Skipping empty L2Node %d\n", get_thid().c_str(), id);
+        }
         stringstream ss;
         ss<<folder;
         ss<<L2NODE_PREFIX<<id;
