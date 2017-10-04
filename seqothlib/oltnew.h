@@ -30,7 +30,7 @@ public:
 private:
     uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
-    constexpr static uint32_t L2limit = 1048576;
+    constexpr static uint32_t L2limit = 1048576*128;
     vector<uint32_t> freqToVnodeIdMap;
     string folder;
     string L1NODE_PREFIX="map.L1.p";
@@ -314,6 +314,7 @@ public:
 #pragma GCC diagnostic ignored "-Wsign-compare"
         while ((1<<LLfreq)<vNodes.size()+L2IDShift+5) LLfreq++;
 #pragma GCC diagnostic pop
+        printf("Got %lu kmers.\n", reader->keycount);
         printf("Constructing L1 Node \n");
         writeSeqOthelloInfo(folder, bind(&KmerGroupComposer<keyType>::putSampleInfoToXml, reader, placeholders::_1 ), histogram);
         l1Node->constructAndWrite(LLfreq, threadsLimit, folder+ L1NODE_PREFIX);

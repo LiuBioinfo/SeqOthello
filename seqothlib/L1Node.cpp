@@ -38,7 +38,7 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
     printf("%s : start to construct L1 Node part %u\n", get_thid().c_str(), id);
     if (kV[id]->size())
         othello = new Othello<uint64_t>(L, *kV[id], *vV[id], true, 200);
-    printf("%s : Write to Gzip File %s\n", get_thid().c_str(),fname.c_str());
+    printf("%s : Write to Gzip File %s.%d\n", get_thid().c_str(),fname.c_str(),id);
     char cbuf[0x400];
     memset(cbuf,0,sizeof(cbuf));
     sprintf(cbuf,"%s.%d",fname.c_str(), id);
