@@ -46,7 +46,7 @@ void getL1Result(SeqOthello * seqoth, const vector<string> & seq, const vector<i
     }
     printf("%s: L1 finished. Got %lu kmers. \n", get_thid().c_str(), TID.size());
 };
-void getL2Result(int32_t high, const vector<L2Node *> &pvNodes, const vector<shared_ptr<vector<uint64_t>>> & vpvkmer, const vector<shared_ptr<vector<uint32_t>>> &vTID, map<int, vector<int>> *pans) {
+void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<shared_ptr<vector<uint64_t>>> & vpvkmer, const vector<shared_ptr<vector<uint32_t>>> &vTID, unordered_map<int, vector<int>> *pans) {
 
     int myid = workers.fetch_add(1);
     unsigned int totkmer = 0;
@@ -71,11 +71,13 @@ void getL2Result(int32_t high, const vector<L2Node *> &pvNodes, const vector<sha
             }
             if (respond) {
                 auto &vec = pans->at(TID[i]);
-                for (auto &p : ret) vec[p] ++;
+                for (auto &p : ret) 
+                    if (p<=high)
+                        vec[p] ++;
                 //for (auto &p : ret) pans->[TID[i]][p]++;
             }
             else {
-                for (int v = 0; v< high; v++) { //ONLY EXP =1...
+                for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
                     auto &vec = pans->at(TID[i]);
                     if (retmap[v>>3] & ( 1<< (v & 7)))
                         vec[v]++;
@@ -274,7 +276,7 @@ int main(int argc, char ** argv) {
     vKmer.clear();
     vkTID.clear();
     seqoth->waitloadL2();
-    vector<shared_ptr<map<int, vector<int>>>> response;
+    vector<shared_ptr<unordered_map<int, vector<int>>>> response;
     response.reserve(vnodecnt);
     printf("Splitting into L2 groups\n");
     vector<shared_ptr<thread>> L2threads;
@@ -290,7 +292,7 @@ int main(int argc, char ** argv) {
 
     for (int i = 0; i < nqueryThreads; i++) {
         //map<int, vector<int>> empty;
-        response.push_back(make_shared<map<int,vector<int>>>());
+        response.push_back(make_shared<unordered_map<int,vector<int>>>());
         auto th = make_shared<thread>
                   (getL2Result,seqoth->sampleCount, std::ref(vvpNode[i]), std::ref(vpkmergrp[i]), std::ref(vpTIDgrp[i]), response[i].get());
         L2threads.push_back(th);

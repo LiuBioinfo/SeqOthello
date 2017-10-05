@@ -61,7 +61,7 @@ public:
     L2ShortValueListNode(uint32_t _valuecnt, uint32_t _maxnl) : valuecnt(_valuecnt), maxnl(_maxnl) {
         definetypes();
     }
-
+    ~L2ShortValueListNode() {}
     bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) override;
     void add(keyType &k, vector<uint32_t> &) override;
     void addMAPP(keyType &, vector<uint8_t> &) override {
@@ -85,7 +85,7 @@ public:
         if (encodetype != L2NodeTypes::MAPP && encodetype!= L2NodeTypes::VALUE_INDEX_ENCODED)
             throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
-
+    ~L2EncodedValueListNode() {}
     bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) override;
     void add(keyType &k, vector<uint32_t> &) override;
     void addMAPP(keyType &k, vector<uint8_t> &mapp) override;

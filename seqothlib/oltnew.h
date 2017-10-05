@@ -125,7 +125,7 @@ public:
             return true;
         }
         if (othquery - L2IDShift >= vNodes.size()) return true;
-        if (!vNodes[othquery-L2IDShift]) return true;
+        if (!vNodes[othquery-L2IDShift] ) return true;
         return vNodes[othquery - L2IDShift]->smartQuery(k, ret, retmap);
     }
 
@@ -181,6 +181,7 @@ public:
     void loadL2Node(int id) {
         if (!vNodes[id]) {
             printf("%s : Skipping empty L2Node %d\n", get_thid().c_str(), id);
+            return;
         }
         stringstream ss;
         ss<<folder;
