@@ -113,7 +113,7 @@ int main(int argc, char ** argv) {
         pRoot->InsertEndChild(pcountInfo);
 
         xml->InsertFirstChild(pRoot);
-        string output = args::get(argOutputname);
+        string output = "keydistribution.xml";
         xml->SaveFile(output.c_str());
         return 0;
     }

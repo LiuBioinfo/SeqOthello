@@ -211,9 +211,9 @@ template <typename keyType>
 struct KIDpair {
     keyType k;
     uint32_t id;
-    bool finished;
+    //bool finished;
     bool friend operator <( const KIDpair &a, const KIDpair &b) {
-        if (a.finished != b.finished) return (((int) a.finished) > ((int) b.finished));
+        //if (a.finished != b.finished) return (((int) a.finished) > ((int) b.finished));
         if (a.k != b.k)
             return a.k>b.k;
         return a.id > b.id;
@@ -234,7 +234,7 @@ public:
             readers.push_back(new KmerReader(fname.c_str()));
             keyType k;
             bool finished = !readers[readers.size()-1]->getNext(&k);
-            KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1), false};
+            KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1)};
             if (!finished) PQ.push(kid);
         }
     }
@@ -247,11 +247,11 @@ public:
     uint64_t keycount = 0;
     bool getNextValueList(keyType &k, vector<uint32_t> &ret) {
         k = PQ.top().k;
-        if (PQ.top().finished) {
+        if (PQ.empty()) {
             return false;
         }
         ret.clear();
-        while (PQ.top().k == k && !PQ.top().finished) {
+        while (PQ.top().k == k) {
             int tid;
             tid = PQ.top().id;
             keyType nextk;
@@ -261,8 +261,11 @@ public:
                    throw std::invalid_argument("error getting nextk!");
             }
             PQ.pop();
-            KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
-            PQ.push(kid);
+            if (!finish) {
+                KIDpair<keyType> kid = {nextk, (uint32_t) tid};
+                PQ.push(kid);
+            }
+            if (PQ.empty()) break;
         }
         updatekeycount();
         return true;
@@ -278,37 +281,6 @@ protected:
     }
 };
 
-/*
-template <typename keyType, typename valueType>
-class KmerFilteredFileReader : public FileReader<keyType, valueType> {
-    KmerFileReader<keyType, valueType> *freader;
-    int lowerbound;
-public:
-    KmerFilteredFileReader(KmerFileReader<keyType, valueType> * _freader, int _lowerbound)  {
-        freader = _freader;
-        lowerbound = _lowerbound;
-    }
-    void finish() {
-        freader->finish();
-    }
-    void reset() {
-        freader->reset();
-    }
-    bool getFileIsSorted() {
-        return freader->getFileIsSorted();
-    }
-    ~KmerFilteredFileReader() {
-        freader->finish();
-    }
-    bool getNext(keyType *T, valueType *V) {
-        while (true) {
-            if (!freader->getNext(T,V)) return false;
-            if (*V >= lowerbound) return true;
-        }
-    }
-};
-
-*/
 
 template <typename keyType, typename valueType>
 struct KVpair {
@@ -620,7 +592,7 @@ public:
             readers.push_back(new MultivalueFileReaderWriter<uint64_t, uint8_t>(fname.c_str(), sizeof(uint64_t), sizeof(uint8_t), true));
             keyType k;
             readers[readers.size()-1]->getNext(&k, &tmpval[i][0]);
-            KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1), false};
+            KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1)};
             PQ.push(kid);
             readkeys.push_back(1);
         }
@@ -638,7 +610,7 @@ public:
         }
         k = PQ.top().k;
         ret.clear();
-        while (PQ.top().k == k && !PQ.top().finished) {
+        while (PQ.top().k == k) {
             int tid;
             tid = PQ.top().id;
             keyType nextk;
@@ -647,15 +619,15 @@ public:
                 ret.push_back(shift[tid] + tmpval[tid][i]);
             }
             PQ.pop();
-            if (PQ.empty()) break;
             bool finish = !readers[tid]->getNext(&nextk, &tmpval[tid][0]);
             if (!finish) {
-            if (nextk <= k) {
+                if (nextk <= k) {
                    throw std::invalid_argument("error getting nextk!");
+                }
+                KIDpair<keyType> kid = {nextk, (uint32_t) tid};
+                PQ.push(kid);
             }
-            KIDpair<keyType> kid = {nextk, (uint32_t) tid, finish};
-            PQ.push(kid);
-            }
+            if (PQ.empty()) break;
         }
 
         updatekeycount();
@@ -678,7 +650,7 @@ public:
 
         for (uint32_t i = 0; i < readers.size(); i++) {
             readers[i]->getNext(&k, &tmpval[i][0]);
-            KIDpair<keyType> kid = {k, i, false};
+            KIDpair<keyType> kid = {k, i};
             PQ.push(kid);
             readkeys[i] = 1;
         }
@@ -805,470 +777,6 @@ public:
     }
 };
 
-/*
-//! read kmer from unsorted txt file and sort .
-template <typename keyType>
-class SortedKmerTxtReader : public KmerReader<keyType> {
-    BinaryKmerReader<keyType> * binaryReader = NULL;
-    uint32_t pointer;
-    vector<keyType> * vK;
-public:
-    SortedKmerTxtReader(const char * fname, uint32_t kmerlength, const char *tmpfilename) {
-        ConstantLengthKmerHelper<keyType, uint64_t> helper(kmerlength, 0);
-        FileReader<keyType,uint64_t> *reader;
-        reader = new KmerFileReader<keyType,uint64_t>(fname, &helper, false);
-        keyType k;
-        uint64_t v;
-        vK = new vector<keyType>();
-        while (reader->getNext(&k, &v)) {
-            vK->push_back(k);
-        }
-        sort(vK->begin(),vK->end());
-        delete reader;
-        if (tmpfilename != NULL) {
-            string binaryfilename (tmpfilename);
-            BinaryKmerWriter<keyType> writer(binaryfilename.c_str());
-            for (uint64_t k:*vK)
-                writer.write(&k);
-            writer.finish();
-            binaryReader = new BinaryKmerReader<keyType> (binaryfilename.c_str());
-        }
-        else pointer = 0;
-    }
-    ~SortedKmerTxtReader() {
-        finish();
-        if (binaryReader)
-            delete binaryReader;
-    }
-    bool getNext(keyType *k) {
-        if (binaryReader!= NULL)
-            return binaryReader->getNext(k);
-        else {
-            if (pointer == vK->size()) {
-                delete vK;
-                return false;
-            }
-            *k = (*vK)[pointer++];
-            return true;
-        }
-    }
-    void reset() {
-        if (binaryReader!=NULL)
-            binaryReader->reset();
-        pointer = 0;
-
-    }
-    void finish() {
-        if (binaryReader)
-            binaryReader->finish();
-    }
-};
-
-
-template <typename keyType, typename valueType>
-class taxoTreeBuilder: public FileReader <keyType, valueType> {
-    vector< FILE *> fV;
-    vector<compressFileReader <keyType, valueType> *> readerV;
-    vector< vector< int > > NCBI; //texonomyToNCBIID;
-    vector< int > stID;
-    struct KIDpair {
-        keyType k;
-        uint32_t id;
-        bool finished;
-        bool friend operator <( const KIDpair &a, const KIDpair &b) {
-            if (a.finished != b.finished) return (((int) a.finished) > ((int) b.finished));
-            return a.k>b.k;
-        }
-    };
-public:
-    void finish() {
-        for (auto f: fV) fclose(f);
-    }
-    void reset() {
-        printf(" Do not support reset() \n");
-    }
-    int levelcount;
-    vector<vector<int> > NCBI_local;
-    vector<int> localshift;
-    vector<vector<string> > NCBI_ID;
-    vector<KmerReader<uint64_t> *> readers;
-    vector<MultivalueFileReaderWriter<uint64_t, uint16_t> *> grpreaders; //must be 64-bit kmers, and 16-bit grpids.
-    priority_queue<KIDpair> PQ;
-    bool combineMode = false; //used when there are >=800 files;
-    uint32_t combineCount; // split the file into combineCount groups,
-    bool getFileIsSorted() {
-        return true;
-    }
-    void groupFile(string fname, vector<string> lf, string prefix, string suffix, int32_t idshift, bool useBinaryKmerFile,uint32_t KmerLength, const char * tmpfolder) {
-        vector<KmerReader<keyType> *> readers;
-        priority_queue<KIDpair> PQN;
-        for (string s: lf) {
-            string fname = prefix + s + suffix;
-            if (useBinaryKmerFile)
-                readers.push_back(new BinaryKmerReader<keyType>(fname.c_str()));
-            else {
-                string tmpfname(tmpfolder);
-                tmpfname = tmpfname + s + ".bintmp";
-                readers.push_back(new SortedKmerTxtReader<keyType>(fname.c_str(),KmerLength,NULL));
-            }
-            keyType key;
-            readers[readers.size()-1]->getNext(&key);
-            KIDpair kid = {key, idshift+readers.size()-1, false};
-            PQN.push(kid);
-        }
-
-        MultivalueFileReaderWriter<keyType,uint16_t> * writer = new MultivalueFileReaderWriter<keyType,uint16_t> (fname.c_str(),8,2,false);
-        // Loop key for these files;
-        while (true) {
-            keyType key = PQN.top().k;
-            uint32_t id = PQN.top().id;
-            vector<uint16_t> ret;
-            if (PQN.top().finished) {
-                for (auto r: readers) {
-                    r->finish();
-                    delete r;
-                }
-                writer->finish();
-                delete writer;
-                return;
-            }
-            while (PQN.top().k == key && !PQN.top().finished) {
-                int tid = PQN.top().id;
-                ret.push_back(tid);
-                keyType nextk;
-                bool finish = !readers[tid-idshift]->getNext(&nextk);
-                PQN.pop();
-                KIDpair kid = {nextk, tid, finish};
-                PQN.push(kid);
-            }
-            writer->write(&key, ret);
-        }
-    }
-    vector< vector<uint16_t> > grpTmpValue;
-
-    taxoTreeBuilder(const char * NCBIfname, const char * fnameprefix, const char * fnamesuffix, const char * tmpFileDirectory, uint32_t KmerLength, uint32_t splitbit, bool useBinaryKmerFile = true ) {
-        FileReader<keyType,valueType>::helper = new ConstantLengthKmerHelper<keyType,valueType> (KmerLength,splitbit);
-        FILE * fNCBI;
-        string prefix ( fnameprefix);
-        string suffix (fnamesuffix);
-        fNCBI = fopen(NCBIfname, "r");
-        //Assuming the file is tab-splited,
-        //Species_index	Species_ID	Species_name	Genus_index	Genus_ID	Genus_name	Family_index	Family_ID	Family_name	Order_index	Order_ID	Order_name	Class_index	Class_ID	Class_name	Phylum_index	Phylum_ID	Phylum_name
-        char buf[4096];
-        fgets(buf, 4096, fNCBI); // skip the first line
-        vector<string> vv = split(buf, '\t');
-        levelcount = vv.size()/3;
-        NCBI_local.clear();
-        NCBI_ID.clear();
-        NCBI_local.resize(levelcount);
-        NCBI_ID.resize(levelcount);
-        readers.clear();
-        vector<string> fnames;
-        while (true) {
-            if (fgets(buf, 4096, fNCBI) == NULL) break; // read a Species
-            vector<string> vv = split(buf, '\t');
-            if (vv.size()<2) break;
-            for (int i = 0 ; i*3 < vv.size(); i++) {
-                int localID = atoi(vv[i*3].c_str());
-                NCBI_local[i].push_back(localID);
-                NCBI_ID[i].push_back(vv[i*3+1]);
-            }
-            fnames.push_back(vv[1]);
-        }
-        localshift.clear();
-        localshift.push_back(1);
-        for (int i = 0; i < levelcount; i++)
-            localshift.push_back(localshift[i] + *max_element(NCBI_local[i].begin(), NCBI_local[i].end())+1);
-
-        int nn = 50;
-        combineMode = (fnames.size()>nn);
-        if (combineMode) {
-            int curr = 0;
-            int combineCount = 0;
-            vector<string> * fnamesInThisgrp ;
-            vector<string> grpfnames;
-            while (curr < fnames.size()) {
-                if (curr + nn < fnames.size())
-                    fnamesInThisgrp = new vector<string> (fnames.begin()+curr, fnames.begin()+curr+nn);
-                else
-                    fnamesInThisgrp = new vector<string> (fnames.begin()+curr, fnames.end());
-                stringstream ss;
-                string tmpFolder(tmpFileDirectory);
-
-                ss<<tmpFolder<<"TMP"<<grpfnames.size();
-                string fnamegrp;
-                ss>> fnamegrp;
-                grpfnames.push_back(fnamegrp);
-                printf("merge kmer files %d %d to grp %s\n", curr, curr+fnamesInThisgrp->size()-1, fnamegrp.c_str());
-                groupFile(fnamegrp, *fnamesInThisgrp, prefix, suffix, curr, useBinaryKmerFile,KmerLength,tmpFileDirectory);
-                curr += fnamesInThisgrp->size();
-                delete fnamesInThisgrp;
-            }
-            combineCount = grpfnames.size();
-            for (string v: grpfnames) {
-                grpreaders.push_back( new MultivalueFileReaderWriter<uint64_t, uint16_t>(v.c_str(), 8,2, true));
-                keyType key;
-                uint16_t valuebuf[1024];
-                grpreaders[grpreaders.size()-1]->getNext(&key, valuebuf);
-                vector<uint16_t> Vvaluebuf;
-                for (int i = 0 ; grpreaders[0]->valid(valuebuf[i]); i++)
-                    Vvaluebuf.push_back(valuebuf[i]);
-                grpTmpValue.push_back(Vvaluebuf);
-                KIDpair kid = {key, grpreaders.size()-1, false};
-                PQ.push(kid);
-            }
-        }
-        else
-            for (int i = 0 ; i < NCBI_ID.size(); i++) {
-                string fname = prefix + fnames[i] + suffix;
-                if (useBinaryKmerFile)
-                    readers.push_back(new BinaryKmerReader<keyType>(fname.c_str()));
-                else {
-                    string tmpfname(tmpFileDirectory);
-                    tmpfname = tmpfname + fnames[i] + ".bintmp";
-                    readers.push_back(new SortedKmerTxtReader<keyType>(fname.c_str(),KmerLength,tmpfname.c_str()));
-                }
-                keyType key;
-                readers[readers.size()-1]->getNext(&key);
-                KIDpair kid = {key, readers.size()-1, false};
-                PQ.push(kid);
-            }
-        fclose(fNCBI);
-        string IDLfname(tmpFileDirectory);
-        IDLfname+= "IDList.txt";
-        FILE * IDLf;
-        IDLf = fopen(IDLfname.c_str(),"w");
-        for (int t : localshift) {
-            fprintf(IDLf,"%d\n",t);
-        }
-        fclose(IDLf);
-    }
-    ~taxoTreeBuilder() {
-        if (combineMode)  {
-            for (int i = 0 ; i < grpreaders.size(); i++)
-                delete grpreaders[i];
-        }
-        else
-            for (int i = 0 ; i < readers.size(); i++)
-                delete readers[i];
-        delete FileReader<keyType,valueType>::helper;
-    }
-    bool getNext( keyType *k, valueType *v) {
-        int anslevel = 0;
-        keyType key = PQ.top().k;
-        vector<int> ret;
-        if (PQ.top().finished) {
-            finish();
-            return false;
-        }
-        // printf("Find key %llx:", key);
-        while (PQ.top().k == key && !PQ.top().finished) {
-            int tid;
-            tid = PQ.top().id;
-            keyType nextk;
-            bool finish;
-            if (combineMode) {
-                ret.insert(ret.end(),grpTmpValue[tid].begin(),grpTmpValue[tid].end());
-                int ll = grpTmpValue[tid].size();
-                //       printf("   %d keys: (from %d)\t", ll, tid);
-                //     for (int i: grpTmpValue[tid])
-                //          printf("%x\t",i);
-                uint16_t valuebuf[1024];
-                finish = !grpreaders[tid]->getNext(&nextk, valuebuf);
-                grpTmpValue[tid].clear();
-                for (int i = 0; grpreaders[tid]->valid(valuebuf[i]); i++)
-                    grpTmpValue[tid].push_back(valuebuf[i]);
-                //    printf("Next Has ::%d::", grpTmpValue[tid].size());
-            }
-            else {
-                ret.push_back(tid);
-                //  printf(" %x\t",PQ.top().id);
-                finish = !readers[tid]->getNext(&nextk);
-            }
-            PQ.pop();
-            KIDpair kid = {nextk, tid, finish};
-            PQ.push(kid);
-        }
-        *k = key;
-
-        for (int i = 0; i< levelcount; i++) {
-            bool flag = true;
-            for (int j = 0; j < ret.size() && flag; j++)
-                flag = (NCBI_local[i][ret[j]]==NCBI_local[i][ret[0]]);
-            if (flag) {
-                *v = localshift[i] + NCBI_local[i][ret[0]];
-                return true;
-            }
-        }
-        *v = localshift[levelcount];
-        return true;
-    }
-};
-
-
-
-template<typename keyType, typename valueType>
-class VectorReader : public FileReader<keyType, valueType> {
-public:
-    vector<keyType> kV;
-    vector<valueType> vV;
-    bool fIsSorted;
-    int cur = 0;
-    VectorReader(IOHelper<keyType,valueType> *_helper, bool b, vector<keyType> &k, vector<valueType> &v) : kV(k),vV(v)  {
-        fIsSorted = b;
-        FileReader<keyType,valueType>::helper = _helper;
-        cur = 0;
-    }
-    void finish() {
-        kV.clear();
-        vV.clear();
-    }
-    void reset() {
-        cur = 0;
-    }
-    bool getFileIsSorted() {
-        return fIsSorted;
-    }
-    ~ VectorReader () {
-        finish();
-    }
-    bool getNext(keyType *T, valueType *V) {
-        if (cur >= kV.size()) return false;
-        *T = kV[cur];
-        *V = vV[cur];
-        cur++;
-        return true;
-    }
-
-};
-
-template<typename keyType, typename valueType>
-class SortedVectorRefReader : public FileReader<keyType,valueType> {
-public:
-    vector<keyType> *kV;
-    vector<valueType> *vV;
-    int cur = 0;
-    SortedVectorRefReader(vector<keyType> *k, vector<valueType> *v,IOHelper<keyType, valueType> * _helper
-                         ) : kV(k),vV(v)  {
-        FileReader<keyType,valueType>::helper = _helper;
-        cur = 0;
-    }
-    void finish() {
-    }
-    void reset() {
-        cur = 0;
-    }
-    bool getFileIsSorted() {
-        return true;
-    }
-    ~ SortedVectorRefReader () {
-        finish();
-    }
-    bool getNext(keyType *T, valueType *V) {
-        if (cur >= kV->size()) return false;
-        *T = (*kV)[cur];
-        *V = (*vV)[cur];
-        cur++;
-        return true;
-    }
-
-
-};
-
-*/
-/*
-class ValueConverter {
-public:
-    virtual uint8_t convert(uint32_t)  = 0;
-};
-
-class expressionConverter : ValueConverter {
-    vector<uint32_t> v;
-public:
-    expressionConverter( vector<uint32_t> V): v(V) {
-
-    }
-    uint8_t convert(uint32_t k) {
-        for (uint8_t ans= v.size() - 1; ans>0; ans--)
-            if (k >= v[ans]) return ans;
-        return 0;
-    }
-};
-*/
-/*
-template <typename keyType, typename valueType>
-class SinglevalueFileReaderWriter : public MultivalueFileReaderWriter< keyType, valueType> {
-public:
-    ValueConverter * converter;
-    SinglevalueFileReaderWriter( const char * fname, bool _isRead = true, ValueConverter * _converter = NULL):
-        MultivalueFileReaderWriter<keyType,valueType>(fname, sizeof(keyType), sizeof(valueType), _isRead)
-    {
-        converter = _converter;
-    }
-    ~SinglevalueFileReaderWriter() {
-        MultivalueFileReaderWriter<keyType, valueType>::finish();
-    }
-    bool getNext(keyType *k, valueType *v) override {
-        if (!MultivalueFileReaderWriter<keyType,valueType>::get(k,sizeof(keyType))) return false;
-        MultivalueFileReaderWriter<keyType,valueType>::get(v,(sizeof(valueType)));
-        if (converter != NULL)
-            *v = converter->convert(*v);
-        return true;
-    }
-    bool write(keyType *k ,valueType *v) override {
-        MultivalueFileReaderWriter<keyType, valueType>::
-        add((void *) k, sizeof(keyType));
-        MultivalueFileReaderWriter<keyType, valueType>::
-        add((void *) v, sizeof(valueType));
-        return true;
-    }
-};
-
-class ValuelistExpressionWriter : MultivalueFileReaderWriter<uint64_t, uint32_t> {
-public:
-    ValuelistExpressionWriter(const char * fname):
-        MultivalueFileReaderWriter<uint64_t, uint32_t>(fname, sizeof(uint64_t), sizeof(uint32_t), false) {}
-    ~ValuelistExpressionWriter() {
-        MultivalueFileReaderWriter<uint64_t, uint32_t>::finish();
-    }
-    bool write(uint64_t &k, vector<pair<uint32_t, uint32_t>> &vec) {
-        MultivalueFileReaderWriter<uint64_t, uint32_t>::
-        add((void *) &k, sizeof(uint64_t));
-        for (auto &p: vec) {
-            MultivalueFileReaderWriter<uint64_t, uint32_t>::
-            add((void *) &p.first, sizeof(uint32_t));
-            MultivalueFileReaderWriter<uint64_t, uint32_t>::
-            add((void *) &p.second, sizeof(uint32_t));
-        }
-        uint32_t pend= 0xFFFFFFFF;
-        MultivalueFileReaderWriter<uint64_t, uint32_t>::
-        add((void *) &pend, sizeof(uint32_t));
-        return true;
-    }
-};
-
-
-class ValuelistExpressionReader : MultivalueFileReaderWriter<uint64_t, uint32_t> {
-public:
-    ValuelistExpressionReader(const char * fname):
-        MultivalueFileReaderWriter<uint64_t, uint32_t>(fname, sizeof(uint64_t), sizeof(uint32_t), true) {}
-    ~ValuelistExpressionReader() {
-        MultivalueFileReaderWriter<uint64_t, uint32_t>::finish();
-    }
-    bool getNext(uint64_t *k,vector<pair<uint32_t,uint32_t>> *vec) {
-        if (!MultivalueFileReaderWriter<uint64_t, uint32_t>::get(k,sizeof(uint64_t))) return false;
-        vec->clear();
-        while (true) {
-            uint32_t v1, v2;
-            if (!MultivalueFileReaderWriter<uint64_t, uint32_t>::get(&v1,sizeof(uint32_t))) return false;
-            if (v1 > 0xF0000000) return true;
-            if (!MultivalueFileReaderWriter<uint64_t, uint32_t>::get(&v2,sizeof(uint32_t))) return false;
-            vec->push_back(make_pair(v1,v2));
-        }
-        return true;
-    }
-};
-*/
 
 template <typename keyType, int NNL>
 struct BinaryBitSet {
