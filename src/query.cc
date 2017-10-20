@@ -71,7 +71,7 @@ void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<sh
             }
             if (respond) {
                 auto &vec = pans->at(TID[i]);
-                for (auto &p : ret) 
+                for (auto &p : ret)
                     if (p<=high)
                         vec[p] ++;
                 //for (auto &p : ret) pans->[TID[i]][p]++;
@@ -144,7 +144,7 @@ int main(int argc, char ** argv) {
     }
 
     bool flag = !args::get(NoReverseCompliment);
-    
+
     if (argNQueryThreads) {
         nqueryThreads = args::get(argNQueryThreads);
     }
@@ -173,11 +173,11 @@ int main(int argc, char ** argv) {
     FILE *fout = fopen(fnameout.c_str(), "w");
 
     if (argShowDedatils) {
-	    seqoth->loadAll(nqueryThreads);
+        seqoth->loadAll(nqueryThreads);
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
         vector<uint64_t>  requests;
         set<uint32_t> skipped;
-
+        vector<bool> usedreverse;
         for (unsigned int id = 0; id < vSeq.size(); id++)  {
             auto &str = vSeq[id];
             int ul = str.size()-kmerLength+1;
@@ -190,21 +190,28 @@ int main(int argc, char ** argv) {
             if (ul>0)
                 for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
                     memcpy(buf,str.data()+i,kmerLength);
-                    uint64_t key;
+                    uint64_t key,key0;
                     helper.convert(buf,&key);
-                    requests.push_back(key);
                     if (flag) {
-                        key = helper.minSelfAndRevcomp(key);
+                        key = helper.minSelfAndRevcomp(key0 = key);
+                        usedreverse.push_back(key == key0);
                     }
+                    requests.push_back(key);
                 }
         }
-
+        auto  itUsedrevse = usedreverse.begin();
         for (auto k : requests) {
             vector<uint32_t> vret;
             vector<uint8_t> vmap;
             char buf[30];
             memset(buf,0,sizeof(buf));
-            helper.convertstring(buf,&k);
+            auto toconvert = k;
+            if (flag) {
+                if (*itUsedrevse)
+                    toconvert = helper.reverseComplement(k);
+                itUsedrevse++;
+            }
+            helper.convertstring(buf,&toconvert);
             fprintf(fout, "%s ", buf);
             bool res = seqoth->smartQuery(&k, vret, vmap);
             if (!res) {

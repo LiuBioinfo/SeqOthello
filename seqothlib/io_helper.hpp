@@ -103,7 +103,7 @@ public:
         ans >>= (sizeof(keyType)*8 - kmerlength*2);
         return ans;
     }
-    keyType minSelfAndRevcomp(keyType k) {
+    keyType minSelfAndRevcomp(const keyType k) {
         keyType comp = reverseComplement(k);
         return (comp < k)? comp : k;
     }

@@ -96,7 +96,9 @@ int main(int argc, char ** argv) {
         memset(buf,0,sizeof(buf));
         for (unsigned int j = 0 ; j < kmers; j++) 
             if (vp[j].count(i)){
-                helper->convertstring(buf,&vkmer[j]);
+                uint64_t k = vkmer[j];
+                k = helper->minSelfAndRevcomp(k);
+                helper->convertstring(buf,&k);
                 fprintf(fout, "%s %d\n", buf, (j-i+2)*i);
             }
         fclose(fout);
