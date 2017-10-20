@@ -273,8 +273,8 @@ void L2ShortValueListNode::loadDataFromGzipFile(string gzfname) {
     gzread(fin, buf,sizeof(buf));
     void *p;
     p = &buf;
-#pragma GCC diagnostic push    
-#pragma GCC diagnostic ignored "-Wpointer-arith"    
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-arith"
     memcpy(&valuecnt, p, 4);
     memcpy(&maxnl, p+0x4, 4);
     uint32_t siz;
@@ -301,8 +301,8 @@ void L2EncodedValueListNode::loadDataFromGzipFile(string gzfname) {
     gzread(fin, buf,sizeof(buf));
     void *p;
     p = &buf;
-#pragma GCC diagnostic push    
-#pragma GCC diagnostic ignored "-Wpointer-arith"    
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-arith"
     memcpy(&IOLengthInBytes, p, 4);
     memcpy(&encodetype, p+0x4, 4);
     uint32_t siz;
@@ -316,59 +316,59 @@ void L2EncodedValueListNode::loadDataFromGzipFile(string gzfname) {
     gzclose(fin);
 }
 
-void L2ShortValueListNode::putInfoToXml(tinyxml2::XMLElement * pe){
-  string typestr = L2NodeTypes::typestr.at(this->getType());
-  pe->SetAttribute("Type", typestr.c_str()); 
-  pe->SetAttribute("ValueCnt", valuecnt); 
-  pe->SetAttribute("BitsPerValue", maxnl); 
-  pe->SetAttribute("Keycount", keycnt); 
-  pe->SetAttribute("EntryCount", entrycnt);
+void L2ShortValueListNode::putInfoToXml(tinyxml2::XMLElement * pe) {
+    string typestr = L2NodeTypes::typestr.at(this->getType());
+    pe->SetAttribute("Type", typestr.c_str());
+    pe->SetAttribute("ValueCnt", valuecnt);
+    pe->SetAttribute("BitsPerValue", maxnl);
+    pe->SetAttribute("Keycount", keycnt);
+    pe->SetAttribute("EntryCount", entrycnt);
 }
 
-void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe){
-  string typestr = L2NodeTypes::typestr.at(this->getType());
-  pe->SetAttribute("Type", typestr.c_str()); 
-  pe->SetAttribute("IOLengthInBytes", IOLengthInBytes); 
-  pe->SetAttribute("Keycount", keycnt); 
-  pe->SetAttribute("EntryCount", entrycnt); 
+void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe) {
+    string typestr = L2NodeTypes::typestr.at(this->getType());
+    pe->SetAttribute("Type", typestr.c_str());
+    pe->SetAttribute("IOLengthInBytes", IOLengthInBytes);
+    pe->SetAttribute("Keycount", keycnt);
+    pe->SetAttribute("EntryCount", entrycnt);
 }
 
-std::shared_ptr<L2Node> 
+std::shared_ptr<L2Node>
 L2Node::createL2Node( tinyxml2::XMLElement *p) {
     std::shared_ptr<L2Node> ptr(NULL);
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {
-       int valuecnt = p->IntAttribute("ValueCnt");
-       int maxnl = p->IntAttribute("BitsPerValue");
-       int entrycnt = p->IntAttribute("EntryCount");
-       if (entrycnt)
-           ptr = make_shared<L2ShortValueListNode>(valuecnt, maxnl); 
+        int valuecnt = p->IntAttribute("ValueCnt");
+        int maxnl = p->IntAttribute("BitsPerValue");
+        int entrycnt = p->IntAttribute("EntryCount");
+        if (entrycnt)
+            ptr = make_shared<L2ShortValueListNode>(valuecnt, maxnl);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_ENCODED).c_str()) == 0) {
-       int IOL = p->IntAttribute("IOLengthInBytes");
-       int type = L2NodeTypes::VALUE_INDEX_ENCODED;
-       int entrycnt = p->IntAttribute("EntryCount");
-       if (entrycnt)
+        int IOL = p->IntAttribute("IOLengthInBytes");
+        int type = L2NodeTypes::VALUE_INDEX_ENCODED;
+        int entrycnt = p->IntAttribute("EntryCount");
+        if (entrycnt)
             ptr =  make_shared<L2EncodedValueListNode>(IOL, type);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::MAPP).c_str()) == 0) {
-       int IOL = p->IntAttribute("IOLengthInBytes");
-       int type = L2NodeTypes::MAPP;
-       int entrycnt = p->IntAttribute("EntryCount");
-       if (entrycnt)
+        int IOL = p->IntAttribute("IOLengthInBytes");
+        int type = L2NodeTypes::MAPP;
+        int entrycnt = p->IntAttribute("EntryCount");
+        if (entrycnt)
             ptr = make_shared<L2EncodedValueListNode>(IOL, type);
     }
     return ptr;
 
 }
 
-uint64_t 
+uint64_t
 L2EncodedValueListNode:: getvalcnt() {
-	return lines.size();
+    return lines.size();
 }
 
 uint64_t
 L2ShortValueListNode::getvalcnt() {
-	return uint64list.size() * IOLengthInBytes; 
+    return uint64list.size() * IOLengthInBytes;
 }

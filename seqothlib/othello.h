@@ -407,14 +407,14 @@ public:
      */
     bool loaded = false;
     void loadDataFromBinaryFile(FILE *pF) {
-        if (mem.size()==0) return ; 
+        if (mem.size()==0) return ;
         auto resp = fread(&(mem[0]),sizeof(mem[0]), mem.size(), pF);
         if (resp == mem.size()*sizeof(mem[0]))
             loaded = true;
 
     }
     void loadDataFromGzipFile(gzFile f) {
-        if (mem.size()==0) return ; 
+        if (mem.size()==0) return ;
         auto resp = gzread(f, &(mem[0]), sizeof(mem[0]) * mem.size());
         if (resp == mem.size()*sizeof(mem[0]))
             loaded = true;
@@ -468,7 +468,7 @@ bool Othello<keyType>::testHash(uint32_t keycount) {
     disj.clear();
     for (uint32_t i = 0; i < keycount; i++) {
         if ((i&4194303) ==0) if (i)
-              printf("%s: Testing keys # %d\n",get_thid().c_str(), i);
+                printf("%s: Testing keys # %d\n",get_thid().c_str(), i);
         get_hash(keys[i], ha, hb);
 
         if (disj.sameset(ha,hb)) {

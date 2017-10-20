@@ -37,7 +37,7 @@ public:
     uint32_t entrycnt = 0;
     Othello<uint64_t> *oth = NULL;
     virtual void putInfoToXml(tinyxml2::XMLElement *) = 0;
-	virtual uint64_t getvalcnt() = 0;
+    virtual uint64_t getvalcnt() = 0;
     static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p);
     string fname;
 };
@@ -70,7 +70,7 @@ public:
     void writeDataToGzipFile(string ) override;
     void loadDataFromGzipFile(string ) override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
-	uint64_t getvalcnt() override;
+    uint64_t getvalcnt() override;
 };
 
 class L2EncodedValueListNode : public L2Node {
@@ -92,6 +92,6 @@ public:
     void writeDataToGzipFile(string ) override;
     void loadDataFromGzipFile(string ) override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
-	uint64_t getvalcnt() override;
+    uint64_t getvalcnt() override;
 };
 

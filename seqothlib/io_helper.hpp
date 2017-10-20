@@ -258,7 +258,7 @@ public:
             ret.push_back(tid);
             bool finish = !readers[tid]->getNext(&nextk);
             if (nextk <= k) {
-                   throw std::invalid_argument("error getting nextk!");
+                throw std::invalid_argument("error getting nextk!");
             }
             PQ.pop();
             if (!finish) {
@@ -549,7 +549,9 @@ protected:
     }
 public:
     KmerGroupComposer() {}
-    int32_t getKmerLength() {return kmerlength;}
+    int32_t getKmerLength() {
+        return kmerlength;
+    }
     void putSampleInfoToXml(tinyxml2::XMLElement * p) {
         for (auto s:fnames) {
             string grpfname = s + ".xml";
@@ -622,7 +624,7 @@ public:
             bool finish = !readers[tid]->getNext(&nextk, &tmpval[tid][0]);
             if (!finish) {
                 if (nextk <= k) {
-                   throw std::invalid_argument("error getting nextk!");
+                    throw std::invalid_argument("error getting nextk!");
                 }
                 KIDpair<keyType> kid = {nextk, (uint32_t) tid};
                 PQ.push(kid);
@@ -663,17 +665,17 @@ protected:
                 printcurrtime();
                 printf("Got %lu keys\n Bytes read from groups: ", keycount);
                 for (int i = 0 ; i < readers.size(); i++)
-                    printf("%d:%5lldM\t", i, readers[i]->getpos()/1048576); 
+                    printf("%d:%5lldM\t", i, readers[i]->getpos()/1048576);
                 printf("\n");
             }
     }
 };
 /*
-template <typename keyType> 
+template <typename keyType>
 class KmerGroupComposerGenerato  : KmerGroupComposer<keyType> {
         int nn, ll;
         uint64_t cur = 0, cnt = 0;
-public: 
+public:
       KmerGroupComposerGenerator(int n, int l): nn(n), ll(l), KmerGroupComposer<keyType>(vector<string>()){}
       virtual ~KmerGroupComposerGenerator() {}
       bool getNextValueList(keyType &k, vector<uint32_t> &ret) {

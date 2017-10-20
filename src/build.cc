@@ -63,7 +63,7 @@ int main(int argc, char ** argv) {
     if (argFolder) prefix = args::get(argFolder);
     string fname =  args::get(argInputname);
     FILE * ffnames = fopen(args::get(argInputname).c_str(), "r");
-    if (ffnames == NULL) 
+    if (ffnames == NULL)
         throw std::invalid_argument("Error reading file"+argInputname);
     char buf[4096];
     vector<string> fnames;
@@ -121,13 +121,13 @@ int main(int argc, char ** argv) {
     if (argLimit)
         limit = args::get(argLimit);
     printf("Estimate the distribution with the first %d Kmers. \n", limit);
-	uint64_t keycount;
+    uint64_t keycount;
     auto distr = SeqOthello::estimateParameters(reader.get(), limit, keycount);
-	/*
+    /*
     for (int i = 0 ; i < distr.size(); i++) {
         printf("%d->%d\n", i, distr[i]);
     }*/
-	printf("We estimate there are %lu keys\n", keycount);
+    printf("We estimate there are %lu keys\n", keycount);
     reader->reset();
 //    auto reader = make_shared<GrpReader<uint64_t>> (args::get(argInputname), args::get(argFolder));
     auto seqoth = make_shared<SeqOthello> ();

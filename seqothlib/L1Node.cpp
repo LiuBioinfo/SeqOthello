@@ -102,7 +102,7 @@ void L1Node::loadFromFile(string fname) {
 }
 
 void L1Node::putInfoToXml(tinyxml2::XMLElement *pe, string fname) {
-    for (unsigned int i = 0 ; i < grpidlimit; i++) 
+    for (unsigned int i = 0 ; i < grpidlimit; i++)
         if (kV[i]->size()) {
             auto pNode = pe->GetDocument()->NewElement("L1NodePart");
             char cbuf[0x400];

@@ -25,8 +25,8 @@ public:
     L1Node * l1Node = NULL;
     vector<std::shared_ptr<L2Node>> vNodes;
     uint32_t L2IDShift;
-	uint32_t sampleCount;
-	uint32_t L1Splitbit;
+    uint32_t sampleCount;
+    uint32_t L1Splitbit;
 private:
     uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
@@ -52,7 +52,7 @@ public:
         l1Node = new L1Node();
         l1Node->setsplitbit(kmerLength,L1Splitbit);
         l1Node->loadFromFile(folder + L1NODE_PREFIX);
-            /*
+        /*
         printf("Starting to load L1 from disk\n");
         string ff = fname + ".L1";
         gzFile fin = gzopen(ff.c_str(), "rb");
@@ -60,9 +60,9 @@ public:
         gzread(fin, buf,sizeof(buf));
         freqOth = new Othello<uint64_t> (buf);
         L1LoadThread = new std::thread (
-            &Othello<uint64_t>::loadDataFromGzipFile,
-            freqOth,
-            fin);
+        &Othello<uint64_t>::loadDataFromGzipFile,
+        freqOth,
+        fin);
         */
     }
     void startloadL2(int nthread) {
@@ -108,7 +108,7 @@ public:
         memcpy(&kmerLength, buf+0xC,4);
         memcpy(&L2IDShift, buf+0x10,4);
         fclose(fin);
-*/
+        */
         if (loadall) {
             loadAll(nthread);
         }
@@ -141,12 +141,12 @@ public:
         auto pL1Node = xml.NewElement("L1Node");
         auto pSamples = xml.NewElement("Samples");
         auto pHistogram = xml.NewElement("Histogram");
-        for (unsigned int i = 0 ; i < histogram.size(); i++) 
-        if (histogram[i]) {
-            auto pHisNode = xml.NewElement("entry");
-            pHisNode->SetAttribute("freq", i);
-            pHisNode->SetAttribute("value", (uint32_t) histogram[i]);
-            pHistogram->InsertEndChild(pHisNode);
+        for (unsigned int i = 0 ; i < histogram.size(); i++)
+            if (histogram[i]) {
+                auto pHisNode = xml.NewElement("entry");
+                pHisNode->SetAttribute("freq", i);
+                pHisNode->SetAttribute("value", (uint32_t) histogram[i]);
+                pHistogram->InsertEndChild(pHisNode);
             }
 
         func(pSamples);
@@ -192,17 +192,17 @@ public:
         vNodes[id]->loadDataFromGzipFile(fname2);
         printf("%s : Finished %s\n", get_thid().c_str(), fname2.c_str());
         if (vNodes[id]->oth)
-            if (vNodes[id]->oth->loaded) 
+            if (vNodes[id]->oth->loaded)
                 return;
         printf("Empty L2 Node %d.\n", id);
         vNodes[id].reset();
     }
 
-	void loadAll(int nqueryThreads) {
+    void loadAll(int nqueryThreads) {
         loadL1(kmerLength);
         startloadL2(nqueryThreads);
         waitloadL2();
-	}
+    }
 
     void constructFromReader(KmerGroupComposer<keyType> *reader, string filename, uint32_t threadsLimit, vector<uint32_t> enclGrpmap, uint64_t estimatedKmerCount) {
         kmerLength = reader->getKmerLength();
@@ -223,7 +223,7 @@ public:
         while ((1<<maxnl)<high) maxnl++;
         uint32_t limitsingle = 64/maxnl;
         L2IDShift = high+2;
-		sampleCount = high;
+        sampleCount = high;
         vector<uint32_t> valshortIDmap(limitsingle+1);
         vector<uint32_t> valshortcnt(limitsingle+1);
         vector<uint32_t> enclGrpIDmap = vector<uint32_t> (1 + *max_element(enclGrpmap.begin(), enclGrpmap.end()));
@@ -258,7 +258,7 @@ public:
         // high+2 .. : stored in vNode[tau - realhigh - 1]... -->real high= high <<EXP when exp>1.
         while (reader->getNextValueList(k, ret)) { //now we are getting a pair<id,expression>
             uint32_t valcnt = ret.size();
-            histogram[valcnt] ++; 
+            histogram[valcnt] ++;
             //cnt = 1
             if (valcnt == 1) {
                 l1Node->add(k, ret[0]+1);
@@ -319,7 +319,7 @@ public:
             l1Node->add(k, MAPPID+ L2IDShift);
         }
         int LLfreq = 8;
-        
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
         while ((1<<LLfreq)<vNodes.size()+L2IDShift+5) LLfreq++;
@@ -375,13 +375,13 @@ public:
                 enchisto[encodelength]++;
             }
         }
-        //printf("%d\n",kmerlimit); 
+        //printf("%d\n",kmerlimit);
         if (kmerlimit <=0) {
             vector<uint64_t> curr, tot;
             reader->getGroupStatus(curr, tot);
             uint64_t currA = accumulate(curr.begin(), curr.end(), 0ULL);
             uint64_t totA = accumulate(tot.begin(), tot.end(), 0ULL);
-          
+
             double rate = totA * 1.0 / currA;
             //printf("---> %llf %lld %lld\n", rate, totA, currA);
             for (auto &x : enchisto)
@@ -393,13 +393,13 @@ public:
         vector<uint32_t> encodeLengthToL1ID(high/8+2);
         uint64_t sq = 0;
         uint64_t l1id = 0;
-        
-        printf("Estimated histogram for encode lengths:"); 
+
+        printf("Estimated histogram for encode lengths:");
         for (int i = 1; i< high/8+2; i++) {
             printf("%d:%d\t", i, enchisto[i]);
         }
         printf("\n");
-       
+
         for (int i = 1 ; i < high/8+2; i++) {
             if ((sq+ enchisto[i])*i > L2limit) {
                 sq = 0;
