@@ -16,9 +16,11 @@ ADD_EXECUTABLE(Build ${BUILD_SRC})
 TARGET_LINK_LIBRARIES(Build tinyxml2 z pthread libL2Node libL1Node)
 
 ADD_EXECUTABLE(Query ${QUERY_SRC})
-TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node)
+TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node mytcp)
+
+ADD_EXECUTABLE(Client client.cc)
+TARGET_LINK_LIBRARIES(Client pthread mytcp)
 
 ADD_EXECUTABLE(Test testL1Node.cpp)
 TARGET_LINK_LIBRARIES(Test tinyxml2 z pthread libL2Node libL1Node)
 
-ADD_SUBDIRECTORY(rpc)

@@ -13,6 +13,8 @@
 #include <args.hxx>
 #include <io_helper.hpp>
 #include <atomic>
+#include "PracticalSocket.h"  // For Socket, ServerSocket, and SocketException
+
 using namespace std;
 
 int nqueryThreads = 1;
@@ -104,7 +106,119 @@ void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<sh
     printf("L2 thread %d finished\n", myid);
 };
 
+struct ThreadParameter {
+    TCPSocket * sock;
+    SeqOthello *oth;
+    string iobuf;
+};
 
+//sock->send(echoBuffer, recvMsgSize);
+void process(ThreadParameter *par) {
+    char ans[65536];
+    int kmerLength = par->oth->kmerLength;
+    ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
+    auto &str = par->iobuf;
+    if (str.size()<kmerLength) {
+        string ans = "transcript "+ par->iobuf + "is too short.";
+        par->sock->send(ans.c_str(), ans.size());
+        return;
+    }
+    char buf[32];
+    memset(buf,0,sizeof(buf));
+    vector<uint64_t>  requests;
+    vector<bool> usedreverse;
+    for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
+        memcpy(buf,str.data()+i,kmerLength);
+        uint64_t key,key0;
+        helper.convert(buf,&key);
+        key = helper.minSelfAndRevcomp(key0 = key);
+        usedreverse.push_back(key == key0);
+        requests.push_back(key);
+    }
+
+    auto  itUsedrevse = usedreverse.begin();
+    for (auto k : requests) {
+        vector<uint32_t> vret;
+        vector<uint8_t> vmap;
+        memset(ans,'x',sizeof(ans));
+        auto toconvert = k;
+        if (*itUsedrevse)
+            toconvert = helper.reverseComplement(k);
+        itUsedrevse++;
+        helper.convertstring(ans,&toconvert);
+        char *p = & ans[kmerLength];
+        *p = ' ';
+        p++;
+        bool res = par->oth->smartQuery(&k, vret, vmap);
+        if (!res) {
+            vret.clear();
+            for (unsigned int v = 0; v< par->oth->sampleCount; v++) {
+                if (vmap[v>>3] & ( 1<< (v & 7)))
+                    vret.push_back(v);
+            }
+        }
+        set<uint16_t> vset(vret.begin(), vret.end());
+        for (unsigned int i = 0; i < par->oth->sampleCount; i++) {
+            if (vset.count(i)) *p = '+';
+            else *p = '.';
+            p++;
+        }
+        *p = '\n'; p++;
+        *p = '\0';
+        par->sock->send(ans, strlen(ans));
+    }
+    char bufc = '=';
+    par->sock->send(&bufc, 1);
+
+}
+
+void HandleTCPClient(ThreadParameter *par) {
+    cout << "Handling client ";
+    try {
+        cout << par->sock->getForeignAddress() << ":";
+    } catch (SocketException &e) {
+        cerr << "Unable to get foreign address" << endl;
+    }
+    try {
+        cout << par->sock->getForeignPort();
+    } catch (SocketException &e) {
+        cerr << "Unable to get foreign port" << endl;
+    }
+    cout << " with thread " << pthread_self() << endl;
+
+    // Send received string and receive again until the end of transmission
+    char echoBuffer[65536];
+    int recvMsgSize;
+    while ((recvMsgSize = par->sock->recv(echoBuffer, 65536)) > 0) { // Zero means
+        // end of transmission
+        // Echo message back to client
+        for (int i = 0; i < recvMsgSize; i++) {
+            char c = echoBuffer[i];
+            if (c == 'A' || c == 'T' || c == 'G' || c =='C')
+                par->iobuf.push_back(c);
+            if (c == '.') {
+                process(par);
+                par->iobuf.clear();
+            }
+        }
+        if (par->iobuf.size()>0) {
+            process(par);
+        }
+    }
+    // Destructor closes socket
+
+}
+
+void *ServerThreadMain(void *par) {
+    // Guarantees that thread resources are deallocated upon return
+    pthread_detach(pthread_self());
+
+    // Extract socket file descriptor from argument
+    HandleTCPClient((ThreadParameter *) par);
+
+    delete (TCPSocket *)( ((ThreadParameter* )par)->sock);
+    return NULL;
+}
 
 int main(int argc, char ** argv) {
     args::ArgumentParser parser("Query SeqOthello! \n");
@@ -116,6 +230,7 @@ int main(int argc, char ** argv) {
     args::Flag   NoReverseCompliment(parser, "",  "do not use reverse complement", {"noreverse"});
     args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1", {"qthread"});
 
+    args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port ", {"start-server-port"});
 
     try
     {
@@ -138,20 +253,58 @@ int main(int argc, char ** argv) {
         std::cerr << parser;
         return 1;
     }
-    if (!(argSeqOthName && argTranscriptName && resultsName)) {
-        std::cerr << "must specify args" << std::endl;
-        return 1;
-    }
 
     bool flag = !args::get(NoReverseCompliment);
+
+    if (argStartServer) {
+        if (argTranscriptName || argTranscriptName || !argSeqOthName || argNQueryThreads) {
+            std::cerr <<" Invalid args. to start a server, please specify SeqOthello mapping file." << std:: endl;
+            return 1;
+        }
+    }
+    else {
+        if (!(argSeqOthName && argTranscriptName && resultsName)) {
+            std::cerr << "must specify args" << std::endl;
+            return 1;
+        }
+    }
 
     if (argNQueryThreads) {
         nqueryThreads = args::get(argNQueryThreads);
     }
 
+
     SeqOthello * seqoth;
     string filename = args::get(argSeqOthName);
     seqoth = new SeqOthello (filename, nqueryThreads ,false);
+    if (argStartServer) {
+        printf("Load SeqOthello. \n");
+        seqoth->loadAll(nqueryThreads);
+        unsigned short echoServPort =  args::get(argStartServer);
+        printf("SeqOthello Loaded. Now start Server at port %d\n", echoServPort);
+
+        try {
+            TCPServerSocket servSock(echoServPort);   // Socket descriptor for server
+            for (;;) {      // Run forever
+                TCPSocket *clntSock = servSock.accept();
+                ThreadParameter p;
+                p.sock = clntSock;
+                p.oth = seqoth;
+                pthread_t threadID;              // Thread ID from pthread_create()
+                if (pthread_create(&threadID, NULL, ServerThreadMain,
+                                   (void *) (&p)) != 0) {
+                    cerr << "Unable to create thread" << endl;
+                    exit(1);
+                }
+            }
+        } catch (SocketException &e) {
+            cerr << e.what() << endl;
+            exit(1);
+        }
+        // NOT REACHED
+        return 0;
+    }
+
     int kmerLength = seqoth->kmerLength;
     FILE *fin;
     fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
@@ -175,6 +328,7 @@ int main(int argc, char ** argv) {
     if (argShowDedatils) {
         seqoth->loadAll(nqueryThreads);
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
+
         vector<uint64_t>  requests;
         set<uint32_t> skipped;
         vector<bool> usedreverse;
@@ -228,6 +382,8 @@ int main(int argc, char ** argv) {
             }
             fprintf(fout, "\n");
         }
+
+
         return 0;
     }
 
