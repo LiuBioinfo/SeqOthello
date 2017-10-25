@@ -20,3 +20,5 @@ TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node)
 
 ADD_EXECUTABLE(Test testL1Node.cpp)
 TARGET_LINK_LIBRARIES(Test tinyxml2 z pthread libL2Node libL1Node)
+
+ADD_SUBDIRECTORY(rpc)
