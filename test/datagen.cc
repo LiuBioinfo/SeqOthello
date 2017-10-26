@@ -11,7 +11,7 @@ int main(int argc, char ** argv) {
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     args::ValueFlag<int> nFiles(parser, "integer", "number of files", {'f'});
     args::ValueFlag<int> nKmers(parser, "integer", "number of kmers", {'k'});
-
+    args::Flag boolUnique(parser,"","these are unique",{'u'});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -77,6 +77,10 @@ int main(int argc, char ** argv) {
     }
     for (unsigned int i = 0; i < kmers; i++) {
         set<int> sint;
+        if (boolUnique) {
+           sint.insert(i % files);
+        }
+        else {
         for (unsigned int j = 0; j<= i/files; j++) {
             sint.insert((i+j)%files);
             // sint.insert((i/files+(i/files+3)*j)%files);
@@ -85,6 +89,7 @@ int main(int argc, char ** argv) {
         for (int j = 0; j<=10; j++) 
             if (i & (1<<j))
                 sint.insert(j+10);
+        }
         vp.push_back(sint);
     }
     for (int i = 0; i< files; i++) {

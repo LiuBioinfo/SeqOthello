@@ -246,6 +246,30 @@ TCPSocket::TCPSocket(const string &foreignAddress, unsigned short foreignPort)
 TCPSocket::TCPSocket(int newConnSD) : CommunicatingSocket(newConnSD) {
 }
 
+void TCPSocket::sendmsg(const string &str) {
+    this->sendmsg(str.c_str(), str.size());
+};
+
+void TCPSocket::sendmsg(const char * buf, uint32_t len) {
+    this->send((void *) (&len), sizeof(uint32_t));
+    this->send((void *) (buf), len);
+  }
+#include <vector>
+
+bool TCPSocket::recvmsg(string &str) {
+    uint32_t len;
+    uint32_t siz = this->recv(&len, sizeof(uint32_t));
+    if (siz != sizeof(uint32_t)) return false;
+    if (len == 0 ) {
+            str = "";
+            return true;
+    }
+    vector<char> chars(len);
+    this->recv(&chars[0], len);
+    str = string (chars.begin(), chars.end());
+    return true;
+}
+
 // TCPServerSocket Code
 
 TCPServerSocket::TCPServerSocket(unsigned short localPort, int queueLen) 

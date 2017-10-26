@@ -206,7 +206,10 @@ public:
    */
   TCPSocket(const string &foreignAddress, unsigned short foreignPort) 
       throw(SocketException);
-
+  
+  void sendmsg(const string &str);
+  void sendmsg(const char * buf, uint32_t len);
+  bool recvmsg(string &msg);
 private:
   // Access for TCPServerSocket::accept() connection creation
   friend class TCPServerSocket;

@@ -32,3 +32,16 @@ done
 for i in {150..181}; do
     echo F$i.Kmer.bin >> flistD
 done
+
+../build/test/datagen -f 100 -k 220 -u 1 > genlog.unique
+tail -n 1 genlog.unique > testTT.fau
+for i in *.Kmer; do 
+   ../build/bin/PreProcess --in=$i --out=$i.bin --k=20;
+done
+rm -rf raw.unique bin.64.unique
+mkdir raw.unique bin.64.unique
+mv *.Kmer raw.unique/
+mv *.bin bin.64.unique/
+mv *.bin.xml bin.64.unique/
+rm -rf flistUnique
+

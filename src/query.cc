@@ -102,7 +102,7 @@ void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<sh
             */
         }
 
-    }
+   }
     printf("L2 thread %d finished\n", myid);
 };
 
@@ -112,7 +112,6 @@ struct ThreadParameter {
     string iobuf;
 };
 
-//sock->send(echoBuffer, recvMsgSize);
 void process(ThreadParameter *par) {
     char ans[65536];
     int kmerLength = par->oth->kmerLength;
@@ -120,7 +119,8 @@ void process(ThreadParameter *par) {
     auto &str = par->iobuf;
     if (str.size()<kmerLength) {
         string ans = "transcript "+ par->iobuf + "is too short.";
-        par->sock->send(ans.c_str(), ans.size());
+        par->sock->sendmsg(ans);
+        par->sock->sendmsg("");
         return;
     }
     char buf[32];
@@ -163,13 +163,10 @@ void process(ThreadParameter *par) {
             else *p = '.';
             p++;
         }
-        *p = '\n'; p++;
-        *p = '\0';
-        par->sock->send(ans, strlen(ans));
+        *p ='\0';
+        par->sock->sendmsg(ans, strlen(ans));
     }
-    char bufc = '=';
-    par->sock->send(&bufc, 1);
-
+    par->sock->sendmsg(""); 
 }
 
 void HandleTCPClient(ThreadParameter *par) {
@@ -187,19 +184,15 @@ void HandleTCPClient(ThreadParameter *par) {
     cout << " with thread " << pthread_self() << endl;
 
     // Send received string and receive again until the end of transmission
-    char echoBuffer[65536];
     int recvMsgSize;
-    while ((recvMsgSize = par->sock->recv(echoBuffer, 65536)) > 0) { // Zero means
+    string str;
+    while (par->sock->recvmsg(str)) {
+        if (str.size()<=0) break;
         // end of transmission
-        // Echo message back to client
-        for (int i = 0; i < recvMsgSize; i++) {
-            char c = echoBuffer[i];
+        par->iobuf.clear(); 
+        for (char c : str) {
             if (c == 'A' || c == 'T' || c == 'G' || c =='C')
                 par->iobuf.push_back(c);
-            if (c == '.') {
-                process(par);
-                par->iobuf.clear();
-            }
         }
         if (par->iobuf.size()>0) {
             process(par);

@@ -24,6 +24,7 @@ int main(int argc, char ** argv) {
     args::ValueFlag<string> resultsName(parser, "string", "where to put the results", {"output"});
     args::ValueFlag<int>  argServerPort(parser, "int", "connect to SeqOthello Server at port ", {"port"});
     args::ValueFlag<string>  argServerAdd(parser, "string", "start a SeqOthello Server at address (default: localhost)", {"server"});
+    args::Flag   argInteractive(parser, "",  "start interactive CLI", {"interactive"});
 
     try
     {
@@ -46,28 +47,32 @@ int main(int argc, char ** argv) {
         std::cerr << parser;
         return 1;
     }
+    FILE *fin, *fout;
+    if (!argInteractive) {
+        if (!(argTranscriptName && resultsName && argServerPort)) {
+            std::cerr << "must specify args" << std::endl;
+            return 1;
+        }
+        fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
+        string fnameout = args::get(resultsName);
+        fout = fopen(fnameout.c_str(), "w");
 
-    if (!(argTranscriptName && resultsName && argServerPort)) {
-        std::cerr << "must specify args" << std::endl;
-        return 1;
+        if (fin == NULL) {
+            std:: cerr << "Error reading file " << args::get(argTranscriptName) << std::endl;
+            return 1;
+        }
     }
-
-
-    FILE *fin;
-    fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
-
-    if (fin == NULL) {
-        std:: cerr << "Error reading file " << args::get(argTranscriptName) << std::endl;
-        return 1;
+    else {
+        if ((!argServerPort) || argTranscriptName || resultsName) {
+            std::cerr << "wrong arg" << std::endl;
+            return 1;
+        }
+        fin = stdin;
+        fout = stdout;
     }
-
 
     char buf[1048576];
-    char recvbuf[8193];
-    int recvbuflen = 8192;
     memset(buf,0,sizeof(buf));
-    string fnameout = args::get(resultsName);
-    FILE *fout = fopen(fnameout.c_str(), "w");
 
     try {
         string servadd = "localhost";
@@ -78,31 +83,24 @@ int main(int argc, char ** argv) {
             char * p;
             p = &buf[0];
             while (*p == 'A' || *p == 'T' || *p == 'G' || *p == 'C' || *p == 'N') p++;
-            *p = '.';
-            p++;
             *p = '\0';
-            if (strlen(buf)>=3) {
-                int strl;
-                sock.send(buf, strl = strlen(buf));
-                printf("Sent a query with %d bases.\n", strl );
-                int bytesReceived = 0;
-                int totReceived = 0;
-                bool flag = false;
-                while ( (bytesReceived = sock.recv(recvbuf, recvbuflen))>0 && !flag) {
-                    for (int i = 0 ; i < bytesReceived; i++) {
-                        if (recvbuf[i] == '=') {
-                            recvbuf[i] = '\0'; flag = true;
-                        }
-                    }
-                    totReceived += bytesReceived;
-                    recvbuf[bytesReceived] = '\0';
-                    fprintf(fout, "%s", recvbuf);
-                    if (flag) break;
-                }
-                printf("received response of %d Bytes. \n", totReceived);
+            if (strlen(buf)<=3) break;
+            int strl;
+            sock.sendmsg(buf, strl = strlen(buf));
+            printf("Sent a query with %d bases.\n", strl );
+            int bytesReceived = 0;
+            int totReceived = 0;
+            bool flag = false;
+            string buf;
+            int tot = 0 ;
+            while (sock.recvmsg(buf)) {
+                if (buf.size()==0) break;
+                fprintf(fout, "%s\n", buf.c_str());
+                tot += buf.size();
             }
+            if (!argInteractive)
+                printf("received reponse of %d Bytes.\n", tot);
         }
-
     }
     catch(SocketException &e) {
         fclose(fin);
