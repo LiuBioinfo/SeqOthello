@@ -82,6 +82,7 @@ int main(int argc, char ** argv) {
         while ( fgets(buf,sizeof(buf),fin)!= NULL) {
             char * p;
             p = &buf[0];
+            if (buf[0] !='A' && buf[0]!='T' && buf[0] !='G' && buf[0] != 'C') continue;
             while (*p == 'A' || *p == 'T' || *p == 'G' || *p == 'C' || *p == 'N') p++;
             *p = '\0';
             if (strlen(buf)<=3) break;

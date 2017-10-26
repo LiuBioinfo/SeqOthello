@@ -1,10 +1,16 @@
 #!/bin/bash
 ../build/test/datagen -f 182 -k 15300 > genlog
-tail -n 1 genlog > testTT.fa
+echo '>11' > testTT.fa
+tail -n 1 genlog >> testTT.fa
+echo '>11' >> testTT.fa
 tail -n 1 genlog | cut -c1-100 >> testTT.fa
+echo '>11' >> testTT.fa
 tail -n 1 genlog | cut -c1-75 >> testTT.fa
+echo '>11' >> testTT.fa
 tail -n 1 genlog | cut -c1-50 >> testTT.fa
+echo '>11' >> testTT.fa
 tail -n 1 genlog | cut -c1-25 >> testTT.fa
+echo '>11' >> testTT.fa
 for j in {1..50}; do rm -rf tmp; for i in A T G C; do echo $i >> tmp; done; echo `sort tmp -R | awk '{print}' ORS=''`; done  | awk '{print}' ORS='' >> testTT.fa
 rm 16.Kmer
 touch 16.Kmer
@@ -33,7 +39,7 @@ for i in {150..181}; do
     echo F$i.Kmer.bin >> flistD
 done
 
-../build/test/datagen -f 100 -k 220 -u 1 > genlog.unique
+../build/test/datagen -f 100 -k 220 -u  > genlog.unique
 tail -n 1 genlog.unique > testTT.fau
 for i in *.Kmer; do 
    ../build/bin/PreProcess --in=$i --out=$i.bin --k=20;
