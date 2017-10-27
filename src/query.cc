@@ -445,7 +445,9 @@ int main(int argc, char ** argv) {
     vector<vector<L2Node*>> vvpNode(nqueryThreads);
     vector<vector<shared_ptr<vector<uint64_t>>>> vpkmergrp(nqueryThreads);
     vector<vector<shared_ptr<vector<uint32_t>>>> vpTIDgrp(nqueryThreads);
-    for (unsigned int i = 0 ; i < vnodecnt; i++) {
+    for (unsigned int i = 0 ; i < vnodecnt; i++) 
+    {
+        if (!needToLoad[i]) continue;
         int tid = i % nqueryThreads;
         vvpNode[tid].push_back(seqoth->vNodes[i].get());
         vpkmergrp[tid].push_back(vL2kmer[i]);
