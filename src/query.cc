@@ -402,11 +402,17 @@ int main(int argc, char ** argv) {
     vtSeq.clear();
     vtTID.clear();
     seqoth->releaseL1();
-    seqoth->startloadL2(nqueryThreads);
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
     uint32_t L2IDShift = seqoth->L2IDShift;
+    vector<bool> needToLoad(vnodecnt, false);
+    for (auto &v : vL1Result) 
+        for (auto &r : v) 
+            if ( r - L2IDShift <= vnodecnt && r-L2IDShift >0) {
+                needToLoad[r-L2IDShift] = true;
+            }
+    seqoth->startloadL2(nqueryThreads,needToLoad);
     map<int, vector<int> *> ans;
     for (int i = 0 ; i < nSeq; i++)
         ans.emplace(i, new vector<int> (seqoth->L2IDShift));
