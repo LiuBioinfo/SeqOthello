@@ -198,9 +198,9 @@ public:
         vNodes[id].reset();
     }
 
-    void loadAll(int nqueryThreads) {
+    void loadAll(int nloadThreads) {
         loadL1(kmerLength);
-        startloadL2(nqueryThreads);
+        startloadL2(nloadThreads);
         waitloadL2();
     }
 

@@ -18,6 +18,7 @@
 using namespace std;
 
 int nqueryThreads = 1;
+int nloadThreads = 1;
 atomic<int> workers;
 void getL1Result(SeqOthello * seqoth, const vector<string> & seq, const vector<int> & seqID,
                  vector<uint16_t> &result, vector<uint64_t> &kmers, vector<uint32_t> & TID, bool useReverseComp) {
@@ -222,6 +223,7 @@ int main(int argc, char ** argv) {
     args::Flag   argShowDedatils(parser, "", "Show the detailed query results for the transcripts", {"detail"});
     args::Flag   NoReverseCompliment(parser, "",  "do not use reverse complement", {"noreverse"});
     args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1", {"qthread"});
+    args::ValueFlag<int>  argNLoadThreads(parser, "int", "how many threads to use for loading the files, default = same as qthread", {"lthread"});
 
     args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port ", {"start-server-port"});
 
@@ -263,9 +265,12 @@ int main(int argc, char ** argv) {
     }
 
     if (argNQueryThreads) {
-        nqueryThreads = args::get(argNQueryThreads);
+        nloadThreads = nqueryThreads = args::get(argNQueryThreads);
     }
-
+    
+    if (argNLoadThreads) {
+        nloadThreads = args::get(argNLoadThreads);
+    }
 
     SeqOthello * seqoth;
     string filename = args::get(argSeqOthName);
@@ -382,6 +387,9 @@ int main(int argc, char ** argv) {
 
     seqoth->loadL1(kmerLength);
     vector<vector<string>> vtSeq(nqueryThreads);
+    if (nloadThreads > 1) {
+        seqoth->startloadL2(nqueryThreads-1);
+    }
     vector<vector<int>> vtTID(nqueryThreads);
     for (unsigned int id = 0; id< vSeq.size(); id++) {
         vtSeq[id % nqueryThreads].push_back(vSeq[id]);
@@ -402,7 +410,9 @@ int main(int argc, char ** argv) {
     vtSeq.clear();
     vtTID.clear();
     seqoth->releaseL1();
-    seqoth->startloadL2(nqueryThreads);
+    if (nloadThreads == 1) {
+        seqoth->startloadL2(nloadThreads);
+    }
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
