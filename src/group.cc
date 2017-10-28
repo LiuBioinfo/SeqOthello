@@ -102,7 +102,7 @@ int main(int argc, char ** argv) {
     auto writer = new MultivalueFileReaderWriter<uint64_t, uint8_t> (args::get(argOut).c_str(), sizeof(uint64_t), sizeof(uint8_t), false);
 
     vector<uint64_t> vhistogram(255,0);
-    uint64_t cnt;
+    uint64_t cnt = 0;
 
     while (reader->getNextValueList(k, ret) && (limit -- >0)) {
         vhistogram[ret.size()] ++;

@@ -89,9 +89,6 @@ int main(int argc, char ** argv) {
             int strl;
             sock.sendmsg(buf, strl = strlen(buf));
             printf("Sent a query with %d bases.\n", strl );
-            int bytesReceived = 0;
-            int totReceived = 0;
-            bool flag = false;
             string buf;
             int tot = 0 ;
             while (sock.recvmsg(buf)) {

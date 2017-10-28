@@ -5,6 +5,7 @@ find_package(Threads REQUIRED)
 ADD_EXECUTABLE(datagen datagen.cc)
 
 
+if (CMAKE_BUILD_TYPE MATCHES Debug)
 # Enable ExternalProject CMake module
 include(ExternalProject)
 
@@ -45,3 +46,4 @@ include_directories("${source_dir}/googletest/include"
                     "${source_dir}/googlemock/include")
 
 add_subdirectory(unit)
+endif()

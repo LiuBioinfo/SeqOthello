@@ -315,8 +315,8 @@ public:
             hl1 = hl2 = 0;
         }
         else {
-            while ((1<<hl1)!= ma) hl1++;
-            while ((1<<hl2)!= mb) hl2++;
+            while ((1U<<hl1)!= ma) hl1++;
+            while ((1U<<hl2)!= mb) hl2++;
         }
         memcpy(v+0x10,&hl1, sizeof(uint32_t));
         memcpy(v+0x14,&hl2,sizeof(uint32_t));
@@ -415,7 +415,7 @@ public:
     }
     void loadDataFromGzipFile(gzFile f) {
         if (mem.size()==0) return ;
-        auto resp = gzread(f, &(mem[0]), sizeof(mem[0]) * mem.size());
+        unsigned int resp = gzread(f, &(mem[0]), sizeof(mem[0]) * mem.size());
         if (resp == mem.size()*sizeof(mem[0]))
             loaded = true;
     }
@@ -496,7 +496,7 @@ void Othello<keyType>::fillvalue(void *values, /*uint32_t keycount,*/ size_t val
         fillcount.resize((ma+mb)/32);
         fill(fillcount.begin(),fillcount.end(),0);
     }
-    for (int i = 0; i< ma+mb; i++)
+    for (unsigned int i = 0; i< ma+mb; i++)
         if (disj.isroot(i)) {
             while (!Q.empty()) Q.pop_front();
             Q.push_back(i);
@@ -517,8 +517,8 @@ void Othello<keyType>::fillvalue(void *values, /*uint32_t keycount,*/ size_t val
                         kid = nxt->at(kid);
                         continue;
                     }
-                    int helse = filled[ha] ? hb : ha;
-                    int hthis = filled[ha] ? ha : hb;
+                    unsigned int helse = filled[ha] ? hb : ha;
+                    unsigned int hthis = filled[ha] ? ha : hb;
                     //! m[hthis] is already filled, now fill m[helse].
                     valueType valueKid = 0;
                     if (values != NULL) {

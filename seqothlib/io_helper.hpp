@@ -578,7 +578,7 @@ public:
         kmerlength = *kmerlengthset.begin();
         tmpval.resize(fnames.size());
         shift.push_back(0);
-        for (int i = 0 ; i < fnames.size(); i++) {
+        for (unsigned int i = 0 ; i < fnames.size(); i++) {
             auto const fname = fnames[i];
             auto const fnamexml = fname + ".xml";
             tinyxml2::XMLDocument xml;
@@ -600,7 +600,7 @@ public:
         }
     }
     virtual ~KmerGroupComposer() {
-        for (int i = 0 ; i < readers.size(); i++)
+        for (unsigned int i = 0 ; i < readers.size(); i++)
             delete readers[i];
     }
 
@@ -664,7 +664,7 @@ protected:
             if ((keycount & (keycount-1))==0) {
                 printcurrtime();
                 printf("Got %lu keys\n Bytes read from groups: ", keycount);
-                for (int i = 0 ; i < readers.size(); i++)
+                for (unsigned int i = 0 ; i < readers.size(); i++)
                     printf("%d:%5lldM\t", i, readers[i]->getpos()/1048576);
                 printf("\n");
             }
