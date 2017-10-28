@@ -387,9 +387,7 @@ int main(int argc, char ** argv) {
 
     seqoth->loadL1(kmerLength);
     vector<vector<string>> vtSeq(nqueryThreads);
-    if (nloadThreads > 1) {
-        seqoth->startloadL2(nqueryThreads-1);
-    }
+    seqoth->startloadL2(nloadThreads);
     vector<vector<int>> vtTID(nqueryThreads);
     for (unsigned int id = 0; id< vSeq.size(); id++) {
         vtSeq[id % nqueryThreads].push_back(vSeq[id]);
@@ -410,9 +408,6 @@ int main(int argc, char ** argv) {
     vtSeq.clear();
     vtTID.clear();
     seqoth->releaseL1();
-    if (nloadThreads == 1) {
-        seqoth->startloadL2(nloadThreads);
-    }
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
