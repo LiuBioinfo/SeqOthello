@@ -417,6 +417,13 @@ int main(int argc, char ** argv) {
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
     uint32_t L2IDShift = seqoth->L2IDShift;
+    vector<bool> needToLoad(vnodecnt, false);
+    for (auto &v : vL1Result) 
+        for (auto &r : v) 
+            if ( r - L2IDShift <= vnodecnt && r-L2IDShift >0) {
+                needToLoad[r-L2IDShift] = true;
+            }
+    seqoth->startloadL2(nqueryThreads,needToLoad);
     map<int, vector<int> *> ans;
     for (int i = 0 ; i < nSeq; i++)
         ans.emplace(i, new vector<int> (seqoth->L2IDShift));
@@ -449,7 +456,9 @@ int main(int argc, char ** argv) {
     vector<vector<L2Node*>> vvpNode(nqueryThreads);
     vector<vector<shared_ptr<vector<uint64_t>>>> vpkmergrp(nqueryThreads);
     vector<vector<shared_ptr<vector<uint32_t>>>> vpTIDgrp(nqueryThreads);
-    for (unsigned int i = 0 ; i < vnodecnt; i++) {
+    for (unsigned int i = 0 ; i < vnodecnt; i++) 
+    {
+        if (!needToLoad[i]) continue;
         int tid = i % nqueryThreads;
         vvpNode[tid].push_back(seqoth->vNodes[i].get());
         vpkmergrp[tid].push_back(vL2kmer[i]);

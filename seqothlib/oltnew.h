@@ -36,15 +36,20 @@ private:
     string L1NODE_PREFIX="map.L1.p";
     string L2NODE_PREFIX="map.L2.";
     string XML_FNAME="map.xml";
+    vector<bool> needToLoad;
 public:
     SeqOthello() {}
 
     void loadL2NodeBatch(uint32_t thid, string _folder, uint32_t nthread) {
         folder = _folder;
         printf("%s: Starting to load L2 nodes of grop %d/%d from disk\n", get_thid().c_str(), thid, nthread);
-        for (uint32_t i = 0; i < vNodes.size(); i++)
+        for (uint32_t i = 0; i < vNodes.size(); i++) {
+            if (i<needToLoad.size()) 
+                if (!needToLoad[i]) 
+                    continue;
             if ( i % nthread == thid)
                 loadL2Node(i);
+        }
     }
     thread * L1LoadThread;
     vector<thread *> L2LoadThreads;
@@ -65,7 +70,8 @@ public:
         fin);
         */
     }
-    void startloadL2(int nthread) {
+    void startloadL2(int nthread, vector<bool> _needToLoad = vector<bool>()) {
+        needToLoad = _needToLoad;
         for (int thid = 0; thid < nthread; thid++)
             L2LoadThreads.push_back(
                 new thread(&SeqOthello::loadL2NodeBatch, this, thid,folder, nthread));
