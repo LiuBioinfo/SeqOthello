@@ -40,6 +40,8 @@ public:
     unsigned short getForeignPort();
     void sendmsg(const string &str);
     void sendmsg(const char * buf, uint32_t len);
+    static constexpr int BUFLEN=65536;
+    char recvbuf[BUFLEN+64];
     bool recvmsg(string &msg);
     string getForeignAddr();
 private:

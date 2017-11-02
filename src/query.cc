@@ -203,26 +203,31 @@ void HandleTCPClient(ThreadParameter *par) {
     cout << "Handling client ";
     try {
         cout << par->sock->getForeignAddr() << ":";
-    } catch (std::exception e) {
+    } catch (std::runtime_error e) {
         cerr << "Unable to get foreign address" << endl;
     }
     try {
         cout << par->sock->getForeignPort();
-    } catch (std::exception e) {
+    } catch (std::runtime_error e) {
         cerr << "Unable to get foreign port" << endl;
     }
     cout << " with thread " << pthread_self() << endl;
 
     // Send received string and receive again until the end of transmission
     string str;
+    try{
     while (par->sock->recvmsg(str)) {
-        if (str.size()<=0) break;
         // end of transmission
+        if (str == TYPE_CONTAINMENT || str == TYPE_COVERAGE) {
         par->sock->recvmsg(par->iobuf);  
-		cout << str;
+		cout << str << std::endl;
         if (par->iobuf.size()>0) {
             process(str, par);
         }
+        }
+    }
+    } catch( std::runtime_error e) {
+            cerr << "Error while responding..." << e.what()<< endl;
     }
     // Destructor closes socket
 
@@ -320,7 +325,7 @@ int main(int argc, char ** argv) {
                     exit(1);
                 }
             }
-        } catch (std::exception e) {
+        } catch (std::runtime_error e) {
             cerr << e.what() << endl;
             exit(1);
         }

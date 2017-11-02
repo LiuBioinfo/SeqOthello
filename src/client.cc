@@ -61,7 +61,7 @@ int main(int argc, char ** argv) {
     string query_type;
     if (!argInteractive) {
         if (!(argTranscriptName && resultsName && argServerPort)) {
-            std::cerr << "must specify args" << std::endl;
+            std::cerr << "must specify args --transcript, --output, --port" << std::endl;
             return 1;
         }
         fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
@@ -123,10 +123,12 @@ int main(int argc, char ** argv) {
                 if (buf.size()==0) break;
                 fprintf(fout, "%s\n", buf.c_str());
                 tot += buf.size();
+                printf("received reponse of %d Bytes.\n", tot);
             }
             if (!argInteractive)
                 printf("received reponse of %d Bytes.\n", tot);
         }
+        sock.sendmsg("");
     }
     catch(std::runtime_error e) {
         fclose(fin);

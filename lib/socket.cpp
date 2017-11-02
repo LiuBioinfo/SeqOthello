@@ -136,27 +136,46 @@ void TCPSocket::sendmsg(const string &str)
 };
 
 void TCPSocket::sendmsg(const char * buf, uint32_t len)
-{
-    this->send((void *) (&len), sizeof(uint32_t));
-    this->send((void *) (buf), len);
+{  
+    if (len == 0) {
+            int sendlen = 0;
+        this->send((void *) (&sendlen), sizeof(int32_t));
+        printf("Send empty msg\n");
+        return;
+    }
+
+    for (int shift = 0; shift*BUFLEN <len; shift++) {
+        int32_t sendlen = -BUFLEN; 
+        if (shift*BUFLEN+BUFLEN>=len)
+                sendlen = len - (shift*BUFLEN);
+        this->send((void *) (&sendlen), sizeof(int32_t));
+        this->send((void *) (buf)+ shift*BUFLEN, sendlen<0?-sendlen:sendlen);
+  //      printf("Send sub mesg: %d\n",  sendlen);
+    }
+    printf("Send mesg %d\n",  len);
 }
 
 bool TCPSocket::recvmsg(string &str)
 {
-    uint32_t len;
-    uint32_t siz = this->recv(&len, sizeof(uint32_t));
-    if (siz != sizeof(uint32_t)) return false;
-    if (len == 0 ) {
-        str = "";
-        return true;
+    int32_t len;
+    str = "";
+    while (true) {
+        uint32_t siz = this->recv(&len, sizeof(int32_t));
+        if (siz != sizeof(uint32_t)) return false;
+        if ((len < 0 && len != -BUFLEN) || len>BUFLEN) {
+            return false;
+        }
+        int recvlen = (len <0)?-len:len;
+    //    printf("Recvlen %d\n", recvlen);
+        if (recvlen >0) {
+            this->recv(&recvbuf[0], recvlen);
+      //      printf("recv sub mesg: %d\n",  recvlen);
+            str += string (&recvbuf[0],(&recvbuf[0])+recvlen);
+        }
+        if (len>=0) return true;
     }
-    vector<char> chars(len);
-    this->recv(&chars[0], len);
-    str = string (chars.begin(), chars.end());
     return true;
 }
-
-// TCPServerSocket Code
 
 TCPServerSocket::TCPServerSocket(unsigned short localPort, int queueLen)
         : Socket(SOCK_STREAM, IPPROTO_TCP)
