@@ -13,7 +13,7 @@
 #include <args.hxx>
 #include <io_helper.hpp>
 #include <atomic>
-#include "PracticalSocket.h"  // For Socket, ServerSocket, and SocketException
+#include "socket.h"  
 
 using namespace std;
 
@@ -37,7 +37,7 @@ void getL1Result(SeqOthello * seqoth, const vector<string> & seq, const vector<i
         if (ul>0)
             for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
                 memcpy(buf,str.data()+i,kmerLength);
-                uint64_t key;
+                uint64_t key = 0;
                 helper.convert(buf,&key);
                 if (useReverseComp) {
                     key =  helper.minSelfAndRevcomp(key);
@@ -113,9 +113,25 @@ struct ThreadParameter {
     string iobuf;
 };
 
-void process(ThreadParameter *par) {
+void process(const string &type, ThreadParameter *par) {
     char ans[65536];
-    int kmerLength = par->oth->kmerLength;
+    vector<int> queryans;
+    static int CONTAINMENT = 1;
+    static int COVERAGE = 2;
+	int query_type;
+    if (type == TYPE_CONTAINMENT)
+            query_type = CONTAINMENT;
+    else if (type == TYPE_COVERAGE)
+            query_type = COVERAGE;
+    else {
+        string ans = "Must specify query type";
+        par->sock->sendmsg(ans);
+        par->sock->sendmsg("");
+        return;
+    }
+    if (query_type == CONTAINMENT) 
+            queryans.resize(par->oth->sampleCount);
+    uint32_t kmerLength = par->oth->kmerLength;
     ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
     auto &str = par->iobuf;
     if (str.size()<kmerLength) {
@@ -130,7 +146,7 @@ void process(ThreadParameter *par) {
     vector<bool> usedreverse;
     for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
         memcpy(buf,str.data()+i,kmerLength);
-        uint64_t key,key0;
+        uint64_t key = 0 ,key0 = 0 ;
         helper.convert(buf,&key);
         key = helper.minSelfAndRevcomp(key0 = key);
         usedreverse.push_back(key == key0);
@@ -158,6 +174,7 @@ void process(ThreadParameter *par) {
                     vret.push_back(v);
             }
         }
+        if (query_type == COVERAGE) {
         set<uint16_t> vset(vret.begin(), vret.end());
         for (unsigned int i = 0; i < par->oth->sampleCount; i++) {
             if (vset.count(i)) *p = '+';
@@ -166,6 +183,18 @@ void process(ThreadParameter *par) {
         }
         *p ='\0';
         par->sock->sendmsg(ans, strlen(ans));
+        }
+        else {
+             for (auto x: vret) if (x<queryans.size())
+                     queryans[x] ++;
+        }
+    }
+    if (query_type == CONTAINMENT) {
+            stringstream ss;
+            for (auto x:queryans)
+                    ss <<x <<" ";
+            string str =ss.str();
+            par->sock->sendmsg(str);
     }
     par->sock->sendmsg(""); 
 }
@@ -173,30 +202,26 @@ void process(ThreadParameter *par) {
 void HandleTCPClient(ThreadParameter *par) {
     cout << "Handling client ";
     try {
-        cout << par->sock->getForeignAddress() << ":";
-    } catch (SocketException &e) {
+        cout << par->sock->getForeignAddr() << ":";
+    } catch (std::exception e) {
         cerr << "Unable to get foreign address" << endl;
     }
     try {
         cout << par->sock->getForeignPort();
-    } catch (SocketException &e) {
+    } catch (std::exception e) {
         cerr << "Unable to get foreign port" << endl;
     }
     cout << " with thread " << pthread_self() << endl;
 
     // Send received string and receive again until the end of transmission
-    int recvMsgSize;
     string str;
     while (par->sock->recvmsg(str)) {
         if (str.size()<=0) break;
         // end of transmission
-        par->iobuf.clear(); 
-        for (char c : str) {
-            if (c == 'A' || c == 'T' || c == 'G' || c =='C')
-                par->iobuf.push_back(c);
-        }
+        par->sock->recvmsg(par->iobuf);  
+		cout << str;
         if (par->iobuf.size()>0) {
-            process(par);
+            process(str, par);
         }
     }
     // Destructor closes socket
@@ -295,7 +320,7 @@ int main(int argc, char ** argv) {
                     exit(1);
                 }
             }
-        } catch (SocketException &e) {
+        } catch (std::exception e) {
             cerr << e.what() << endl;
             exit(1);
         }
@@ -342,7 +367,7 @@ int main(int argc, char ** argv) {
             if (ul>0)
                 for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
                     memcpy(buf,str.data()+i,kmerLength);
-                    uint64_t key,key0;
+                    uint64_t key = 0, key0 = 0 ;
                     helper.convert(buf,&key);
                     if (flag) {
                         key = helper.minSelfAndRevcomp(key0 = key);
