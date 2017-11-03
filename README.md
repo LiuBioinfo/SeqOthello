@@ -13,6 +13,7 @@ To compile the SeqOthello tool chain, decompress the source code and execute the
 ```
 ./build.sh
 ```
+Then you can find the compile resutls in the ```build/bin``` folder. 
 
 ##Build
 To build the SeqOthello structure, please first prepare the Jellyfish-generated Kmer files. For test purpose, 
@@ -34,6 +35,11 @@ For all prompted input questions, just press Enter to use the default value for 
 ```
 And the generated SeqOthello file can be found in _out_ folder.
 
+###Prepare the kmers in parallel
+Each line of the generated scripts contains a command to prepare the files. The commands in each of the generated scripts can be executed in parallel. For example, with GNU Parallel, you can run 
+
+``` cat ConvertToBinary.sh | parallel ```
+
 ##Query
 
 Containment Query
@@ -45,7 +51,7 @@ Coverage Query
 ```build/bin/Query --map-folder=out/ --transcript=test.fa --detail --output=queryresult --lthread=16 > querylog```
 
 ##OnlineQuery
-use the following command to start a server on the machine, (e.g, on TCP port 3322). The service will run as a deamon.
+Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
 
 ```build/bin/Query --map-folder=out/ --start-server-port 3322```
 

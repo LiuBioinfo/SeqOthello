@@ -154,6 +154,7 @@ bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret,
     if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
         ret.clear();
         if (IOLengthInBytes*index >= lines.size()) return true;
+        if (index==0) return true;
         vector<uint32_t> decode;
         valuelistDecode(&lines[IOLengthInBytes*index], decode, IOLengthInBytes);
         if (decode.size()==0) return true;
@@ -203,8 +204,10 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
         throw invalid_argument("can not add value list L2EncodedValueListNode");
     keys.push_back(k);
     vector<uint8_t> buff(IOLengthInBytes);
-    if (lines.size() == 0)
+    if (lines.size() == 0) {
         lines.resize(IOLengthInBytes);
+        entrycnt++;
+    }
     uint32_t curr = lines.size();
     lines.resize(lines.size() + IOLengthInBytes);
     valuelistEncode(&lines[curr], valuelist, true);
@@ -218,13 +221,18 @@ void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
     if (encodetype!= L2NodeTypes::MAPP)
         throw invalid_argument("can not add bitmap to L2EncodedValueListNode");
     keys.push_back(k);
-    values.push_back(keycnt);
+    //TODO :: Need to pre-pend a record for false positives!
     keycnt++;
     entrycnt++;
+    if (lines.size() == 0) {
+        lines.resize(mapp.size());
+        entrycnt++;
+    }
     if (mapp.size() != IOLengthInBytes) {
         throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
     lines.insert(lines.end(), mapp.begin(), mapp.end());
+    values.push_back(keycnt);
 }
 
 void L2ShortValueListNode::writeDataToGzipFile(string gzfname) {

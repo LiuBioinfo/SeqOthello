@@ -50,7 +50,6 @@ void getL1Result(SeqOthello * seqoth, const vector<string> & seq, const vector<i
     printf("%s: L1 finished. Got %lu kmers. \n", get_thid().c_str(), TID.size());
 };
 void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<shared_ptr<vector<uint64_t>>> & vpvkmer, const vector<shared_ptr<vector<uint32_t>>> &vTID, unordered_map<int, vector<int>> *pans) {
-
     int myid = workers.fetch_add(1);
     unsigned int totkmer = 0;
     for (auto const & p:vpvkmer)
@@ -89,14 +88,13 @@ void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<sh
             /*
             printf("Update pans %d:", TID[i]);
 
-            ConstantLengthKmerHelper<uint64_t, uint16_t> helper(D_KMERLENGTH,0);
+            ConstantLengthKmerHelper<uint64_t, uint16_t> helper(20,0);
                 printf( "%12llx:", kmers[i]);
                 char buf[30];
                 memset(buf,0,sizeof(buf));
                 uint64_t k = kmers[i];
                 helper.convertstring(buf,&k);
                 printf( "%s ", buf);
-
             for (int v = 0 ; v < high; v++)
                 printf("%d ", pans->at(TID[i]).at(v));
             printf("\n");
