@@ -19,16 +19,16 @@ while [ ! -d ${KMER_PATH} ]; do
 done
 
 KMER_FLIST_DEFAULT=${KMER_PATH}/flist
-read -e -p "Please enter a file that contains all filenames of the Kmer files [default: ${KMER_FLIST_DEFAULT}]" INPUT
+read -e -p "Please enter a file that contains all filenames of the Kmer files [default: ${KMER_FLIST_DEFAULT}]: " INPUT
 KMER_FLIST="${INPUT:-$KMER_FLIST_DEFAULT}"
 
 while [ ! -f ${KMER_FLIST} ]; do 
     echo ${KMER_FLIST} 'does not exist.'
-    read -e -p "Please enter a file that contains all filenames of the Kmer files [default: ${KMER_FLIST_DEFAULT}]" INPUT
+    read -e -p "Please enter a file that contains all filenames of the Kmer files [default: ${KMER_FLIST_DEFAULT}]: " INPUT
     KMER_FLIST="${INPUT:-$KMER_FLIST_DEFAULT}"
 done
 
-read -e -p "Where can we keep some temporary files? [default: `pwd`] " INPUT
+read -e -p "Where can we keep some temporary files? [default: `pwd`]: " INPUT
 TEMP_FOLDER="${INPUT:-`pwd`}"
 
 if [ ! -d ${TEMP_FOLDER}/bin ]; then 
@@ -37,7 +37,7 @@ if [ ! -d ${TEMP_FOLDER}/bin ]; then
 fi
 
 
-read -e -p "Please enter the value of k [default : 20]" INPUT
+read -e -p "Please enter the value of k [default : 20]: " INPUT
 k=${INPUT:-20}
 
 NUM_CONVERTED=0
@@ -73,7 +73,7 @@ while [ $((FILE_PER_GROUP * FILE_PER_GROUP)) -le $NUM_CONVERTED  ] ; do
 done
 
 
-split -l ${FILE_PER_GROUP} -d ${TEMP_FOLDER}/${BINARY_LIST} ${TEMP_FOLDER}/${BINARY_LIST_PREFIX}
+split -l ${FILE_PER_GROUP} -d ${BINARY_LIST} ${TEMP_FOLDER}/${BINARY_LIST_PREFIX}
 echo '        Each group contains at most '$FILE_PER_GROUP 'files.'
 echo '        These group description files are' ${TEMP_FOLDER}/${BINARY_LIST_PREFIX}'*' 
 
