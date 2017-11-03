@@ -49,4 +49,5 @@ use the following command to start a server on the machine, (e.g, on TCP port 33
 
 ```build/bin/Query --map-folder=out/ --start-server-port 3322```
 
-In another terminal
+In another terminal, run the Client program.
+```build/bin/Client --transcript=kmer/test.fa --coverage --output=result --port=3333```
