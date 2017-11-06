@@ -33,7 +33,7 @@ TEMP_FOLDER="${INPUT:-`pwd`}"
 
 if [ ! -d ${TEMP_FOLDER}/bin ]; then 
     echo 'folder' ${TEMP_FOLDER}'/bin/ does not exist, creating.'
-    mkdir -p mkdir -p ${TEMP_FOLDER}/bin
+    mkdir -p ${TEMP_FOLDER}/bin
 fi
 
 
@@ -79,7 +79,7 @@ echo '        These group description files are' ${TEMP_FOLDER}/${BINARY_LIST_PR
 
 if [ ! -d ${TEMP_FOLDER}/grp ]; then 
     echo 'folder' ${TEMP_FOLDER}'/grp/ does not exist, creating.'
-    mkdir -p mkdir -p ${TEMP_FOLDER}/grp
+    mkdir  -p ${TEMP_FOLDER}/grp
 fi
 
 MAKE_GROUP=MakeGroup.sh
@@ -114,7 +114,7 @@ EXPORT_FOLDER="${INPUT:-$EXPORT_FOLDER_DEFAULT}"
 
 if [ ! -d ${EXPORT_FOLDER} ]; then 
     echo 'folder' ${EXPORT_FOLDER} 'does not exist, creating.'
-    mkdir -p mkdir -p ${EXPORT_FOLDER}
+    mkdir -p ${EXPORT_FOLDER}
 fi
 
 while [ ! -d ${KMER_PATH} ]; do 

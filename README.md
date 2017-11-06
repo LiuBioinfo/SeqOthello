@@ -11,7 +11,7 @@ libz >= 1.2.3
 ```
 To compile the SeqOthello tool chain, decompress the source code and execute the following commands in the source folder.
 ```
-./build.sh
+./compile.sh
 ```
 Then you can find the compile resutls in the ```build/bin``` folder. 
 
