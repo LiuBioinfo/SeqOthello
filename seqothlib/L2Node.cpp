@@ -380,3 +380,45 @@ uint64_t
 L2ShortValueListNode::getvalcnt() {
     return uint64list.size() * IOLengthInBytes;
 }
+
+double L2ShortValueListNode::expectedOnes(double &prb) {
+    map <int, double> tmap;
+    L2Node::oth->getrates(tmap);
+    prb = 0;
+    double ans = 0;
+    for (int i = 1 ; i < uint64list.size(); i++){
+        ans += tmap[i]*valuecnt;
+        prb += tmap[i];
+    }
+    return ans;
+}
+
+double L2EncodedValueListNode::expectedOnes(double &prb) {
+    map<int,double> tmap;
+    L2Node::oth->getrates(tmap);
+    vector<uint8_t> cnt8(256);
+    for (int t = 0 ; t < 256; t++) {
+        int tt = t;
+        while (tt) {
+            cnt8[t]+=(tt&1);
+            tt>>=1;
+        }
+    }
+    double ans = 0;
+    prb = 0.0;
+    for (int index = 1; index< lines.size()/IOLengthInBytes; index++) {
+        prb += tmap[index];
+        if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
+            vector<uint32_t> decode;
+            valuelistDecode(&lines[IOLengthInBytes*index], decode, IOLengthInBytes);
+            ans += decode.size()  * tmap[index];
+        }
+        else {
+                int tot = 0;
+                for (int j = index*IOLengthInBytes; j < IOLengthInBytes*(index+1); j++) 
+                    tot += cnt8[lines[j]];
+                ans += tot * tmap[index];
+        }
+    }
+    return ans;
+}

@@ -14,6 +14,7 @@
 #include "disjointset.h"
 #include <zlib.h>
 
+#include <map>
 
 //! \brief A hash function that hashes keyType to uint32_t. When SSE4.2 support is found, use sse4.2 instructions, otherwise use default hash function  std::hash.
 
@@ -428,6 +429,7 @@ public:
     void writeDataToGzipFile(gzFile f) {
         gzwrite(f, &(mem[0]),sizeof(mem[0])*mem.size());
     }
+    void getrates(std::map<int, double> &sum);
 private:
     void padd (vector<int32_t> &A, valueType &t) {
         const valueType one = 1;
@@ -715,7 +717,36 @@ void Othello<keyType>::setAlienPreference(double ideal) {
 
     }
 
+}
 
 
-
+template<class keyType> 
+void Othello<keyType>::getrates(map<int, double> &sum) {
+    sum.clear();
+    int high =  (1<<L);
+    vector<int> LA(high), LB(high);
+    for (int i = 0 ; i < ma; i++) 
+        LA[get(i) & (high-1) ]++;
+    for (int i = ma; i<ma+mb; i++)
+        LB[get(i) & (high-1) ]++;
+    if (L <= 12) 
+    for (int i = 0 ; i < high; i++) {
+        for (int j = 0 ; j < high; j++)
+            sum[i ^ j] += LA[i] * LB[j];
+    }
+    else {
+        long long tot = 0;
+        for (int i = 0 ; i < high; i++) 
+            tot += ((long long) LA[i])*LB[i];
+        long long rest = ma;
+        rest *= mb;
+        rest -= tot;
+        rest/=high;
+        sum[0] = tot*1.0;
+        for (int i = 1 ; i < high; i++)
+            sum[i] = rest;
+    }
+    for (auto &x: sum) {
+        x.second/=((long long) ma* (long long)mb);
+    }
 }

@@ -113,3 +113,14 @@ void L1Node::putInfoToXml(tinyxml2::XMLElement *pe, string fname) {
             pe->InsertEndChild(pNode);
         }
 }
+
+map<int,double> L1Node::printrates() {
+    map<int, double> sum;
+    for (auto *p: othellos) {
+        map<int,double> tmap;
+        p->getrates(tmap);
+        for (auto &x: tmap) 
+            sum[x.first] += x.second;
+    }
+    return sum;
+}

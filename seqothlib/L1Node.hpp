@@ -51,6 +51,7 @@ public:
     uint32_t getsplitbit() {
         return splitbit;
     }
+    map<int, double> printrates();
 };
 
 
