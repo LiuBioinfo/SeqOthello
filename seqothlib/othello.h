@@ -729,7 +729,7 @@ void Othello<keyType>::getrates(map<int, double> &sum) {
         LA[get(i) & (high-1) ]++;
     for (int i = ma; i<ma+mb; i++)
         LB[get(i) & (high-1) ]++;
-    if (L <= 12) 
+    if (L <= 5) 
     for (int i = 0 ; i < high; i++) {
         for (int j = 0 ; j < high; j++)
             sum[i ^ j] += LA[i] * LB[j];
