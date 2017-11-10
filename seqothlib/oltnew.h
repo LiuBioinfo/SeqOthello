@@ -28,9 +28,15 @@ public:
     uint32_t sampleCount;
     uint32_t L1Splitbit;
 private:
+#ifndef NDEBUG
+    uint32_t L2InQKeyLimit = 1024512;
+    uint64_t L2InQValLimit = 1024ULL*32ULL;
+    constexpr static uint32_t L2limit = 128;
+#else
     uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
     constexpr static uint32_t L2limit = 1048576*128;
+#endif    
     vector<uint32_t> freqToVnodeIdMap;
     string folder;
     string L1NODE_PREFIX="map.L1.p";
@@ -161,7 +167,6 @@ public:
         for (uint32_t i = 0 ; i < vNodes.size(); i++) {
             auto pL2Node = xml.NewElement("L2Node");
             vNodes[i]->putInfoToXml(pL2Node);
-            pL2Node->SetAttribute("L2NodeID", i);
             pL2Nodes->InsertEndChild(pL2Node);
         }
         pSeqOthello->InsertEndChild(pL2Nodes);
@@ -173,15 +178,18 @@ public:
         auto xmlName = folder + XML_FNAME;
         xml.SaveFile(xmlName.c_str());
     }
-    void constructL2Node(int id) {
-        printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
+    string toL2Name(int id) {
         stringstream ss;
         ss<<folder;
         ss<<L2NODE_PREFIX<<id;
         string fname2;
         ss >> fname2;
+        return fname2;
+    }
+    void constructL2Node(int id) {
+        printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
         vNodes[id]->constructOth();
-        vNodes[id]->writeDataToGzipFile(fname2);
+        vNodes[id]->writeDataToGzipFile();
     }
 
     void loadL2Node(int id) {
@@ -189,13 +197,9 @@ public:
             printf("%s : Skipping empty L2Node %d\n", get_thid().c_str(), id);
             return;
         }
-        stringstream ss;
-        ss<<folder;
-        ss<<L2NODE_PREFIX<<id;
-        string fname2;
-        ss >> fname2;
+        string fname2 = toL2Name(id);
         printf("%s : Loading %s\n", get_thid().c_str(), fname2.c_str());
-        vNodes[id]->loadDataFromGzipFile(fname2);
+        vNodes[id]->loadDataFromGzipFile();
         printf("%s : Finished %s\n", get_thid().c_str(), fname2.c_str());
         if (vNodes[id]->oth)
             if (vNodes[id]->oth->loaded)
@@ -244,18 +248,18 @@ public:
 
 
         for (unsigned int i = 2; i<=limitsingle; i++) {
-            vNodes.push_back(std::make_shared<L2ShortValueListNode>(i, maxnl));
+            vNodes.push_back(std::make_shared<L2ShortValueListNode>(i, maxnl, toL2Name(vNodes.size())));
             valshortIDmap[i] = vNodes.size()-1;
         }
         for (unsigned int i = 0 ; i < enclGrpIDmap.size(); i++) {
-            vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[i], L2NodeTypes::VALUE_INDEX_ENCODED));
+            vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[i], L2NodeTypes::VALUE_INDEX_ENCODED,toL2Name(vNodes.size())));
             enclGrpIDmap[i] = vNodes.size()-1;
         }
 
         uint32_t MAPPlength = high/8;
         if (high &7) MAPPlength++;
 
-        vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength,L2NodeTypes::MAPP));
+        vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength,L2NodeTypes::MAPP, toL2Name(vNodes.size())));
         uint32_t MAPPID = vNodes.size()-1;
         uint32_t MAPPcnt = 0;
 
@@ -278,7 +282,7 @@ public:
                     valshortcnt[valcnt]++;
                 } else {
                     valshortcnt[valcnt] = 0;
-                    vNodes.push_back(std::make_shared<L2ShortValueListNode>(valcnt, maxnl));
+                    vNodes.push_back(std::make_shared<L2ShortValueListNode>(valcnt, maxnl, toL2Name(vNodes.size())));
                     valshortIDmap[valcnt] = vNodes.size() - 1;
                 }
                 vNodes[valshortIDmap[valcnt]]->add(k, ret);
@@ -302,7 +306,7 @@ public:
                     enclGrpcnt[grpid]++;
                 } else {
                     enclGrpcnt[grpid] = 0;
-                    vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[grpid], L2NodeTypes::VALUE_INDEX_ENCODED));
+                    vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[grpid], L2NodeTypes::VALUE_INDEX_ENCODED, toL2Name(vNodes.size())));
                     enclGrpIDmap[grpid] = vNodes.size() - 1;
                 }
                 vNodes[enclGrpIDmap[grpid]]->add(k, diff);
@@ -312,7 +316,7 @@ public:
             }
             if (MAPPcnt * MAPPlength > L2limit)  {
                 MAPPcnt = 0;
-                vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP));
+                vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP, toL2Name(vNodes.size())));
                 MAPPID = vNodes.size() - 1;
             }
             MAPPcnt++;

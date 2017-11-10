@@ -48,7 +48,7 @@ TEST_F(L2NodeTest, TestEncodeDecode) {
 
 TEST_F(L2NodeTest, TestL2Short) {
     
-    L2Node *N = new L2ShortValueListNode (5,8);
+    L2Node *N = new L2ShortValueListNode (5,8,"test.gz");
     unsigned int NN = 20;
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
@@ -78,10 +78,10 @@ TEST_F(L2NodeTest, TestL2Short) {
         EXPECT_EQ(vret, v);
     }
 
-    N->writeDataToGzipFile("test.gz");
+    N->writeDataToGzipFile();
 
-    L2Node *N2 = new L2ShortValueListNode (5,8);
-    N2->loadDataFromGzipFile("test.gz");
+    L2Node *N2 = new L2ShortValueListNode (5,8,"test.gz");
+    N2->loadDataFromGzipFile();
     for (uint64_t i = 0; i < NN; i++) {
         uint64_t k = vK[i];
         vector<uint32_t> v,vret;
@@ -111,7 +111,7 @@ TEST_F(L2NodeTest, TestL2MAPP) {
         uint64_t tmp = dis2(gen);
         vK.push_back(tmp  ^ (tmp<<16));
     }
-	L2Node *N = new L2EncodedValueListNode (L,L2NodeTypes::MAPP);
+	L2Node *N = new L2EncodedValueListNode (L,L2NodeTypes::MAPP,"test.gz");
     for (uint64_t i=0; i<totN; i++) {
         uint64_t k = vK[i];
 		vector<uint8_t> tmp(buf.begin()+(i*L), buf.begin() + ((i+1)*L));
@@ -119,10 +119,10 @@ TEST_F(L2NodeTest, TestL2MAPP) {
     }
     N->constructOth();
 
-    N->writeDataToGzipFile("test.gz");
+    N->writeDataToGzipFile();
 
-    L2Node *N2 = new L2ShortValueListNode (4,6);
-    N2->loadDataFromGzipFile("test.gz");
+    L2Node *N2 = new L2ShortValueListNode (4,6,"test.gz");
+    N2->loadDataFromGzipFile();
 
     for (uint64_t i=0; i<totN; i++) {
         uint64_t k = vK[i];
@@ -173,7 +173,7 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
         vK.push_back(tmp  ^ (tmp<<16));
     }
 
-	L2Node *N = new L2EncodedValueListNode (maxlength,L2NodeTypes::VALUE_INDEX_ENCODED);
+	L2Node *N = new L2EncodedValueListNode (maxlength,L2NodeTypes::VALUE_INDEX_ENCODED, "test.gz");
     for (uint64_t i=0; i<totN; i++) {
         uint64_t k = vK[i];
 		vector<uint32_t> vec = vlists[i];
@@ -184,9 +184,9 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
     }
     N->constructOth();
 
-    N->writeDataToGzipFile("test.gz");
-	L2Node *N2 = new L2EncodedValueListNode (maxlength,L2NodeTypes::VALUE_INDEX_ENCODED);
-    N2->loadDataFromGzipFile("test.gz");
+    N->writeDataToGzipFile();
+	L2Node *N2 = new L2EncodedValueListNode (maxlength,L2NodeTypes::VALUE_INDEX_ENCODED,"test.gz");
+    N2->loadDataFromGzipFile();
 
     for (uint64_t i=0; i<totN; i++) {
         uint64_t k = vK[i];

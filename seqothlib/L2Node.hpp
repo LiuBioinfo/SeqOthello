@@ -28,8 +28,8 @@ public:
     virtual bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) = 0;
     virtual void add(keyType &k, vector<uint32_t> &) = 0;
     virtual void addMAPP(keyType &k, vector<uint8_t> &mapp) = 0;
-    virtual void writeDataToGzipFile(string ) = 0;
-    virtual void loadDataFromGzipFile(string ) = 0;
+    virtual void writeDataToGzipFile() = 0;
+    virtual void loadDataFromGzipFile() = 0;
     uint32_t keycnt = 0;
     vector<uint32_t> values;
     vector<uint64_t> keys;
@@ -39,7 +39,8 @@ public:
     virtual void putInfoToXml(tinyxml2::XMLElement *) = 0;
     virtual uint64_t getvalcnt() = 0;
     static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p);
-    string fname;
+    string gzfname;
+    
 };
 
 class L2ShortValueListNode : public L2Node {
@@ -58,7 +59,9 @@ public:
     int getType() override {
         return L2NodeTypes::VALUE_INDEX_SHORT;
     }
-    L2ShortValueListNode(uint32_t _valuecnt, uint32_t _maxnl) : valuecnt(_valuecnt), maxnl(_maxnl) {
+    gzFile fdata = NULL;
+    L2ShortValueListNode(uint32_t _valuecnt, uint32_t _maxnl, string fname) : valuecnt(_valuecnt), maxnl(_maxnl) {
+        L2Node::gzfname = fname;
         definetypes();
     }
     ~L2ShortValueListNode() {}
@@ -67,8 +70,8 @@ public:
     void addMAPP(keyType &, vector<uint8_t> &) override {
         throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
-    void writeDataToGzipFile(string ) override;
-    void loadDataFromGzipFile(string ) override;
+    void writeDataToGzipFile() override;
+    void loadDataFromGzipFile() override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
     uint64_t getvalcnt() override;
 };
@@ -81,16 +84,18 @@ public:
     int getType() override {
         return encodetype;
     }
-    L2EncodedValueListNode(uint32_t _IOLengthInBytes, uint32_t _encodetype) :  IOLengthInBytes(_IOLengthInBytes), encodetype(_encodetype) {
+    gzFile fdata = NULL;
+    L2EncodedValueListNode(uint32_t _IOLengthInBytes, uint32_t _encodetype, string fname) :  IOLengthInBytes(_IOLengthInBytes), encodetype(_encodetype) {
         if (encodetype != L2NodeTypes::MAPP && encodetype!= L2NodeTypes::VALUE_INDEX_ENCODED)
             throw invalid_argument("can not add bitmap to L2ShortValuelist type");
+        L2Node::gzfname = fname;
     }
     ~L2EncodedValueListNode() {}
     bool smartQuery(const keyType *k, vector<uint32_t> &ret, vector<uint8_t> &retmap) override;
     void add(keyType &k, vector<uint32_t> &) override;
     void addMAPP(keyType &k, vector<uint8_t> &mapp) override;
-    void writeDataToGzipFile(string ) override;
-    void loadDataFromGzipFile(string ) override;
+    void writeDataToGzipFile() override;
+    void loadDataFromGzipFile() override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
     uint64_t getvalcnt() override;
 };
