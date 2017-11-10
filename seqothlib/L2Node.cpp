@@ -64,10 +64,11 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
     uint32_t ans = 0;
 
     uint8_t **pp = &p;
-    uint8_t *p0 = p;
+    uint8_t *p0 = p; //starting location
     bool filledhalf = false;
     //inline uint8_t put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
-    for (auto &x: val) {
+    for (int i = 0 ; i < val.size(); i++) {
+        auto x = val[i];
         if (x>0xFFF) { //>12bits
             if (really) {
                 put4b(pp, filledhalf, 0);
@@ -178,6 +179,14 @@ bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret,
 }
 
 void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
+    if (fdata==NULL) {
+        fdata = gzopen((gzfname+".dat").c_str(),"wb");
+        gzbuffer(fdata,64*1024);
+        if (fdata == NULL) {
+            fprintf(stderr,"failed to open file %s to write\n", (gzfname+".dat").c_str());
+            return;
+        }
+    }
     keycnt++;
     uint64_t value = 0ULL;
     for (auto pval = valuelist.rbegin(); pval!=valuelist.rend(); pval++) {
@@ -186,11 +195,13 @@ void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
     }
     if (valuemap.count(value) == 0) {
         //we always prepend one  to avoid \tau result = 0;
-        if (uint64list.size() ==0)
+        if (uint64list.size() ==0) {
             uint64list.push_back(value);
-
+            gzwrite(fdata, &uint64list[0], IOLengthInBytes);
+        }
         valuemap[value] = valuemap.size();
         uint64list.push_back(value);
+        gzwrite(fdata, &uint64list[uint64list.size()-1], IOLengthInBytes);
         entrycnt = uint64list.size();
     }
     values.push_back(valuemap[value]);
@@ -202,15 +213,25 @@ void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
 void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // this valuelist is diff.
     if (encodetype!= L2NodeTypes::VALUE_INDEX_ENCODED)
         throw invalid_argument("can not add value list L2EncodedValueListNode");
+    if (fdata==NULL) {
+        fdata = gzopen((gzfname+".dat").c_str(),"wb");
+        gzbuffer(fdata,64*1024);
+        if (fdata == NULL) {
+            fprintf(stderr,"failed to open file %s to write\n", (gzfname+".dat").c_str());
+            return;
+        }
+    }
     keys.push_back(k);
     vector<uint8_t> buff(IOLengthInBytes);
     if (lines.size() == 0) {
         lines.resize(IOLengthInBytes);
         entrycnt++;
+        gzwrite(fdata,&lines[0], IOLengthInBytes);
     }
     uint32_t curr = lines.size();
     lines.resize(lines.size() + IOLengthInBytes);
     valuelistEncode(&lines[curr], valuelist, true);
+    gzwrite(fdata,&lines[curr], IOLengthInBytes);
     keycnt++;
     entrycnt++;
     values.push_back(keycnt);
@@ -220,22 +241,33 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
 void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
     if (encodetype!= L2NodeTypes::MAPP)
         throw invalid_argument("can not add bitmap to L2EncodedValueListNode");
+    if (fdata==NULL) {
+        fdata = gzopen((gzfname+".dat").c_str(),"wb");
+        gzbuffer(fdata,256*1024);
+        if (fdata == NULL) {
+            fprintf(stderr,"failed to open file %s to write\n", (gzfname+".dat").c_str());
+            return;
+        }
+    }
     keys.push_back(k);
     //TODO :: Need to pre-pend a record for false positives!
     keycnt++;
     entrycnt++;
     if (lines.size() == 0) {
         lines.resize(mapp.size());
+        gzwrite(fdata,&lines[0], IOLengthInBytes);
         entrycnt++;
     }
     if (mapp.size() != IOLengthInBytes) {
         throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
+    uint32_t curr = lines.size();
     lines.insert(lines.end(), mapp.begin(), mapp.end());
+    gzwrite(fdata,&lines[curr], IOLengthInBytes);
     values.push_back(keycnt);
 }
 
-void L2ShortValueListNode::writeDataToGzipFile(string gzfname) {
+void L2ShortValueListNode::writeDataToGzipFile() {
     printf("%s : writing to L2 Gzip File %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fout = gzopen(gzfname.c_str(), "wb");
     unsigned char buf[0x20];
@@ -248,14 +280,15 @@ void L2ShortValueListNode::writeDataToGzipFile(string gzfname) {
     L2Node::oth->exportInfo(buf);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->writeDataToGzipFile(fout);
-    for (auto const & vl: uint64list) {
-        uint64_t rvl = vl;
-        gzwrite(fout, &rvl, IOLengthInBytes);
-    }
     gzclose(fout);
+    //  for (auto const & vl: uint64list) {
+    //            uint64_t rvl = vl;
+    //            gzwrite(fdata, &rvl, IOLengthInBytes);
+    //        }
+    gzclose(fdata);
 }
 
-void L2EncodedValueListNode::writeDataToGzipFile(string gzfname) {
+void L2EncodedValueListNode::writeDataToGzipFile() {
     printf("%s: Write L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fout = gzopen(gzfname.c_str(), "wb");
     unsigned char buf[0x20];
@@ -268,14 +301,16 @@ void L2EncodedValueListNode::writeDataToGzipFile(string gzfname) {
     L2Node::oth->exportInfo(buf);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->writeDataToGzipFile(fout);
-    gzwrite(fout, &lines[0], lines.size());
+    //gzwrite(fdata, &lines[0], lines.size());
     gzclose(fout);
+    gzclose(fdata);
 }
 
 
-void L2ShortValueListNode::loadDataFromGzipFile(string gzfname) {
+void L2ShortValueListNode::loadDataFromGzipFile() {
     printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
+    gzbuffer(fin,256*1024);
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
@@ -291,19 +326,23 @@ void L2ShortValueListNode::loadDataFromGzipFile(string gzfname) {
     gzread(fin, buf,sizeof(buf));
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
+    gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
+    gzbuffer(fin2,256*1024);
     uint64list.resize(0);//ShortVLcount);
     for (uint32_t i = 0 ; i < siz; i++) {
         uint64_t vl = 0ULL;
-        gzread(fin, &vl, IOLengthInBytes);
+        gzread(fin2, &vl, IOLengthInBytes);
         uint64list.push_back(vl);
     }
     gzclose(fin);
+    gzclose(fin2);
 }
 
 
-void L2EncodedValueListNode::loadDataFromGzipFile(string gzfname) {
+void L2EncodedValueListNode::loadDataFromGzipFile() {
     printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
+    gzbuffer(fin,256*1024);
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
@@ -320,8 +359,11 @@ void L2EncodedValueListNode::loadDataFromGzipFile(string gzfname) {
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
     lines.resize(siz);//ShortVLcount);
-    gzread(fin, &lines[0], siz);
+    gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
+    gzbuffer(fin2,256*1024);
+    gzread(fin2, &lines[0], siz);
     gzclose(fin);
+    gzclose(fin2);
 }
 
 void L2ShortValueListNode::putInfoToXml(tinyxml2::XMLElement * pe) {
@@ -331,6 +373,7 @@ void L2ShortValueListNode::putInfoToXml(tinyxml2::XMLElement * pe) {
     pe->SetAttribute("BitsPerValue", maxnl);
     pe->SetAttribute("Keycount", keycnt);
     pe->SetAttribute("EntryCount", entrycnt);
+    pe->SetAttribute("L2FileName", gzfname.c_str());
 }
 
 void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe) {
@@ -339,17 +382,20 @@ void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe) {
     pe->SetAttribute("IOLengthInBytes", IOLengthInBytes);
     pe->SetAttribute("Keycount", keycnt);
     pe->SetAttribute("EntryCount", entrycnt);
+    pe->SetAttribute("L2FileName", gzfname.c_str());
 }
+
 
 std::shared_ptr<L2Node>
 L2Node::createL2Node( tinyxml2::XMLElement *p) {
     std::shared_ptr<L2Node> ptr(NULL);
+    string fname(p->Attribute("L2FileName"));
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {
         int valuecnt = p->IntAttribute("ValueCnt");
         int maxnl = p->IntAttribute("BitsPerValue");
         int entrycnt = p->IntAttribute("EntryCount");
         if (entrycnt)
-            ptr = make_shared<L2ShortValueListNode>(valuecnt, maxnl);
+            ptr = make_shared<L2ShortValueListNode>(valuecnt, maxnl,fname);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_ENCODED).c_str()) == 0) {
@@ -357,7 +403,7 @@ L2Node::createL2Node( tinyxml2::XMLElement *p) {
         int type = L2NodeTypes::VALUE_INDEX_ENCODED;
         int entrycnt = p->IntAttribute("EntryCount");
         if (entrycnt)
-            ptr =  make_shared<L2EncodedValueListNode>(IOL, type);
+            ptr =  make_shared<L2EncodedValueListNode>(IOL, type,fname);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::MAPP).c_str()) == 0) {
@@ -365,7 +411,7 @@ L2Node::createL2Node( tinyxml2::XMLElement *p) {
         int type = L2NodeTypes::MAPP;
         int entrycnt = p->IntAttribute("EntryCount");
         if (entrycnt)
-            ptr = make_shared<L2EncodedValueListNode>(IOL, type);
+            ptr = make_shared<L2EncodedValueListNode>(IOL, type,fname);
     }
     return ptr;
 
