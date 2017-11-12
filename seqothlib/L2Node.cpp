@@ -281,10 +281,10 @@ void L2ShortValueListNode::writeDataToGzipFile() {
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->writeDataToGzipFile(fout);
     gzclose(fout);
-    //  for (auto const & vl: uint64list) {
-    //            uint64_t rvl = vl;
-    //            gzwrite(fdata, &rvl, IOLengthInBytes);
-    //        }
+    //for (auto const & vl: uint64list) {
+    //  uint64_t rvl = vl;
+    //  gzwrite(fdata, &rvl, IOLengthInBytes);
+    //}
     gzclose(fdata);
 }
 
@@ -327,7 +327,7 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
     gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
-    gzbuffer(fin2,256*1024);
+    gzbuffer(fin2,256*1024); 
     uint64list.resize(0);//ShortVLcount);
     for (uint32_t i = 0 ; i < siz; i++) {
         uint64_t vl = 0ULL;
@@ -360,7 +360,7 @@ void L2EncodedValueListNode::loadDataFromGzipFile() {
     L2Node::oth->loadDataFromGzipFile(fin);
     lines.resize(siz);//ShortVLcount);
     gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
-    gzbuffer(fin2,256*1024);
+    gzbuffer(fin2,256*1024); 
     gzread(fin2, &lines[0], siz);
     gzclose(fin);
     gzclose(fin2);

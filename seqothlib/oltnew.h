@@ -31,12 +31,15 @@ private:
 #ifndef NDEBUG
     uint32_t L2InQKeyLimit = 1024512;
     uint64_t L2InQValLimit = 1024ULL*32ULL;
-    constexpr static uint32_t L2limit = 128;
+    uint32_t L2limit = 128;
+    uint32_t L2diff = L2limit;
 #else
     uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
-    constexpr static uint32_t L2limit = 1048576*128;
+    uint32_t L2limit = 1048576*128;
+    uint32_t L2diff = L2limit/128;
 #endif    
+    constexpr static uint32_t L2limit0 = 1048576*128;
     vector<uint32_t> freqToVnodeIdMap;
     string folder;
     string L1NODE_PREFIX="map.L1.p";
@@ -284,10 +287,13 @@ public:
             //cnt = 2 ~ limit (encode within 64)
             if (valcnt <= limitsingle) {
                 if (valshortcnt[valcnt] * valcnt < L2limit) {
+
                     valshortcnt[valcnt]++;
                 } else {
                     valshortcnt[valcnt] = 0;
                     vNodes.push_back(std::make_shared<L2ShortValueListNode>(valcnt, maxnl, toL2Name(vNodes.size())));
+                    L2limit+=(vNodes.size()*L2diff);
+                    if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
                     valshortIDmap[valcnt] = vNodes.size() - 1;
                 }
                 vNodes[valshortIDmap[valcnt]]->add(k, ret);
@@ -312,6 +318,8 @@ public:
                 } else {
                     enclGrpcnt[grpid] = 0;
                     vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[grpid], L2NodeTypes::VALUE_INDEX_ENCODED, toL2Name(vNodes.size())));
+                    L2limit+=(vNodes.size()*L2diff);
+                    if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
                     enclGrpIDmap[grpid] = vNodes.size() - 1;
                 }
                 vNodes[enclGrpIDmap[grpid]]->add(k, diff);
@@ -322,6 +330,8 @@ public:
             if (MAPPcnt * MAPPlength > L2limit)  {
                 MAPPcnt = 0;
                 vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP, toL2Name(vNodes.size())));
+                L2limit+=(vNodes.size()*L2diff);
+                if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
                 MAPPID = vNodes.size() - 1;
             }
             MAPPcnt++;
@@ -416,7 +426,7 @@ public:
         printf("\n");
 
         for (int i = 1 ; i < high/8+2; i++) {
-            if ((sq+ enchisto[i])*i > L2limit) {
+            if ((sq+ enchisto[i])*i > L2limit0) {
                 sq = 0;
                 l1id ++;
             }
