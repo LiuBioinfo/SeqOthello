@@ -59,16 +59,7 @@ uint32_t valuelistDecode(uint8_t *p, vector<uint32_t> &val, uint32_t maxmem) {
     }
     return val.size();
 }
-
-uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
-    uint32_t ans = 0;
-
-    uint8_t **pp = &p;
-    uint8_t *p0 = p; //starting location
-    bool filledhalf = false;
-    //inline uint8_t put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
-    for (int i = 0 ; i < val.size(); i++) {
-        auto x = val[i];
+void putvalue(uint32_t x, uint8_t **pp, bool &filledhalf, bool really, uint32_t & ans) {
         if (x>0xFFF) { //>12bits
             if (really) {
                 put4b(pp, filledhalf, 0);
@@ -110,6 +101,18 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
             else
                 ans ++;
         }
+
+}
+uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
+    uint32_t ans = 0;
+
+    uint8_t **pp = &p;
+    uint8_t *p0 = p; //starting location
+    bool filledhalf = false;
+    //inline uint8_t put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
+    for (int i = 0 ; i < val.size(); i++) {
+        auto x = val[i];
+        putvalue(x, pp, filledhalf, really, ans);
     }
     if (really) {
         put4b(pp, filledhalf, 8);
