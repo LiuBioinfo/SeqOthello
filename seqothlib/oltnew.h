@@ -196,10 +196,12 @@ public:
         printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
         vNodes[id]->constructOth();
         vNodes[id]->writeDataToGzipFile();
-        vNodes[id].reset();
         constructedL2.insert(id);
     }
-
+    void startBuildOneL2(int id) {
+        // TODO : start a thread...
+        constructL2Node(id);
+    }
     void loadL2Node(int id) {
         if (!vNodes[id]) {
             printf("%s : Skipping empty L2Node %d\n", get_thid().c_str(), id);
@@ -226,7 +228,7 @@ public:
         kmerLength = reader->getKmerLength();
         folder = filename;
         keyType k;
-        l1Node = new L1Node(estimatedKmerCount, kmerLength);
+        l1Node = new L1Node(estimatedKmerCount, kmerLength, filename+"tmp");
         printf("We will use at most %d threads to construct.\n", threadsLimit);
         printf("Use encode length to split L2 nodes at: ");
         for (uint32_t i = 1; i < enclGrpmap.size(); i++) {
@@ -291,6 +293,7 @@ public:
                     valshortcnt[valcnt]++;
                 } else {
                     valshortcnt[valcnt] = 0;
+                    startBuildOneL2(valshortIDmap[valcnt]);
                     vNodes.push_back(std::make_shared<L2ShortValueListNode>(valcnt, maxnl, toL2Name(vNodes.size())));
                     L2limit+=(vNodes.size()*L2diff);
                     if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
@@ -317,6 +320,7 @@ public:
                     enclGrpcnt[grpid]++;
                 } else {
                     enclGrpcnt[grpid] = 0;
+                    startBuildOneL2(enclGrpIDmap[grpid]);
                     vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[grpid], L2NodeTypes::VALUE_INDEX_ENCODED, toL2Name(vNodes.size())));
                     L2limit+=(vNodes.size()*L2diff);
                     if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
@@ -329,6 +333,7 @@ public:
             }
             if (MAPPcnt * MAPPlength > L2limit)  {
                 MAPPcnt = 0;
+                startBuildOneL2(MAPPID);
                 vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP, toL2Name(vNodes.size())));
                 L2limit+=(vNodes.size()*L2diff);
                 if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;

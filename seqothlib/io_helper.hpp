@@ -696,7 +696,7 @@ public:
 template <typename KVpair>
 class BinaryKmerReader: public KmerReader<KVpair> {
     FILE * f;
-    static const int buflen = 8192;
+    static const int buflen = 16384;
     KVpair buff[buflen*2];
     int curr = 0;
     int max = 0;
@@ -752,7 +752,7 @@ class BinaryKmerWriter {
     FILE *f;
     int curr = 0;
 public:
-    KVpair buf[1024];
+    KVpair buf[4096];
     BinaryKmerWriter( const char * fname) {
         char buf[1024];
         strcpy(buf,fname);
@@ -763,7 +763,7 @@ public:
         curr = 0;
         memset(buf,0,sizeof(buf));
     }
-    static const int buflen = 16;
+    static const int buflen = 2048;
     void write(KVpair *p) {
         memcpy(&buf[curr],p,sizeof(buf[curr]));
         curr++;
@@ -886,4 +886,62 @@ public:
     }
 };
 //__attribute__((packed));
+
+template <typename keyType>
+class IOBuf {
+    vector<keyType> v;
+    FILE * fout;
+    size_t tot = 0;
+    bool load = false;
+    bool done = false;
+    char fname[1024]; 
+    void load_from_file() {
+       if (!done) 
+               finishwrite();
+       v.resize(tot);
+       FILE *fin = fopen(fname,"rb");
+       size_t max = fread(&v[0], sizeof(keyType), tot, fin);
+       if (max != tot) {
+               fprintf(stderr,"Warning reading %s: read %d elements , expected %d elements .\n", fname, max, tot);
+       }
+       load = true;
+       fclose(fin);
+       if ( remove(fname) != 0) {
+               fprintf(stderr,"faile to remove file %s\n", fname);
+       }
+    }
+public:
+    IOBuf(const char * _fname) {
+        strcpy(fname,_fname);
+        fout = fopen(fname,"wb");
+        if (fout == NULL) {
+              fprintf(stderr,"failed to open file %s\n", fname);
+        }
+        v.clear();
+    }
+    void finishwrite() {
+        if (v.size())
+            fwrite(&v[0], v.size(), sizeof(keyType), fout);
+        fclose(fout);
+        done = true;
+        v.clear();
+    }
+    void push_back(const keyType &t) {
+        tot ++; 
+        v.push_back(t);
+        if (v.size() == 8192) {
+            fwrite(&v[0], v.size(), sizeof(keyType), fout);
+            v.clear();
+        }
+    }
+    
+    size_t size() {
+        return tot;
+    }
+    keyType * getstart() {
+        if (!load) 
+             load_from_file();
+        return &v[0];
+    }
+};
 

@@ -16,7 +16,7 @@ int main(int argc, char* argv [] ) {
          v.push_back(rand()%0xFFFF);
     }
     sort(k.begin(), k.end());
-    L1Node * p = new L1Node(1048575*128*4, 14);
+    L1Node * p = new L1Node(1048575*128*4, 14, "testloc");
     for (int i = 0 ; i < n ; i++) {
             p->add(k[i], v[i]);
     }

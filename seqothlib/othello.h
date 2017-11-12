@@ -283,6 +283,13 @@ public:
     {
     }
 
+    //!\brief Construct othello with vectors.
+    template<typename VT>
+    Othello(uint8_t _L,  IOBuf<keyType> &keys,  IOBuf<VT> &values, bool _autoclear = true, int32_t allowed_conflicts = -1) :
+        Othello(_L, keys.getstart(), keys.size(), _autoclear, values.getstart(), sizeof(VT), allowed_conflicts)
+    {
+    }
+
     //! \brief release memory space used during construction and forbid future modification of arrayA and arrayB.
     void finishBuild() {
         delete nxt1;

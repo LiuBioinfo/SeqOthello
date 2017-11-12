@@ -46,6 +46,7 @@ public:
 class L2ShortValueListNode : public L2Node {
     vector<uint64_t> uint64list;
     uint32_t valuecnt, maxnl, mask;
+    uint32_t siz = 0;
     map<uint64_t, uint32_t> valuemap;
     uint32_t IOLengthInBytes;
     void definetypes() {
@@ -78,6 +79,7 @@ public:
 
 class L2EncodedValueListNode : public L2Node {
     vector<uint8_t> lines;
+    uint32_t siz = 0;
     uint32_t IOLengthInBytes, encodetype;
     uint32_t keycnt  = 0;
 public:

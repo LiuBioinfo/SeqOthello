@@ -195,14 +195,16 @@ void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
     }
     if (valuemap.count(value) == 0) {
         //we always prepend one  to avoid \tau result = 0;
-        if (uint64list.size() ==0) {
-            uint64list.push_back(value);
-            gzwrite(fdata, &uint64list[0], IOLengthInBytes);
+        if (siz == 0) {
+            uint64_t u0 = 0;
+            siz ++;
+            gzwrite(fdata, &u0, IOLengthInBytes);
         }
+        //}
         valuemap[value] = valuemap.size();
-        uint64list.push_back(value);
-        gzwrite(fdata, &uint64list[uint64list.size()-1], IOLengthInBytes);
-        entrycnt = uint64list.size();
+        gzwrite(fdata, &value, IOLengthInBytes);
+        siz++;
+        entrycnt = siz;
     }
     values.push_back(valuemap[value]);
     keys.push_back(k);
@@ -223,15 +225,17 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
     }
     keys.push_back(k);
     vector<uint8_t> buff(IOLengthInBytes);
-    if (lines.size() == 0) {
-        lines.resize(IOLengthInBytes);
+    if (siz == 0) { //lines.size() == 0) {
+        //lines.resize(IOLengthInBytes);
+        siz += IOLengthInBytes;
         entrycnt++;
-        gzwrite(fdata,&lines[0], IOLengthInBytes);
+        gzwrite(fdata,&buff[0], IOLengthInBytes);
     }
-    uint32_t curr = lines.size();
-    lines.resize(lines.size() + IOLengthInBytes);
-    valuelistEncode(&lines[curr], valuelist, true);
-    gzwrite(fdata,&lines[curr], IOLengthInBytes);
+    //uint32_t curr = lines.size();
+    //lines.resize(lines.size() + IOLengthInBytes);
+    siz += IOLengthInBytes;
+    valuelistEncode(&buff[0], valuelist, true);
+    gzwrite(fdata,&buff[0], IOLengthInBytes);
     keycnt++;
     entrycnt++;
     values.push_back(keycnt);
@@ -253,18 +257,21 @@ void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
     //TODO :: Need to pre-pend a record for false positives!
     keycnt++;
     entrycnt++;
-    if (lines.size() == 0) {
-        lines.resize(mapp.size());
-        gzwrite(fdata,&lines[0], IOLengthInBytes);
+    if (siz == 0) { //lines.size() == 0) {
+        //lines.resize(mapp.size());
+        siz += IOLengthInBytes;
+        vector<uint8_t> buff(IOLengthInBytes);
+        gzwrite(fdata,&buff[0], IOLengthInBytes);
         entrycnt++;
     }
     if (mapp.size() != IOLengthInBytes) {
         throw invalid_argument("can not add bitmap to L2ShortValuelist type");
     }
-    uint32_t curr = lines.size();
-    lines.insert(lines.end(), mapp.begin(), mapp.end());
-    gzwrite(fdata,&lines[curr], IOLengthInBytes);
+    //uint32_t curr = lines.size();
+    //lines.insert(lines.end(), mapp.begin(), mapp.end());
+    gzwrite(fdata,&mapp[0], IOLengthInBytes);
     values.push_back(keycnt);
+    siz += IOLengthInBytes;
 }
 
 void L2ShortValueListNode::writeDataToGzipFile() {
@@ -274,13 +281,14 @@ void L2ShortValueListNode::writeDataToGzipFile() {
     memset(buf,0,sizeof(buf));
     memcpy(buf, &valuecnt, 4);
     memcpy(buf+4, &maxnl, 4);
-    uint32_t siz = uint64list.size();
     memcpy(buf+8, &siz, 4);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->exportInfo(buf);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->writeDataToGzipFile(fout);
     gzclose(fout);
+    uint64list.clear();
+    delete L2Node::oth;
     //for (auto const & vl: uint64list) {
     //  uint64_t rvl = vl;
     //  gzwrite(fdata, &rvl, IOLengthInBytes);
@@ -295,7 +303,6 @@ void L2EncodedValueListNode::writeDataToGzipFile() {
     memset(buf,0,sizeof(buf));
     memcpy(buf, &IOLengthInBytes, 4);
     memcpy(buf+4, &encodetype, 4);
-    uint32_t siz = lines.size();
     memcpy(buf+8, &siz, 4);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->exportInfo(buf);
