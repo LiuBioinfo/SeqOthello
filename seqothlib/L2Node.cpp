@@ -23,43 +23,49 @@ inline void put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
         filledhalf = true;
     }
 }
-
+inline uint32_t getvalue(uint8_t **pp, bool & hasvalue, uint8_t &buff, bool & finished) {
+        uint8_t v = get4b(pp, hasvalue, buff);
+        if (v & 0x8) {
+            if (v == 8) finished = true;
+            return (v&0x7);
+        }
+        uint32_t v2 = get4b(pp, hasvalue, buff);
+        if (v & 0x4) {
+            uint32_t a = (v & 0x3);
+            return ( (a<<4) | v2);
+        }
+        uint32_t v3 = get4b(pp, hasvalue, buff);
+        if (v & 0x2) {
+            uint32_t a = (v & 0x1);
+            return ( (a<<8) | (v2<<4) | v3);
+        }
+        uint32_t v4 = get4b(pp, hasvalue, buff);
+        if (v == 1) {
+            return (v2<<8) | (v3<<4) | v4;
+        }
+        uint32_t v5 = get4b(pp, hasvalue, buff);
+        uint32_t v6 = get4b(pp, hasvalue, buff);
+        return ( (v2<<16) | (v3<<12) | (v4<<8) | (v5<<4) | v6);
+}
 uint32_t valuelistDecode(uint8_t *p, vector<uint32_t> &val, uint32_t maxmem) {
     uint8_t **pp = &p;
     val.clear();
     bool hasvalue = false;
     uint8_t buff = 0;
+    bool finished = false;;
     while ( *pp < (p+maxmem) ) {
-        uint8_t v = get4b(pp, hasvalue, buff);
-        if (v & 0x8) {
-            if (v == 8) return val.size();
-            val.push_back(v&0x7);
-            continue;
-        }
-        uint32_t v2 = get4b(pp, hasvalue, buff);
-        if (v & 0x4) {
-            uint32_t a = (v & 0x3);
-            val.push_back( (a<<4) | v2);
-            continue;
-        }
-        uint32_t v3 = get4b(pp, hasvalue, buff);
-        if (v & 0x2) {
-            uint32_t a = (v & 0x1);
-            val.push_back( (a<<8) | (v2<<4) | v3);
-            continue;
-        }
-        uint32_t v4 = get4b(pp, hasvalue, buff);
-        if (v == 1) {
-            val.push_back( (v2<<8) | (v3<<4) | v4);
-            continue;
-        }
-        uint32_t v5 = get4b(pp, hasvalue, buff);
-        uint32_t v6 = get4b(pp, hasvalue, buff);
-        val.push_back( (v2<<16) | (v3<<12) | (v4<<8) | (v5<<4) | v6);
+            uint32_t x = getvalue(pp, hasvalue, buff,finished);
+            if (finished)
+                   return val.size();
+            val.push_back(x);
+            if (x == 1) {
+                    uint32_t dup = getvalue(pp, hasvalue, buff, finished);
+                    while (dup > 1) {val.push_back(1); dup--; }
+            }
     }
     return val.size();
 }
-void putvalue(uint32_t x, uint8_t **pp, bool &filledhalf, bool really, uint32_t & ans) {
+inline void putvalue(uint32_t x, uint8_t **pp, bool &filledhalf, bool really, uint32_t & ans) {
         if (x>0xFFF) { //>12bits
             if (really) {
                 put4b(pp, filledhalf, 0);
@@ -110,9 +116,20 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
     uint8_t *p0 = p; //starting location
     bool filledhalf = false;
     //inline uint8_t put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
-    for (int i = 0 ; i < val.size(); i++) {
+    for (int i = 0 ; i < val.size();) {
         auto x = val[i];
         putvalue(x, pp, filledhalf, really, ans);
+        if (x==1) {
+            int j = i;
+            while (val[j] == 1) {
+                j++;
+                if (j == val.size()) break;
+            }
+            putvalue(j-i, pp, filledhalf, really, ans);
+            i=j;
+        }
+        else 
+           i++;
     }
     if (really) {
         put4b(pp, filledhalf, 8);
