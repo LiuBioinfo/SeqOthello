@@ -121,7 +121,7 @@ int main(int argc, char ** argv) {
     if (argLimit)
         limit = args::get(argLimit);
     printf("Estimate the distribution with the first %d Kmers. \n", limit);
-    uint64_t keycount;
+    uint64_t keycount = 0;
     auto distr = SeqOthello::estimateParameters(reader.get(), limit, keycount);
     /*
     for (int i = 0 ; i < distr.size(); i++) {

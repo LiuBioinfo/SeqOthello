@@ -81,7 +81,7 @@ int main(int argc, char ** argv) {
            sint.insert(i % files);
         }
         else {
-        for (unsigned int j = 0; j<= i/files; j++) {
+        for (unsigned int j = 0; j<= i/files/3; j++) {
             sint.insert((i+j)%files);
             // sint.insert((i/files+(i/files+3)*j)%files);
         }
