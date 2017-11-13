@@ -87,16 +87,18 @@ int main(int argc, char ** argv) {
     if (argCountOnly) {
         uint64_t k= 0;
         int64_t cnt = 0;
+        vector< vector <uint32_t> > detailedHisto(samplecount, vector<uint32_t>(samplecount+1, 0));
         while (reader->getNextValueList(k, ret)) {
             uint32_t keycnt = ret.size();
             if (keycnt > samplecount) {
                 printf("%d \n", keycnt);
                 for (auto &x: ret)
                     printf("%d ", x);
-
                 printf("\n");
             }
             keyHisto[keycnt]++;
+            for (auto &x: ret)
+                detailedHisto[x][keycnt]++;
             cnt ++;
         }
         auto pRoot = xml->NewElement("Root");
@@ -115,6 +117,15 @@ int main(int argc, char ** argv) {
         xml->InsertFirstChild(pRoot);
         string output = "keydistribution.xml";
         xml->SaveFile(output.c_str());
+        auto vres = reader->getSampleInfo();
+        FILE *fout = fopen("histo.txt","w");
+        for (int i = 0 ; i < samplecount; i++) {
+                fprintf(fout, "%s,", vres[i].c_str());
+                for (int j = 1; j<=samplecount;j++)
+                     fprintf(fout, "%d,", detailedHisto[i][j]);
+                fprintf(fout,"\n");
+        }
+        fclose (fout);
         return 0;
     }
     int limit = 10485760;
