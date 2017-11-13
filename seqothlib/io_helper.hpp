@@ -563,6 +563,21 @@ public:
             }
         }
     }
+    vector<string> getSampleInfo() {
+        vector<string> ans;
+        for (auto s:fnames) {
+            string grpfname = s + ".xml";
+            tinyxml2::XMLDocument doc;
+            doc.LoadFile(grpfname.c_str());
+            for (tinyxml2::XMLElement *q = doc.FirstChildElement("Root")->FirstChildElement("Samples")->FirstChildElement("SampleInfo"); q!= NULL; q=q->NextSiblingElement("SampleInfo")) {
+                string fname (q->Attribute("BinaryFile")); //, &fname);
+                string count (q->Attribute("KmerCount")); //, &count);
+                string cutoff (q->Attribute("MinExpressionInKmerFile"));//,&cutoff);
+                ans.push_back(fname+":Cnt:"+count+"Cut:"+cutoff);
+            }
+        }
+        return ans;
+    }
     KmerGroupComposer(vector<string> & _fnames): fnames(_fnames) {
 
         //check kmer length consistent;
@@ -894,28 +909,28 @@ class IOBuf {
     size_t tot = 0;
     bool load = false;
     bool done = false;
-    char fname[1024]; 
+    char fname[1024];
     void load_from_file() {
-       if (!done) 
-               finishwrite();
-       v.resize(tot);
-       FILE *fin = fopen(fname,"rb");
-       size_t max = fread(&v[0], sizeof(keyType), tot, fin);
-       if (max != tot) {
-               fprintf(stderr,"Warning reading %s: read %d elements , expected %d elements .\n", fname, max, tot);
-       }
-       load = true;
-       fclose(fin);
-       if ( remove(fname) != 0) {
-               fprintf(stderr,"faile to remove file %s\n", fname);
-       }
+        if (!done)
+            finishwrite();
+        v.resize(tot);
+        FILE *fin = fopen(fname,"rb");
+        size_t max = fread(&v[0], sizeof(keyType), tot, fin);
+        if (max != tot) {
+            fprintf(stderr,"Warning reading %s: read %d elements , expected %d elements .\n", fname, max, tot);
+        }
+        load = true;
+        fclose(fin);
+        if ( remove(fname) != 0) {
+            fprintf(stderr,"faile to remove file %s\n", fname);
+        }
     }
 public:
     IOBuf(const char * _fname) {
         strcpy(fname,_fname);
         fout = fopen(fname,"wb");
         if (fout == NULL) {
-              fprintf(stderr,"failed to open file %s\n", fname);
+            fprintf(stderr,"failed to open file %s\n", fname);
         }
         v.clear();
     }
@@ -927,20 +942,20 @@ public:
         v.clear();
     }
     void push_back(const keyType &t) {
-        tot ++; 
+        tot ++;
         v.push_back(t);
         if (v.size() == 8192) {
             fwrite(&v[0], v.size(), sizeof(keyType), fout);
             v.clear();
         }
     }
-    
+
     size_t size() {
         return tot;
     }
     keyType * getstart() {
-        if (!load) 
-             load_from_file();
+        if (!load)
+            load_from_file();
         return &v[0];
     }
 };

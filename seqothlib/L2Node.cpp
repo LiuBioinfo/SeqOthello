@@ -24,28 +24,28 @@ inline void put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
     }
 }
 inline uint32_t getvalue(uint8_t **pp, bool & hasvalue, uint8_t &buff, bool & finished) {
-        uint8_t v = get4b(pp, hasvalue, buff);
-        if (v & 0x8) {
-            if (v == 8) finished = true;
-            return (v&0x7);
-        }
-        uint32_t v2 = get4b(pp, hasvalue, buff);
-        if (v & 0x4) {
-            uint32_t a = (v & 0x3);
-            return ( (a<<4) | v2);
-        }
-        uint32_t v3 = get4b(pp, hasvalue, buff);
-        if (v & 0x2) {
-            uint32_t a = (v & 0x1);
-            return ( (a<<8) | (v2<<4) | v3);
-        }
-        uint32_t v4 = get4b(pp, hasvalue, buff);
-        if (v == 1) {
-            return (v2<<8) | (v3<<4) | v4;
-        }
-        uint32_t v5 = get4b(pp, hasvalue, buff);
-        uint32_t v6 = get4b(pp, hasvalue, buff);
-        return ( (v2<<16) | (v3<<12) | (v4<<8) | (v5<<4) | v6);
+    uint8_t v = get4b(pp, hasvalue, buff);
+    if (v & 0x8) {
+        if (v == 8) finished = true;
+        return (v&0x7);
+    }
+    uint32_t v2 = get4b(pp, hasvalue, buff);
+    if (v & 0x4) {
+        uint32_t a = (v & 0x3);
+        return ( (a<<4) | v2);
+    }
+    uint32_t v3 = get4b(pp, hasvalue, buff);
+    if (v & 0x2) {
+        uint32_t a = (v & 0x1);
+        return ( (a<<8) | (v2<<4) | v3);
+    }
+    uint32_t v4 = get4b(pp, hasvalue, buff);
+    if (v == 1) {
+        return (v2<<8) | (v3<<4) | v4;
+    }
+    uint32_t v5 = get4b(pp, hasvalue, buff);
+    uint32_t v6 = get4b(pp, hasvalue, buff);
+    return ( (v2<<16) | (v3<<12) | (v4<<8) | (v5<<4) | v6);
 }
 uint32_t valuelistDecode(uint8_t *p, vector<uint32_t> &val, uint32_t maxmem) {
     uint8_t **pp = &p;
@@ -54,59 +54,62 @@ uint32_t valuelistDecode(uint8_t *p, vector<uint32_t> &val, uint32_t maxmem) {
     uint8_t buff = 0;
     bool finished = false;;
     while ( *pp < (p+maxmem) ) {
-            uint32_t x = getvalue(pp, hasvalue, buff,finished);
-            if (finished)
-                   return val.size();
-            val.push_back(x);
-            if (x == 1) {
-                    uint32_t dup = getvalue(pp, hasvalue, buff, finished);
-                    while (dup > 1) {val.push_back(1); dup--; }
+        uint32_t x = getvalue(pp, hasvalue, buff,finished);
+        if (finished)
+            return val.size();
+        val.push_back(x);
+        if (x == 1) {
+            uint32_t dup = getvalue(pp, hasvalue, buff, finished);
+            while (dup > 1) {
+                val.push_back(1);
+                dup--;
             }
+        }
     }
     return val.size();
 }
 inline void putvalue(uint32_t x, uint8_t **pp, bool &filledhalf, bool really, uint32_t & ans) {
-        if (x>0xFFF) { //>12bits
-            if (really) {
-                put4b(pp, filledhalf, 0);
-                put4b(pp, filledhalf, 0xF & (x >> 16));
-                put4b(pp, filledhalf, 0xF & (x >> 12));
-                put4b(pp, filledhalf, 0xF & (x >> 8));
-                put4b(pp, filledhalf, 0xF & (x >> 4));
-                put4b(pp, filledhalf, 0xF & x);
-            }
-            else ans += 6;
+    if (x>0xFFF) { //>12bits
+        if (really) {
+            put4b(pp, filledhalf, 0);
+            put4b(pp, filledhalf, 0xF & (x >> 16));
+            put4b(pp, filledhalf, 0xF & (x >> 12));
+            put4b(pp, filledhalf, 0xF & (x >> 8));
+            put4b(pp, filledhalf, 0xF & (x >> 4));
+            put4b(pp, filledhalf, 0xF & x);
         }
-        else if (x>0x1FF) { //10~12bits
-            if (really) {
-                put4b(pp, filledhalf, 1);
-                put4b(pp, filledhalf, 0xF & (x >> 8));
-                put4b(pp, filledhalf, 0xF & (x >> 4));
-                put4b(pp, filledhalf, 0xF & x);
-            }
-            else ans += 4;
+        else ans += 6;
+    }
+    else if (x>0x1FF) { //10~12bits
+        if (really) {
+            put4b(pp, filledhalf, 1);
+            put4b(pp, filledhalf, 0xF & (x >> 8));
+            put4b(pp, filledhalf, 0xF & (x >> 4));
+            put4b(pp, filledhalf, 0xF & x);
         }
-        else if (x>0x3F) { // 7~9 bits
-            if (really) {
-                put4b(pp, filledhalf, 2 | (x>>8) );
-                put4b(pp, filledhalf, 0xF & (x >> 4));
-                put4b(pp, filledhalf, 0xF & x);
-            }
-            else ans += 3;
+        else ans += 4;
+    }
+    else if (x>0x3F) { // 7~9 bits
+        if (really) {
+            put4b(pp, filledhalf, 2 | (x>>8) );
+            put4b(pp, filledhalf, 0xF & (x >> 4));
+            put4b(pp, filledhalf, 0xF & x);
         }
-        else if (x>0x7 || x==0) { // 4~6 bits or 0
-            if (really) {
-                put4b(pp, filledhalf, 4 | (x>>4) );
-                put4b(pp, filledhalf, 0xF & x);
-            }
-            else ans += 2;
+        else ans += 3;
+    }
+    else if (x>0x7 || x==0) { // 4~6 bits or 0
+        if (really) {
+            put4b(pp, filledhalf, 4 | (x>>4) );
+            put4b(pp, filledhalf, 0xF & x);
         }
-        else { //<=3bits
-            if (really)
-                put4b(pp, filledhalf, 0x8 | x);
-            else
-                ans ++;
-        }
+        else ans += 2;
+    }
+    else { //<=3bits
+        if (really)
+            put4b(pp, filledhalf, 0x8 | x);
+        else
+            ans ++;
+    }
 
 }
 uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
@@ -128,8 +131,8 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
             putvalue(j-i, pp, filledhalf, really, ans);
             i=j;
         }
-        else 
-           i++;
+        else
+            i++;
     }
     if (really) {
         put4b(pp, filledhalf, 8);
@@ -221,7 +224,7 @@ void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
             gzwrite(fdata, &u0, IOLengthInBytes);
         }
         //}
-        valuemap[value] = valuemap.size();
+        valuemap[value] = siz;
         gzwrite(fdata, &value, IOLengthInBytes);
         siz++;
         entrycnt = siz;
@@ -233,6 +236,7 @@ void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
 }
 
 void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // this valuelist is diff.
+    vector<uint8_t> buff(IOLengthInBytes,0);
     if (encodetype!= L2NodeTypes::VALUE_INDEX_ENCODED)
         throw invalid_argument("can not add value list L2EncodedValueListNode");
     if (fdata==NULL) {
@@ -244,21 +248,38 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
         }
     }
     keys.push_back(k);
-    vector<uint8_t> buff(IOLengthInBytes);
-    if (siz == 0) { //lines.size() == 0) {
-        //lines.resize(IOLengthInBytes);
+    keycnt++;
+    valuelistEncode(&buff[0], valuelist, true);
+    if (IOLengthInBytes<=8) {
+        uint64_t v64 = 0;
+        memcpy(&v64, &buff[0], IOLengthInBytes);
+        if (valuemap.count(v64) ==0) {
+            if (siz == 0) {
+                siz += IOLengthInBytes;
+                entrycnt++;
+                gzwrite(fdata,&buff[0], IOLengthInBytes);
+            }
+            valuemap[v64] = entrycnt;
+            entrycnt++;
+            siz += IOLengthInBytes;
+            gzwrite(fdata,&buff[0], IOLengthInBytes);
+        }
+        values.push_back(valuemap[v64]);
+    }
+    else {
+        if (siz == 0) { //lines.size() == 0) {
+            //lines.resize(IOLengthInBytes);
+            siz += IOLengthInBytes;
+            entrycnt++;
+            gzwrite(fdata,&buff[0], IOLengthInBytes);
+        }
+        //uint32_t curr = lines.size();
+        //lines.resize(lines.size() + IOLengthInBytes);
         siz += IOLengthInBytes;
         entrycnt++;
         gzwrite(fdata,&buff[0], IOLengthInBytes);
+        values.push_back(keycnt);
     }
-    //uint32_t curr = lines.size();
-    //lines.resize(lines.size() + IOLengthInBytes);
-    siz += IOLengthInBytes;
-    valuelistEncode(&buff[0], valuelist, true);
-    gzwrite(fdata,&buff[0], IOLengthInBytes);
-    keycnt++;
-    entrycnt++;
-    values.push_back(keycnt);
 
 }
 
@@ -354,7 +375,7 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
     gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
-    gzbuffer(fin2,256*1024); 
+    gzbuffer(fin2,256*1024);
     uint64list.resize(0);//ShortVLcount);
     for (uint32_t i = 0 ; i < siz; i++) {
         uint64_t vl = 0ULL;
@@ -387,7 +408,7 @@ void L2EncodedValueListNode::loadDataFromGzipFile() {
     L2Node::oth->loadDataFromGzipFile(fin);
     lines.resize(siz);//ShortVLcount);
     gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
-    gzbuffer(fin2,256*1024); 
+    gzbuffer(fin2,256*1024);
     gzread(fin2, &lines[0], siz);
     gzclose(fin);
     gzclose(fin2);

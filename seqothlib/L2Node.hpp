@@ -82,6 +82,7 @@ class L2EncodedValueListNode : public L2Node {
     uint32_t siz = 0;
     uint32_t IOLengthInBytes, encodetype;
     uint32_t keycnt  = 0;
+    map<uint64_t, uint32_t> valuemap;
 public:
     int getType() override {
         return encodetype;

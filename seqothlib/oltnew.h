@@ -32,14 +32,15 @@ private:
     uint32_t L2InQKeyLimit = 1024512;
     uint64_t L2InQValLimit = 1024ULL*32ULL;
     uint32_t L2limit = 128;
+    constexpr static uint32_t L2limit0 = 128;
     uint32_t L2diff = L2limit;
 #else
     uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
     uint32_t L2limit = 1048576*128;
+    constexpr static uint32_t L2limit0 = 1048576*128;
     uint32_t L2diff = L2limit/128;
 #endif    
-    constexpr static uint32_t L2limit0 = 1048576*128;
     vector<uint32_t> freqToVnodeIdMap;
     string folder;
     string L1NODE_PREFIX="map.L1.p";
