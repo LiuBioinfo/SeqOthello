@@ -60,3 +60,7 @@ In another terminal, run the Client program.
 
 #License 
 Please refer to LICENSE.TXT.
+
+#Contact
+Please contact us at SeqOthello@googlegroups.com
+
