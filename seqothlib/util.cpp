@@ -1,3 +1,4 @@
+// This file is a part of SeqOthello. Please refer to LICENSE.TXT for the LICENSE
 #include "util.h"
 #include <cstring>
 #include <cstdio>
