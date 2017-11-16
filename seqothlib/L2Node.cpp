@@ -155,6 +155,8 @@ void L2Node::constructOth() {
     for (auto &k: oth->removedKeys) {
         printf("%s: Removed key vNode %lx\n", get_thid().c_str(), k);
     }
+    keys.clear();
+    values.clear();
 }
 
 #pragma GCC diagnostic push
