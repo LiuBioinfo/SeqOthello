@@ -949,7 +949,9 @@ public:
             v.clear();
         }
     }
-
+    void release() {
+        v.clear();
+    }
     size_t size() {
         return tot;
     }
