@@ -50,6 +50,7 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
         othello->exportInfo(buf);
         gzwrite(fout, buf, sizeof(buf));
         othello->writeDataToGzipFile(fout);
+        kV[id]->release();
     }
     else
         gzwrite(fout,buf,sizeof(buf));
@@ -120,7 +121,7 @@ map<int,double> L1Node::printrates() {
     for (auto *p: othellos) {
         map<int,double> tmap;
         p->getrates(tmap);
-        for (auto &x: tmap) 
+        for (auto &x: tmap)
             sum[x.first] += x.second;
     }
     return sum;
