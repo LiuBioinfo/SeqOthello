@@ -52,12 +52,12 @@ int main(int argc, char ** argv) {
     }
     FILE *fin, *fout;
     string helpstr =  "usage: \t Q ATGCATGC..................... : Show Containment query results for transcript.\n"
-                   "     : \t D ATGCATGC..................... : Show Coverage query results for transcript.\n"
-                   "     : \t H                               : Show help info\n";
+                      "     : \t D ATGCATGC..................... : Show Coverage query results for transcript.\n"
+                      "     : \t H                               : Show help info\n";
     int x = ((int) (argInteractive)) + ((int) argContainmentQuery) + ((int) argCoverageQuery);
     if (x != 1) {
-            std::cerr << " must be one of --interactive, --containment, --coverage"<< std::endl; 
-            return 1;
+        std::cerr << " must be one of --interactive, --containment, --coverage"<< std::endl;
+        return 1;
     }
     string query_type;
     if (!argInteractive) {
@@ -85,7 +85,7 @@ int main(int argc, char ** argv) {
         fout = stdout;
         fprintf(fout,"%s", helpstr.c_str());
     }
-    
+
 
     char buf[1048576];
     memset(buf,0,sizeof(buf));
@@ -99,15 +99,15 @@ int main(int argc, char ** argv) {
             char * p, *p0;
             p0 = p = &buf[0];
             if (argInteractive) {
-                  if ((buf[0] != 'Q' && buf[0]!='D') || buf[1]!=' ') {
-                         printf("%s\n",helpstr.c_str());
-                         continue;
-                  }
-                  p0 = p = &buf[2];
-                  if (buf[0] == 'Q')
-                          query_type = TYPE_CONTAINMENT;
-                  if (buf[0] == 'D')
-                          query_type = TYPE_COVERAGE;
+                if ((buf[0] != 'Q' && buf[0]!='D') || buf[1]!=' ') {
+                    printf("%s\n",helpstr.c_str());
+                    continue;
+                }
+                p0 = p = &buf[2];
+                if (buf[0] == 'Q')
+                    query_type = TYPE_CONTAINMENT;
+                if (buf[0] == 'D')
+                    query_type = TYPE_COVERAGE;
             }
 
             if (*p !='A' && *p!='T' && *p !='G' && *p != 'C') continue;
@@ -115,7 +115,7 @@ int main(int argc, char ** argv) {
             *p = '\0';
             if (strlen(buf)<=3) break;
             int strl;
-            sock.sendmsg(query_type); 
+            sock.sendmsg(query_type);
             sock.sendmsg(p0, strl = strlen(p0));
             printf("Sent a query %s with %d bases.\n", query_type.c_str(), strl );
             string buf;

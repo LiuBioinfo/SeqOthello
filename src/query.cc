@@ -14,7 +14,7 @@
 #include <args.hxx>
 #include <io_helper.hpp>
 #include <atomic>
-#include "socket.h"  
+#include "socket.h"
 
 using namespace std;
 
@@ -102,7 +102,7 @@ void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<sh
             */
         }
 
-   }
+    }
     printf("L2 thread %d finished\n", myid);
 };
 
@@ -117,19 +117,19 @@ void process(const string &type, ThreadParameter *par) {
     vector<int> queryans;
     static int CONTAINMENT = 1;
     static int COVERAGE = 2;
-	int query_type;
+    int query_type;
     if (type == TYPE_CONTAINMENT)
-            query_type = CONTAINMENT;
+        query_type = CONTAINMENT;
     else if (type == TYPE_COVERAGE)
-            query_type = COVERAGE;
+        query_type = COVERAGE;
     else {
         string ans = "Must specify query type";
         par->sock->sendmsg(ans);
         par->sock->sendmsg("");
         return;
     }
-    if (query_type == CONTAINMENT) 
-            queryans.resize(par->oth->sampleCount);
+    if (query_type == CONTAINMENT)
+        queryans.resize(par->oth->sampleCount);
     uint32_t kmerLength = par->oth->kmerLength;
     ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
     auto &str = par->iobuf;
@@ -174,28 +174,28 @@ void process(const string &type, ThreadParameter *par) {
             }
         }
         if (query_type == COVERAGE) {
-        set<uint16_t> vset(vret.begin(), vret.end());
-        for (unsigned int i = 0; i < par->oth->sampleCount; i++) {
-            if (vset.count(i)) *p = '+';
-            else *p = '.';
-            p++;
-        }
-        *p ='\0';
-        par->sock->sendmsg(ans, strlen(ans));
+            set<uint16_t> vset(vret.begin(), vret.end());
+            for (unsigned int i = 0; i < par->oth->sampleCount; i++) {
+                if (vset.count(i)) *p = '+';
+                else *p = '.';
+                p++;
+            }
+            *p ='\0';
+            par->sock->sendmsg(ans, strlen(ans));
         }
         else {
-             for (auto x: vret) if (x<queryans.size())
-                     queryans[x] ++;
+            for (auto x: vret) if (x<queryans.size())
+                    queryans[x] ++;
         }
     }
     if (query_type == CONTAINMENT) {
-            stringstream ss;
-            for (auto x:queryans)
-                    ss <<x <<" ";
-            string str =ss.str();
-            par->sock->sendmsg(str);
+        stringstream ss;
+        for (auto x:queryans)
+            ss <<x <<" ";
+        string str =ss.str();
+        par->sock->sendmsg(str);
     }
-    par->sock->sendmsg(""); 
+    par->sock->sendmsg("");
 }
 
 void HandleTCPClient(ThreadParameter *par) {
@@ -214,19 +214,19 @@ void HandleTCPClient(ThreadParameter *par) {
 
     // Send received string and receive again until the end of transmission
     string str;
-    try{
-    while (par->sock->recvmsg(str)) {
-        // end of transmission
-        if (str == TYPE_CONTAINMENT || str == TYPE_COVERAGE) {
-        par->sock->recvmsg(par->iobuf);  
-		cout << str << std::endl;
-        if (par->iobuf.size()>0) {
-            process(str, par);
+    try {
+        while (par->sock->recvmsg(str)) {
+            // end of transmission
+            if (str == TYPE_CONTAINMENT || str == TYPE_COVERAGE) {
+                par->sock->recvmsg(par->iobuf);
+                cout << str << std::endl;
+                if (par->iobuf.size()>0) {
+                    process(str, par);
+                }
+            }
         }
-        }
-    }
     } catch( std::runtime_error e) {
-            cerr << "Error while responding..." << e.what()<< endl;
+        cerr << "Error while responding..." << e.what()<< endl;
     }
     // Destructor closes socket
 
@@ -296,7 +296,7 @@ int main(int argc, char ** argv) {
     if (argNQueryThreads) {
         nloadThreads = nqueryThreads = args::get(argNQueryThreads);
     }
-    
+
     if (argNLoadThreads) {
         nloadThreads = args::get(argNLoadThreads);
     }
