@@ -40,7 +40,7 @@ public:
     virtual uint64_t getvalcnt() = 0;
     static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p);
     string gzfname;
-    
+    virtual double expectedOnes(double &) = 0;
 };
 
 class L2ShortValueListNode : public L2Node {
@@ -75,6 +75,7 @@ public:
     void loadDataFromGzipFile() override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
     uint64_t getvalcnt() override;
+    double expectedOnes(double &) override;
 };
 
 class L2EncodedValueListNode : public L2Node {
@@ -101,5 +102,6 @@ public:
     void loadDataFromGzipFile() override;
     void putInfoToXml(tinyxml2::XMLElement *) override;
     uint64_t getvalcnt() override;
+    double expectedOnes(double &) override;
 };
 
