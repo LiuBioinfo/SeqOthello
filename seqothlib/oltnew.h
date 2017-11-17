@@ -443,6 +443,18 @@ public:
         reader->reset();
         return encodeLengthToL1ID;
     }
+    vector<vector<uint16_t>> QueryL1ByPartition(vector<vector<uint64_t>> &kmers, int nThreads) {
+        loadL1(kmerLength);
+        vector<vector<uint16_t>> ans;
+        for (auto &vk : kmers) {
+            vector<uint16_t> result;
+            for (auto &k : vk) {
+                result.push_back(this->l1Node->queryInt(k));
+            }
+            ans.push_back(result);
+        }
+        return ans;
+    }
     void printrates() {
         map<int, double> rates = l1Node->printrates();
         for (int i = 1; i<L2IDShift; i++) 
@@ -452,7 +464,6 @@ public:
             double exp = vNodes[i]->expectedOnes(t);
             printf("%d : %.8lf %.5lf %.3lf\n", i+L2IDShift, rates[i+L2IDShift] ,t, exp);
         }
-        
     }
 };
 

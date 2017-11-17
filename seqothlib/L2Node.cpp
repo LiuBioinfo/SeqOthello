@@ -483,7 +483,7 @@ double L2ShortValueListNode::expectedOnes(double &prb) {
     L2Node::oth->getrates(tmap);
     prb = 0;
     double ans = 0;
-    for (int i = 1 ; i < uint64list.size(); i++){
+    for (int i = 1 ; i < uint64list.size(); i++) {
         ans += tmap[i]*valuecnt;
         prb += tmap[i];
     }
@@ -511,10 +511,10 @@ double L2EncodedValueListNode::expectedOnes(double &prb) {
             ans += decode.size()  * tmap[index];
         }
         else {
-                int tot = 0;
-                for (int j = index*IOLengthInBytes; j < IOLengthInBytes*(index+1); j++) 
-                    tot += cnt8[lines[j]];
-                ans += tot * tmap[index];
+            int tot = 0;
+            for (int j = index*IOLengthInBytes; j < IOLengthInBytes*(index+1); j++)
+                tot += cnt8[lines[j]];
+            ans += tot * tmap[index];
         }
     }
     return ans;

@@ -1,3 +1,4 @@
+// This file is a part of SeqOthello. Please refer to LICENSE.TXT for the LICENSE
 #pragma once
 #include "othello.h"
 #include <map>
@@ -30,9 +31,10 @@ public:
         kV.clear();
         vV.clear();
         for (unsigned int i = 0 ; i < grpidlimit; i++) {
-            stringstream ss; 
+            stringstream ss;
             ss << buf << i;
-            string fstr; ss >> fstr;
+            string fstr;
+            ss >> fstr;
             kV.push_back(new IOBuf<uint64_t>((fstr+".keys").c_str()));
             vV.push_back(new IOBuf<uint16_t>((fstr+".values").c_str()));
         }

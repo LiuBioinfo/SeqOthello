@@ -16,6 +16,8 @@
 #include <atomic>
 #include "socket.h"
 
+#include <threadpool.h>
+
 using namespace std;
 
 int nqueryThreads = 1;
@@ -449,7 +451,51 @@ int main(int argc, char ** argv) {
         ans.emplace(i, new vector<int> (seqoth->L2IDShift));
 
     vector<shared_ptr<unordered_map<int, vector<int>>>> response;
-    if (true) {
+    if (!argLegacy) {
+        int32_t kmerLength = seqoth->kmerLength;
+        ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
+        vector<vector<uint64_t>> seqInKmers;
+        for (auto &str : vSeq)  {
+
+            int ul = str.size()-kmerLength+1;
+            char buf[64];
+            memset(buf,0,sizeof(buf));
+            vector<uint64_t> kmers;
+            if (ul>0)
+                for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
+                    memcpy(buf,str.data()+i,kmerLength);
+                    uint64_t key = 0;
+                    helper.convert(buf,&key);
+                    if (flag) {
+                        key =  helper.minSelfAndRevcomp(key);
+                    }
+                    kmers.push_back(key);
+                }
+            seqInKmers.push_back(kmers);
+        }
+        auto L1Resp = seqoth->QueryL1ByPartition(seqInKmers, nqueryThreads);
+        for (int i = 0; i < L1Resp.size(); i++) {
+            for (int j = 0; j < L1Resp[i].size(); j++) {
+                uint16_t othquery = L1Resp[i][j];
+                if (othquery ==0) continue;
+                if (othquery < L2IDShift) {
+                    ans.find(i)->second->at(othquery-1) ++;
+                    continue;
+                }
+                if (othquery - L2IDShift >= vnodecnt) continue;
+                if (vL2kmer[othquery - L2IDShift ] == nullptr) {
+                    vL2kmer[othquery - L2IDShift] = make_shared<vector<uint64_t>>();
+                    vL2TID[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
+                }
+                vL2kmer[othquery - L2IDShift]->push_back(seqInKmers[i][j]);
+                vL2TID[othquery - L2IDShift]->push_back(i);
+            }
+        }
+        L1Resp.clear();
+        seqoth->startloadL2(nloadThreads);
+    }
+
+    if (argLegacy) {
         for (int i = 0 ; i < nqueryThreads; i++) {
             for (unsigned int j = 0 ; j < vL1Result[i].size(); j++) {
                 uint16_t othquery = vL1Result[i][j];
@@ -471,6 +517,54 @@ int main(int argc, char ** argv) {
         vL1Result.clear();
         vKmer.clear();
         vkTID.clear();
+    }
+    if (!argLegacy) {
+        for (unsigned int i = 0; i < vnodecnt; i++) {
+            L2Node *pvNode = seqoth->vNodes[i].get();
+            map<int, vector<int> > mans;
+            int high = seqoth->sampleCount;
+            if (vL2kmer[i] != nullptr)
+                for (int j = 0 ; j < vL2kmer[i]->size(); j++) {
+                    auto kmer = (*vL2kmer[i])[j];
+                    auto TID = (*vL2TID[i])[j];
+                    vector<uint32_t> ret;
+                    vector<uint8_t> retmap;
+                    bool respond = pvNode->smartQuery(&kmer, ret, retmap);
+                    if (mans.count(TID) == 0) {
+                        vector<int> empty(high+1);
+                        mans.emplace(TID, empty);
+                    }
+                    if (respond) {
+                        auto &vec = mans.at(TID);
+                        for (auto &p : ret)
+                            if (p<=high)
+                                vec[p] ++;
+                    }
+                    else {
+                        for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
+                            auto vec = mans.at(TID);
+                            if (retmap[v>>3] & ( 1<< (v & 7)))
+                                vec[v]++;
+                        }
+                    }
+                }
+            for (auto &x: mans) {
+                if (ans.count(x.first) == 0)
+                    ans[x.first] = new vector<int>(x.second);
+                else {
+                    auto ip = ans[x.first]->begin();
+                    auto iq = x.second.begin();
+                    while (iq != x.second.end()) {
+                        *ip  += *iq;
+                        ip++;
+                        iq++;
+                    }
+                }
+            }
+        }
+
+    }
+    if (argLegacy) {
         seqoth->waitloadL2();
         response.reserve(vnodecnt);
         printf("Splitting into L2 groups\n");
