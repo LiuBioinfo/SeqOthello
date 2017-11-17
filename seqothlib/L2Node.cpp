@@ -207,7 +207,7 @@ bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret,
 void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
     if (fdata==NULL) {
         fdata = gzopen((gzfname+".dat").c_str(),"wb");
-        gzbuffer(fdata,64*1024);
+//        gzbuffer(fdata,64*1024);
         if (fdata == NULL) {
             fprintf(stderr,"failed to open file %s to write\n", (gzfname+".dat").c_str());
             return;
@@ -244,7 +244,7 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
         throw invalid_argument("can not add value list L2EncodedValueListNode");
     if (fdata==NULL) {
         fdata = gzopen((gzfname+".dat").c_str(),"wb");
-        gzbuffer(fdata,64*1024);
+//        gzbuffer(fdata,64*1024);
         if (fdata == NULL) {
             fprintf(stderr,"failed to open file %s to write\n", (gzfname+".dat").c_str());
             return;
@@ -291,7 +291,7 @@ void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
         throw invalid_argument("can not add bitmap to L2EncodedValueListNode");
     if (fdata==NULL) {
         fdata = gzopen((gzfname+".dat").c_str(),"wb");
-        gzbuffer(fdata,256*1024);
+//        gzbuffer(fdata,256*1024);
         if (fdata == NULL) {
             fprintf(stderr,"failed to open file %s to write\n", (gzfname+".dat").c_str());
             return;
@@ -361,7 +361,7 @@ void L2EncodedValueListNode::writeDataToGzipFile() {
 void L2ShortValueListNode::loadDataFromGzipFile() {
     printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
-    gzbuffer(fin,256*1024);
+//    gzbuffer(fin,256*1024);
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
@@ -378,7 +378,7 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
     gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
-    gzbuffer(fin2,256*1024);
+//    gzbuffer(fin2,256*1024);
     uint64list.resize(0);//ShortVLcount);
     for (uint32_t i = 0 ; i < siz; i++) {
         uint64_t vl = 0ULL;
@@ -393,7 +393,7 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
 void L2EncodedValueListNode::loadDataFromGzipFile() {
     printf("%s: Load L2 Node %s\n", get_thid().c_str(), gzfname.c_str());
     gzFile fin = gzopen(gzfname.c_str(), "rb");
-    gzbuffer(fin,256*1024);
+//    gzbuffer(fin,256*1024);
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
@@ -411,7 +411,7 @@ void L2EncodedValueListNode::loadDataFromGzipFile() {
     L2Node::oth->loadDataFromGzipFile(fin);
     lines.resize(siz);//ShortVLcount);
     gzFile fin2 = gzopen((gzfname+".dat").c_str(), "rb");
-    gzbuffer(fin2,256*1024);
+//    gzbuffer(fin2,256*1024);
     gzread(fin2, &lines[0], siz);
     gzclose(fin);
     gzclose(fin2);
