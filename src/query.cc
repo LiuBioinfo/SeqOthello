@@ -22,79 +22,6 @@ using namespace std;
 
 int nqueryThreads = 1;
 int nloadThreads = 1;
-/*
-atomic<int> workers;
-void getL1Result(SeqOthello * seqoth, const vector<string> & seq, const vector<int> & seqID,
-                 vector<uint16_t> &result, vector<uint64_t> &kmers, vector<uint32_t> & TID, bool useReverseComp) {
-    int32_t kmerLength = seqoth->kmerLength;
-    ConstantLengthKmerHelper<uint64_t, uint16_t> helper(seqoth->kmerLength,0);
-
-    printf("%s : Got %lu transcripts for L1 query. \n", get_thid().c_str(), seq.size());
-    result.clear();
-    TID.clear();
-    kmers.clear();
-    for (unsigned int id = 0; id < seq.size(); id++) {
-        auto const & str = seq[id];
-        int ul = str.size()-kmerLength+1;
-        char buf[64];
-        memset(buf,0,sizeof(buf));
-        if (ul>0)
-            for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
-                memcpy(buf,str.data()+i,kmerLength);
-                uint64_t key = 0;
-                helper.convert(buf,&key);
-                if (useReverseComp) {
-                    key =  helper.minSelfAndRevcomp(key);
-                }
-                kmers.push_back(key);
-                result.push_back(seqoth->l1Node->queryInt(key));
-                TID.push_back(seqID[id]);
-            }
-    }
-    printf("%s: L1 finished. Got %lu kmers. \n", get_thid().c_str(), TID.size());
-};
-void getL2Result(uint32_t high, const vector<L2Node *> &pvNodes, const vector<shared_ptr<vector<uint64_t>>> & vpvkmer, const vector<shared_ptr<vector<uint32_t>>> &vTID, unordered_map<int, vector<int>> *pans) {
-    int myid = workers.fetch_add(1);
-    unsigned int totkmer = 0;
-    for (auto const & p:vpvkmer)
-        if (p)
-            totkmer += p->size();
-    printf("%s : Query on %lu L2 nodes, with %u kmers.\n", get_thid().c_str(), pvNodes.size(), totkmer);
-    pans->clear();
-    for (unsigned int vpid = 0; vpid < vpvkmer.size(); vpid++) {
-        auto const pvNode = pvNodes[vpid];
-        if (pvNode == NULL) continue;
-        if (!vpvkmer[vpid]) continue;
-        auto const &kmers = *vpvkmer[vpid].get();
-        auto const &TID = *vTID[vpid].get();
-        for (unsigned int i = 0 ; i < kmers.size(); i++) {
-            vector<uint32_t> ret;
-            vector<uint8_t> retmap;
-            bool respond = pvNode->smartQuery(&kmers[i], ret, retmap);
-            if (pans->count(TID[i]) == 0) {
-                vector<int> empty(high+1);
-                pans->emplace(TID[i], empty);
-            }
-            if (respond) {
-                auto &vec = pans->at(TID[i]);
-                for (auto &p : ret)
-                    if (p<=high)
-                        vec[p] ++;
-                //for (auto &p : ret) pans->[TID[i]][p]++;
-            }
-            else {
-                for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
-                    auto &vec = pans->at(TID[i]);
-                    if (retmap[v>>3] & ( 1<< (v & 7)))
-                        vec[v]++;
-                }
-            }
-        }
-
-    }
-    printf("L2 thread %d finished\n", myid);
-};
-*/
 
 struct ThreadParameter {
     TCPSocket * sock;
@@ -243,7 +170,6 @@ int main(int argc, char ** argv) {
     args::Flag   NoReverseCompliment(parser, "",  "do not use reverse complement", {"noreverse"});
     args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1", {"qthread"});
     args::ValueFlag<int>  argNLoadThreads(parser, "int", "how many threads to use for loading the files, default = same as qthread", {"lthread"});
-    args::Flag   argLegacy(parser, "",  "Use legacy method to do the query", {"legacy"});
 
     args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port ", {"start-server-port"});
 
@@ -341,98 +267,6 @@ int main(int argc, char ** argv) {
     int nSeq = vSeq.size();
     string fnameout = args::get(resultsName);
     FILE *fout = fopen(fnameout.c_str(), "w");
-    /*
-        if (argLegacy)
-            if (argShowDedatils) {
-                seqoth->loadAll(nqueryThreads);
-                ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
-
-                vector<uint64_t>  requests;
-                set<uint32_t> skipped;
-                vector<bool> usedreverse;
-                for (unsigned int id = 0; id < vSeq.size(); id++)  {
-                    auto &str = vSeq[id];
-                    int ul = str.size()-kmerLength+1;
-                    if (ul<=0) {
-                        ul = 0;
-                        skipped.insert(id);
-                    }
-                    char buf[64];
-                    memset(buf,0,sizeof(buf));
-                    if (ul>0)
-                        for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
-                            memcpy(buf,str.data()+i,kmerLength);
-                            uint64_t key = 0, key0 = 0 ;
-                            helper.convert(buf,&key);
-                            if (flag) {
-                                key = helper.minSelfAndRevcomp(key0 = key);
-                                usedreverse.push_back(key == key0);
-                            }
-                            requests.push_back(key);
-                        }
-                }
-                auto  itUsedrevse = usedreverse.begin();
-                for (auto k : requests) {
-                    vector<uint32_t> vret;
-                    vector<uint8_t> vmap;
-                    char buf[30];
-                    memset(buf,0,sizeof(buf));
-                    auto toconvert = k;
-                    if (flag) {
-                        if (*itUsedrevse)
-                            toconvert = helper.reverseComplement(k);
-                        itUsedrevse++;
-                    }
-                    helper.convertstring(buf,&toconvert);
-                    fprintf(fout, "%s ", buf);
-                    bool res = seqoth->smartQuery(&k, vret, vmap);
-                    if (!res) {
-                        vret.clear();
-                        for (unsigned int v = 0; v< seqoth->sampleCount; v++) {
-                            if (vmap[v>>3] & ( 1<< (v & 7)))
-                                vret.push_back(v);
-                        }
-                    }
-                    set<uint16_t> vset(vret.begin(), vret.end());
-                    for (unsigned int i = 0; i < seqoth->sampleCount; i++) {
-                        if (vset.count(i)) fprintf(fout, "+");
-                        else fprintf(fout, ".");
-                    }
-                    fprintf(fout, "\n");
-                }
-
-
-                return 0;
-            }
-    */
-//
-//    vector<vector<uint64_t>> vKmer(nqueryThreads);
-//    vector<vector<uint16_t>> vL1Result(nqueryThreads);
-//    vector<vector<uint32_t>> vkTID(nqueryThreads);
-//    vector<shared_ptr<thread>> L1threads;
-    /*
-        if (argLegacy) {
-            seqoth->loadL1(kmerLength);
-            vector<vector<string>> vtSeq(nqueryThreads);
-            seqoth->startloadL2(nloadThreads);
-            vector<vector<int>> vtTID(nqueryThreads);
-            for (unsigned int id = 0; id< vSeq.size(); id++) {
-                vtSeq[id % nqueryThreads].push_back(vSeq[id]);
-                vtTID[id % nqueryThreads].push_back(id);
-            }
-            vSeq.clear();
-            for (int i = 0 ; i < nqueryThreads; i++) {
-                auto th1 = make_shared<thread>(getL1Result, seqoth, std::ref(vtSeq[i]), std::ref(vtTID[i]), std::ref(vL1Result[i]), std::ref(vKmer[i]), std::ref(vkTID[i]), flag);
-                L1threads.push_back(th1);
-            }
-            for (auto &th: L1threads)
-                th->join();
-
-            vtSeq.clear();
-            vtTID.clear();
-            seqoth->releaseL1();
-        }
-    */
 
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
@@ -509,31 +343,6 @@ int main(int argc, char ** argv) {
         }
     }
     L1Resp.clear();
-    /*
-        if (argLegacy) {
-            for (int i = 0 ; i < nqueryThreads; i++) {
-                for (unsigned int j = 0 ; j < vL1Result[i].size(); j++) {
-                    uint16_t othquery = vL1Result[i][j];
-                    if (othquery == 0) continue;
-                    if (othquery < L2IDShift) {
-                        ans.find(vkTID[i][j])->second->at(othquery-1) ++;
-                        continue;
-                    }
-                    if (othquery - L2IDShift >= vnodecnt)
-                        continue;
-                    if (vL2kmer[othquery - L2IDShift ] == nullptr) {
-                        vL2kmer[othquery - L2IDShift] = make_shared<vector<uint64_t>>();
-                        vL2TID[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
-                    }
-                    vL2kmer[othquery - L2IDShift]->push_back(vKmer[i][j]);
-                    vL2TID[othquery - L2IDShift]->push_back(vkTID[i][j]);
-                }
-            }
-            vL1Result.clear();
-            vKmer.clear();
-            vkTID.clear();
-        }
-    */
     for (unsigned int i = 0; i < vnodecnt; i++)
         if (vL2kmer[i] != nullptr) {
             seqoth->loadL2Node(i);
@@ -554,11 +363,9 @@ int main(int argc, char ** argv) {
                 if (argShowDedatils) {
                     string str(high,'.');
                     if (respond) {
-                        auto &vec = mans.at(TID);
                         for (auto &p : ret)
-                            if (p<high) {
+                            if (p<high)
                                 str[p]='+';
-                            }
                     }
                     else {
                         for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
@@ -607,51 +414,6 @@ int main(int argc, char ** argv) {
             }
             seqoth->releaseL2Node(i);
         }
-    /*
-        if (argLegacy) {
-            seqoth->waitloadL2();
-            response.reserve(vnodecnt);
-            printf("Splitting into L2 groups\n");
-            vector<shared_ptr<thread>> L2threads;
-            vector<vector<L2Node*>> vvpNode(nqueryThreads);
-            vector<vector<shared_ptr<vector<uint64_t>>>> vpkmergrp(nqueryThreads);
-            vector<vector<shared_ptr<vector<uint32_t>>>> vpTIDgrp(nqueryThreads);
-            for (unsigned int i = 0 ; i < vnodecnt; i++) {
-                int tid = i % nqueryThreads;
-                vvpNode[tid].push_back(seqoth->vNodes[i].get());
-                vpkmergrp[tid].push_back(vL2kmer[i]);
-                vpTIDgrp[tid].push_back(vL2TID[i]);
-            }
-
-            for (int i = 0; i < nqueryThreads; i++) {
-                //map<int, vector<int>> empty;
-                response.push_back(make_shared<unordered_map<int,vector<int>>>());
-                auto th = make_shared<thread>
-                          (getL2Result,seqoth->sampleCount, std::ref(vvpNode[i]), std::ref(vpkmergrp[i]), std::ref(vpTIDgrp[i]), response[i].get());
-                L2threads.push_back(th);
-            }
-            for (auto &th : L2threads)
-                th->join();
-            vvpNode.clear();
-            vpkmergrp.clear();
-            vpTIDgrp.clear();
-            printf("Gather L2 results\n");
-            for (auto const &res : response)
-                for (auto const &resKv : *res.get()) {
-                    if (ans.count(resKv.first) == 0)
-                        ans[resKv.first] = new vector<int>(resKv.second);
-                    else {
-                        auto ip = ans[resKv.first]->begin();
-                        auto iq = resKv.second.begin();
-                        while (iq != resKv.second.end()) {
-                            *ip += *iq;
-                            ip++;
-                            iq++;
-                        }
-                    }
-                }
-        }
-    */
     printf("Printing\n");
     if (argShowDedatils) {
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
@@ -696,9 +458,4 @@ int main(int argc, char ** argv) {
     }
     fclose(fout);
 
-// split the kmers onto multiple queues.
-// Step1: each thread gets vectors: v<seq> returns two v<kmer> v<L1Result>
-//         --- after this we have  v<v<kmer>> v<v<L1Result>>  v<v<transciptID>>
-//         --- categorize them into v<v<kmer>> v<v<transcriptID>> by L1 result.
-// Step2: for each node: get v<kmer>,
 }
