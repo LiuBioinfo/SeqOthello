@@ -51,6 +51,7 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
         gzwrite(fout, buf, sizeof(buf));
         othello->writeDataToGzipFile(fout);
         kV[id]->release();
+        vV[id]->release();
     }
     else
         gzwrite(fout,buf,sizeof(buf));
@@ -125,4 +126,49 @@ map<int,double> L1Node::printrates() {
             sum[x.first] += x.second;
     }
     return sum;
+}
+
+void L1Node::setfname(string str) {
+    fname = str;
+}
+
+void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, int grp, int threads) {
+    if (grp <0 || grp >= (1<<splitbit))
+        throw std::invalid_argument("Error group id for L1");
+
+    char cbuf[0x400];
+    memset(cbuf,0,sizeof(cbuf));
+    sprintf(cbuf,"%s.%d",fname.c_str(), grp);
+    gzFile fin = gzopen(cbuf, "rb");
+    unsigned char buf[0x20];
+    gzread(fin, buf,sizeof(buf));
+    unsigned char buf0[0x20];
+    memset(buf0,0,sizeof(buf0));
+    Othello<uint64_t> *oth;
+    if (memcmp(buf, buf0, 0x20) ==0) {
+        return;
+    }
+    else {
+        oth = new Othello<uint64_t> (buf);
+        oth->loadDataFromGzipFile(fin);
+        if (!oth->loaded) {
+            delete oth;
+            return;
+        }
+    }
+    int maxs = 64;
+    vector<int> loc;
+    for (int i = 0 ; i<=maxs; i++)
+        loc.push_back(kmers.size()*i/maxs);
+    for (int thd = 0; thd < 64; thd++)  {
+        int st = loc[thd];
+        int ed = loc[thd+1];
+        for (int i = st ; i < ed; i++)
+            for (int j = 0 ; j < kmers[i].size(); j++)
+                if (grp == (kmers[i][j] >> shift))
+                    ans[i][j] = oth->queryInt(kmers[i][j]);
+    }
+
+    delete oth;
+    return;
 }

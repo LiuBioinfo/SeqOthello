@@ -11,6 +11,7 @@ class L1Node {
 private:
     uint32_t splitbit;
     uint32_t shift;
+    string fname;
 public:
     uint32_t kmerLength;
     vector<Othello<uint64_t> *> othellos;
@@ -57,6 +58,8 @@ public:
         return splitbit;
     }
     map<int, double> printrates();
+    void setfname(string);
+    void queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, int grp, int threads);
 };
 
 

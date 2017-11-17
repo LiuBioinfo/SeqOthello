@@ -28,6 +28,7 @@ public:
     uint32_t L2IDShift;
     uint32_t sampleCount;
     uint32_t L1Splitbit;
+    SeqOthello() {}
 private:
 #ifndef NDEBUG
     uint32_t L2InQKeyLimit = 1024512;
@@ -48,8 +49,6 @@ private:
     string L2NODE_PREFIX="map.L2.";
     string XML_FNAME="map.xml";
     vector<bool> needToLoad;
-public:
-    SeqOthello() {}
 
     void loadL2NodeBatch(uint32_t thid, string _folder, uint32_t nthread) {
         folder = _folder;
@@ -64,6 +63,7 @@ public:
     }
     thread * L1LoadThread;
     vector<thread *> L2LoadThreads;
+private:
     void loadL1(uint32_t kmerLength) {
         l1Node = new L1Node();
         l1Node->setsplitbit(kmerLength,L1Splitbit);
@@ -93,6 +93,7 @@ public:
         L2LoadThreads.clear();
         printf("Load L2 finished \n");
     }
+public:
     void releaseL1() {
         delete l1Node;
     }
@@ -222,13 +223,11 @@ public:
         printf("Empty L2 Node %d.\n", id);
         vNodes[id].reset();
     }
-
     void loadAll(int nloadThreads) {
         loadL1(kmerLength);
         startloadL2(nloadThreads);
         waitloadL2();
     }
-
     void constructFromReader(KmerGroupComposer<keyType> *reader, string filename, uint32_t threadsLimit, vector<uint32_t> enclGrpmap, uint64_t estimatedKmerCount) {
         kmerLength = reader->getKmerLength();
         folder = filename;
@@ -381,7 +380,6 @@ public:
         for (auto &th : vthreadL2) th.join();
         vthreadL2.clear();
     }
-public:
     static vector<uint32_t> estimateParameters(KmerGroupComposer<keyType> *reader, int kmerlimit, uint64_t &estimateKmerCnt) {
         int maxnl = 1;
         int high = reader->gethigh();
@@ -447,15 +445,15 @@ public:
         return encodeLengthToL1ID;
     }
     vector<vector<uint16_t>> QueryL1ByPartition(vector<vector<uint64_t>> &kmers, int nThreads) {
-        loadL1(kmerLength);
+        l1Node = new L1Node();
+        l1Node->setsplitbit(kmerLength,L1Splitbit);
+        l1Node->setfname(folder + L1NODE_PREFIX);
+        //loadL1(kmerLength);
         vector<vector<uint16_t>> ans;
-        for (auto &vk : kmers) {
-            vector<uint16_t> result;
-            for (auto &k : vk) {
-                result.push_back(this->l1Node->queryInt(k));
-            }
-            ans.push_back(result);
-        }
+        for (auto &vk:kmers)
+                ans.push_back(vector<uint16_t>(vk.size()));
+        for (int grp = 0; grp < (1<<L1Splitbit); grp++)
+                l1Node->queryPartAndPutToVV(ans,kmers,grp,nThreads);
         return ans;
     }
     void printrates() {
@@ -469,4 +467,5 @@ public:
         }
     }
 };
+
 
