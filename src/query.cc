@@ -458,27 +458,33 @@ int main(int argc, char ** argv) {
         ans.emplace(i, new vector<int> (seqoth->L2IDShift));
 
     vector<shared_ptr<unordered_map<int, vector<int>>>> response;
+    vector<vector<uint64_t>> seqInKmers;
+    vector<vector<bool>> usedreverse;
+    vector<vector<shared_ptr<string>>> detilaedans;
     if (!argLegacy) {
         int32_t kmerLength = seqoth->kmerLength;
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
-        vector<vector<uint64_t>> seqInKmers;
-        vector<vector<shared_ptr<string>>> detilaedans;
         int totallength = 0;
         for (auto &str : vSeq)  {
             int ul = str.size()-kmerLength+1;
             char buf[64];
             memset(buf,0,sizeof(buf));
             vector<uint64_t> kmers;
+            vector<bool> reverse;
             if (ul>0)
                 for (unsigned int i = 0 ; i < str.size() - kmerLength + 1; i++) {
                     memcpy(buf,str.data()+i,kmerLength);
                     uint64_t key = 0;
                     helper.convert(buf,&key);
+                    uint64_t key0 = k;
                     if (flag) {
                         key =  helper.minSelfAndRevcomp(key);
+                        reverse.push_back(key == key0);
                     }
                     kmers.push_back(key);
                 }
+            if (flag)
+                usedreverse.push_back(reverse);
             seqInKmers.push_back(kmers);
             totallength += kmers.size();
             if (argShowDedatils) {
@@ -510,13 +516,13 @@ int main(int argc, char ** argv) {
                 if (vL2kmer[othquery - L2IDShift ] == nullptr) {
                     vL2kmer[othquery - L2IDShift] = make_shared<vector<uint64_t>>();
                     vL2TID[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
-                    if (argShowDedatils) 
+                    if (argShowDedatils)
                         vL2KmerPosInTranscript[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
                 }
                 vL2kmer[othquery - L2IDShift]->push_back(seqInKmers[i][j]);
                 vL2TID[othquery - L2IDShift]->push_back(i);
-                if (argShowDedatils) 
-                        vL2KmerPosInTranscript[othquery - L2IDShift]->push_back(j);
+                if (argShowDedatils)
+                    vL2KmerPosInTranscript[othquery - L2IDShift]->push_back(j);
             }
         }
         L1Resp.clear();
@@ -550,6 +556,7 @@ int main(int argc, char ** argv) {
         for (unsigned int i = 0; i < vnodecnt; i++) {
             L2Node *pvNode = seqoth->vNodes[i].get();
             map<int, vector<int> > mans;
+            map<pair<int,int>, string> mstr;
             int high = seqoth->sampleCount;
             if (vL2kmer[i] != nullptr)
                 for (int j = 0 ; j < vL2kmer[i]->size(); j++) {
@@ -567,18 +574,18 @@ int main(int argc, char ** argv) {
                         if (respond) {
                             auto &vec = mans.at(TID);
                             for (auto &p : ret)
-                                if (p<=high) {
-                                    vec[p] ++;
-                                    str[p]
+                                if (p<high) {
+                                    str[p]='+';
                                 }
                         }
                         else {
                             for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
                                 auto vec = mans.at(TID);
                                 if (retmap[v>>3] & ( 1<< (v & 7)))
-                                    vec[v]++;
+                                    str[v] = '+';
                             }
                         }
+                        mstr[make_pair(TID,vL2KmerPosInTranscript[i][j])] = str;
                     }
                     else {
                         if (respond) {
@@ -599,16 +606,23 @@ int main(int argc, char ** argv) {
 
 
                 }
-            for (auto &x: mans) {
-                if (ans.count(x.first) == 0)
-                    ans[x.first] = new vector<int>(x.second);
-                else {
-                    auto ip = ans[x.first]->begin();
-                    auto iq = x.second.begin();
-                    while (iq != x.second.end()) {
-                        *ip  += *iq;
-                        ip++;
-                        iq++;
+            if (argShowDedatils) {
+                for (auto &x: mstr) {
+                    detilaedans[x.first.first][x.first.second] = make_shared<string>(x.second);
+                }
+            }
+            else {
+                for (auto &x: mans) {
+                    if (ans.count(x.first) == 0)
+                        ans[x.first] = new vector<int>(x.second);
+                    else {
+                        auto ip = ans[x.first]->begin();
+                        auto iq = x.second.begin();
+                        while (iq != x.second.end()) {
+                            *ip  += *iq;
+                            ip++;
+                            iq++;
+                        }
                     }
                 }
             }
@@ -659,32 +673,46 @@ int main(int argc, char ** argv) {
             }
     }
     printf("Printing\n");
-    for (auto &res : ans) {
-        fprintf(fout,"transcript# %d\t", res.first);
-        for (unsigned int i = 0 ; i < seqoth->sampleCount; i++)
-            fprintf(fout, "%d\t", (*res.second)[i]);
-        fprintf(fout, "\n");
-        delete res.second;
-    }
-    /*
-    for (int i = 0 ; i < response.size(); i++) {
-        printf("Results from response %d \n", i);
-        for (auto const &resKv : *response[i].get()) {
-            printf("%d :", resKv.first);
-            for (int h = 0 ; h < seqoth->high; h++)
-                printf("%d ", resKv.second[h]);
-            printf("\n");
-        }
-    }
-    */
-    for (unsigned int i = 0 ; i < response.size(); i++) {
-        response[i]->clear();
-    }
-    fclose(fout);
+    if (!argLegacy)
+        if (argShowDedatils) {
+            char buf[30];
+            memset(buf,0,sizeof(buf));
+            for (int i = 0 ; i < seqInKmers.size(); i++) {
+                for (int j = 0 ; j < seqInKmers[i].size(); i++) {
+                    uint64_t key = seqInKmers[i][j];
+                    if (flag)
+                        if (usedreverse[i][j])
+                            key = helper.reverseComplement(key);
+                    helper.convertstring(buf,&key);
+                    fprintf(fout, "%s %s\n", buf, detilaedans[i][j]);
+                }
+            }
+            for (auto &res : ans) {
+                fprintf(fout,"transcript# %d\t", res.first);
+                for (unsigned int i = 0 ; i < seqoth->sampleCount; i++)
+                    fprintf(fout, "%d\t", (*res.second)[i]);
+                fprintf(fout, "\n");
+                delete res.second;
+            }
+            /*
+            for (int i = 0 ; i < response.size(); i++) {
+                printf("Results from response %d \n", i);
+                for (auto const &resKv : *response[i].get()) {
+                    printf("%d :", resKv.first);
+                    for (int h = 0 ; h < seqoth->high; h++)
+                        printf("%d ", resKv.second[h]);
+                    printf("\n");
+                }
+            }
+            */
+            for (unsigned int i = 0 ; i < response.size(); i++) {
+                response[i]->clear();
+            }
+            fclose(fout);
 
-    // split the kmers onto multiple queues.
-    // Step1: each thread gets vectors: v<seq> returns two v<kmer> v<L1Result>
-    //         --- after this we have  v<v<kmer>> v<v<L1Result>>  v<v<transciptID>>
-    //         --- categorize them into v<v<kmer>> v<v<transcriptID>> by L1 result.
-    // Step2: for each node: get v<kmer>,
-}
+            // split the kmers onto multiple queues.
+            // Step1: each thread gets vectors: v<seq> returns two v<kmer> v<L1Result>
+            //         --- after this we have  v<v<kmer>> v<v<L1Result>>  v<v<transciptID>>
+            //         --- categorize them into v<v<kmer>> v<v<transcriptID>> by L1 result.
+            // Step2: for each node: get v<kmer>,
+        }
