@@ -96,6 +96,9 @@ public:
     void releaseL1() {
         delete l1Node;
     }
+    void releaseL2Node(int id) {
+          vNodes[id].reset(); 
+    }
     SeqOthello(string &_folder, int nthread, bool loadall = true) {
         folder = _folder;
         tinyxml2::XMLDocument xml;
