@@ -416,6 +416,12 @@ int main(int argc, char ** argv) {
 
             return 0;
         }
+
+    if (!argLegacy) {
+        if (argShowDedatils) {
+
+        }
+    }
     vector<vector<uint64_t>> vKmer(nqueryThreads);
     vector<vector<uint16_t>> vL1Result(nqueryThreads);
     vector<vector<uint32_t>> vkTID(nqueryThreads);
@@ -445,6 +451,7 @@ int main(int argc, char ** argv) {
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
+    vector<shared_ptr<vector<uint32_t>>> vL2KmerPosInTranscript(vnodecnt, nullptr);
     uint32_t L2IDShift = seqoth->L2IDShift;
     map<int, vector<int> *> ans;
     for (int i = 0 ; i < nSeq; i++)
@@ -455,8 +462,9 @@ int main(int argc, char ** argv) {
         int32_t kmerLength = seqoth->kmerLength;
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
         vector<vector<uint64_t>> seqInKmers;
+        vector<vector<shared_ptr<string>>> detilaedans;
+        int totallength = 0;
         for (auto &str : vSeq)  {
-
             int ul = str.size()-kmerLength+1;
             char buf[64];
             memset(buf,0,sizeof(buf));
@@ -472,23 +480,43 @@ int main(int argc, char ** argv) {
                     kmers.push_back(key);
                 }
             seqInKmers.push_back(kmers);
+            totallength += kmers.size();
+            if (argShowDedatils) {
+                vector<shared_ptr<string>> strs(ul, nullptr);
+                detailans.push_back(strs);
+            }
+            if (argShowDedatils && totallength > 128*1024) {
+                throw std::invalid_argument("Too many bases in the transcripts for coverage query. Please do less than 128K kmers per time.");
+            }
+
         }
+
         auto L1Resp = seqoth->QueryL1ByPartition(seqInKmers, nqueryThreads);
+
         for (int i = 0; i < L1Resp.size(); i++) {
             for (int j = 0; j < L1Resp[i].size(); j++) {
                 uint16_t othquery = L1Resp[i][j];
                 if (othquery ==0) continue;
                 if (othquery < L2IDShift) {
                     ans.find(i)->second->at(othquery-1) ++;
+                    if (argShowDedatils) {
+                        string str(L2IDShift,'.');
+                        str[othquery-1] = '+';
+                        detailans[i][j] = str;
+                    }
                     continue;
                 }
                 if (othquery - L2IDShift >= vnodecnt) continue;
                 if (vL2kmer[othquery - L2IDShift ] == nullptr) {
                     vL2kmer[othquery - L2IDShift] = make_shared<vector<uint64_t>>();
                     vL2TID[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
+                    if (argShowDedatils) 
+                        vL2KmerPosInTranscript[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
                 }
                 vL2kmer[othquery - L2IDShift]->push_back(seqInKmers[i][j]);
                 vL2TID[othquery - L2IDShift]->push_back(i);
+                if (argShowDedatils) 
+                        vL2KmerPosInTranscript[othquery - L2IDShift]->push_back(j);
             }
         }
         L1Resp.clear();
@@ -534,19 +562,42 @@ int main(int argc, char ** argv) {
                         vector<int> empty(high+1);
                         mans.emplace(TID, empty);
                     }
-                    if (respond) {
-                        auto &vec = mans.at(TID);
-                        for (auto &p : ret)
-                            if (p<=high)
-                                vec[p] ++;
-                    }
-                    else {
-                        for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
-                            auto vec = mans.at(TID);
-                            if (retmap[v>>3] & ( 1<< (v & 7)))
-                                vec[v]++;
+                    if (argShowDedatils) {
+                        string str(sampleCount,'.');
+                        if (respond) {
+                            auto &vec = mans.at(TID);
+                            for (auto &p : ret)
+                                if (p<=high) {
+                                    vec[p] ++;
+                                    str[p]
+                                }
+                        }
+                        else {
+                            for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
+                                auto vec = mans.at(TID);
+                                if (retmap[v>>3] & ( 1<< (v & 7)))
+                                    vec[v]++;
+                            }
                         }
                     }
+                    else {
+                        if (respond) {
+                            auto &vec = mans.at(TID);
+                            for (auto &p : ret)
+                                if (p<=high)
+                                    vec[p] ++;
+                        }
+                        else {
+                            for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
+                                auto vec = mans.at(TID);
+                                if (retmap[v>>3] & ( 1<< (v & 7)))
+                                    vec[v]++;
+                            }
+                        }
+                    }
+
+
+
                 }
             for (auto &x: mans) {
                 if (ans.count(x.first) == 0)
