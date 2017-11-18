@@ -450,7 +450,7 @@ int main(int argc, char ** argv) {
                               seqoth->sampleCount,
                               std::ref(pool.write_mutex)
                           );
-            std::future<int> x = pool.enqueue(1, lambda);
+            std::future<int> x = pool.enqueue(i, lambda);
             results.emplace_back(std::move(x));
 
         }

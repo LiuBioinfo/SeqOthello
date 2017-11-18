@@ -181,7 +181,7 @@ void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<ui
         if (st == ed) continue;    
         auto lambda = std::bind(queryThreadInPool,
                   std::ref(*oth), std::ref(ans), std::ref(kmers), (grp), (st), (ed), (shift));
-        std::future<int> x = pool.enqueue(1, lambda);
+        std::future<int> x = pool.enqueue(thd, lambda);
         results.emplace_back(std::move(x));
     }
     for (auto && result: results)

@@ -86,17 +86,19 @@ public:
                     pri = this->tasks.top().first;
                     this->tasks.pop();
                 }
-                {
-                    std::unique_lock<std::mutex> lock(this->queue_mutex);
-                    this->condition_resource.wait(lock,
-                                                  [this] { return this->resource > 0; });
-                    this->resource-=pri;
-                }
+//               {
+//                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+//                    this->condition_resource.wait(lock,
+//                                                  [this] { return this->resource > 0; });
+//                    this->resource-=pri;
+//                } 
+                printf("Starting task ID %d\n",pri);              
                 task();
-                {
-                    std::unique_lock<std::mutex> lock(this->queue_mutex);
-                    this->resource+=pri;
-                }
+                printf("Finish task ID %d\n",pri);              
+//                {
+//                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+//                    this->resource+=pri;
+//                }
                 condition_resource.notify_all();
             }
         }
