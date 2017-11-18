@@ -136,13 +136,13 @@ void L1Node::setfname(string str) {
 int queryThreadInPool(Othello<uint64_t> &oth, vector<vector<uint16_t>> &ans, const vector<vector<uint64_t>> &kmers, const int &grp, const int &st, const int &ed, const uint32_t &shift) {
     printf("Query L1 grp %d for transcripts from %d to %d\n", grp,st,ed-1);
     int totcnt = 0;
-        for (int i = st ; i < ed; i++)
+    for (int i = st ; i < ed; i++)
             for (int j = 0 ; j < (kmers)[i].size(); j++)
                 if (grp == ((kmers)[i][j] >> shift)) {
                     totcnt++;
                     (ans)[i][j] = oth.queryInt((kmers)[i][j]);
                 }
-        return totcnt;
+    return totcnt;
 }
 void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, int grp, int threads) {
     if (grp <0 || grp >= (1<<splitbit))
@@ -170,12 +170,12 @@ void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<ui
             return;
         }
     }
-    int maxs = 64;
+    int maxs = 32;
     vector<int> loc;
     for (int i = 0 ; i<=maxs; i++)
         loc.push_back(kmers.size()*i/maxs);
     std::vector<std::future<int>> results;
-    for (int thd = 0; thd < 64; thd++)  {
+    for (int thd = 0; thd < maxs; thd++)  {
         int st = loc[thd];
         int ed = loc[thd+1];
         if (st == ed) continue;    

@@ -29,7 +29,7 @@ struct ThreadParameter {
     string iobuf;
 };
 
-int queryL2InThreadPool(int i, const shared_ptr<L2Node> pvNode,
+int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         const vector<uint64_t> &kmers,
                         const vector<uint32_t> &TIDs,
                         const vector<uint32_t> &PosInTranscript,
@@ -39,8 +39,13 @@ int queryL2InThreadPool(int i, const shared_ptr<L2Node> pvNode,
                         int high,
                         std::mutex &mu
                        ) {
+
+    seqoth->loadL2Node(i);
+    if (!seqoth->vNodes[i]) return 0;
+
     map<int, vector<int> > mans;
     map<pair<int,int>, string> mstr;
+    L2Node*  pvNode = (seqoth->vNodes[i]).get(); 
 //            int high = seqoth->sampleCount;
     for (int j = 0 ; j < kmers.size(); j++) {
         auto kmer = kmers[j];
@@ -107,6 +112,7 @@ int queryL2InThreadPool(int i, const shared_ptr<L2Node> pvNode,
             }
         }
     }
+    seqoth->releaseL2Node(i);
     return 0;
 }
 
@@ -301,9 +307,9 @@ int main(int argc, char ** argv) {
         nloadThreads = args::get(argNLoadThreads);
     }
 
-    SeqOthello * seqoth;
+    shared_ptr<SeqOthello>  seqoth;
     string filename = args::get(argSeqOthName);
-    seqoth = new SeqOthello (filename, nqueryThreads ,false);
+    seqoth = make_shared<SeqOthello> (filename, nqueryThreads ,false);
     if (argStartServer) {
         printf("Load SeqOthello. \n");
         seqoth->loadAll(nqueryThreads);
@@ -316,7 +322,7 @@ int main(int argc, char ** argv) {
                 TCPSocket *clntSock = servSock.accept();
                 ThreadParameter p;
                 p.sock = clntSock;
-                p.oth = seqoth;
+                p.oth = seqoth.get();
                 pthread_t threadID;              // Thread ID from pthread_create()
                 if (pthread_create(&threadID, NULL, ServerThreadMain,
                                    (void *) (&p)) != 0) {
@@ -386,7 +392,7 @@ int main(int argc, char ** argv) {
             }
         if (flag)
             usedreverse.push_back(reverse);
-        seqInKmers.push_back(kmers);
+        seqInKmers.push_back(vector<uint64_t>(kmers));
         totallength += kmers.size();
         if (argShowDedatils) {
             vector<shared_ptr<string>> strs(ul);
@@ -401,7 +407,7 @@ int main(int argc, char ** argv) {
 
     for (int i = 0; i < L1Resp.size(); i++) {
         for (int j = 0; j < L1Resp[i].size(); j++) {
-            uint16_t othquery = L1Resp[i][j];
+            uint16_t othquery = L1Resp[i].at(j);
             if (othquery ==0) continue;
             if (othquery < L2IDShift) {
                 ans.find(i)->second->at(othquery-1) ++;
@@ -419,7 +425,7 @@ int main(int argc, char ** argv) {
                 if (argShowDedatils)
                     vL2KmerPosInTranscript[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
             }
-            vL2kmer[othquery - L2IDShift]->push_back(seqInKmers[i][j]);
+            vL2kmer[othquery - L2IDShift]->push_back(seqInKmers[i].at(j));
             vL2TID[othquery - L2IDShift]->push_back(i);
             if (argShowDedatils)
                 vL2KmerPosInTranscript[othquery - L2IDShift]->push_back(j);
@@ -431,12 +437,10 @@ int main(int argc, char ** argv) {
 
     for (unsigned int i = 0; i < vnodecnt; i++)
         if (vL2kmer[i] != nullptr) {
-            seqoth->loadL2Node(i);
-            if (!seqoth->vNodes[i]) continue;
 //            queryL2InThreadPool(i, *pvNode, vL2kmer[i], vL2TID[i], detailans, ans, argShowDedatils,seqoth->high);
             auto lambda = std::bind(
                               queryL2InThreadPool,i,
-                              seqoth->vNodes[i],
+                              seqoth,
                               std::ref(*vL2kmer[i]),
                               std::ref(*vL2TID[i]),
                               std::ref(*vL2KmerPosInTranscript[i]),
@@ -446,7 +450,6 @@ int main(int argc, char ** argv) {
                               seqoth->sampleCount,
                               std::ref(pool.write_mutex)
                           );
-            seqoth->releaseL2Node(i);
             std::future<int> x = pool.enqueue(1, lambda);
             results.emplace_back(std::move(x));
 
@@ -462,7 +465,7 @@ int main(int argc, char ** argv) {
         for (int i = 0 ; i < seqInKmers.size(); i++) {
             vector<shared_ptr<string>> &vans = detailans[i];
             for (int j = 0 ; j < seqInKmers[i].size(); j++) {
-                uint64_t key = seqInKmers[i][j];
+                uint64_t key = seqInKmers[i].at(j);
                 if (flag)
                     if (usedreverse[i][j])
                         key = helper.reverseComplement(key);
