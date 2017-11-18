@@ -17,7 +17,7 @@ ADD_EXECUTABLE(Build ${BUILD_SRC})
 TARGET_LINK_LIBRARIES(Build tinyxml2 z pthread libL2Node libL1Node)
 
 ADD_EXECUTABLE(Query ${QUERY_SRC})
-TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node smalltcp threadpool)
+TARGET_LINK_LIBRARIES(Query tinyxml2 z pthread libL2Node libL1Node smalltcp)
 
 ADD_EXECUTABLE(PrintRates ${PRINT_SRC})
 TARGET_LINK_LIBRARIES(PrintRates tinyxml2 z pthread libL2Node libL1Node smalltcp)

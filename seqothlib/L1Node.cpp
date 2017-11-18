@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 #include <zlib.h>
+#include <future>
 using namespace std;
 
 L1Node::~L1Node() {
@@ -132,9 +133,22 @@ void L1Node::setfname(string str) {
     fname = str;
 }
 
+int queryThreadInPool(Othello<uint64_t> &oth, vector<vector<uint16_t>> &ans, const vector<vector<uint64_t>> &kmers, const int &grp, const int &st, const int &ed, const uint32_t &shift) {
+    printf("Query L1 grp %d for transcripts from %d to %d\n", grp,st,ed-1);
+    int totcnt = 0;
+        for (int i = st ; i < ed; i++)
+            for (int j = 0 ; j < (kmers)[i].size(); j++)
+                if (grp == ((kmers)[i][j] >> shift)) {
+                    totcnt++;
+                    (ans)[i][j] = oth.queryInt((kmers)[i][j]);
+                }
+        return totcnt;
+}
 void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, int grp, int threads) {
     if (grp <0 || grp >= (1<<splitbit))
         throw std::invalid_argument("Error group id for L1");
+
+    ThreadPool pool(threads, 1024);
 
     char cbuf[0x400];
     memset(cbuf,0,sizeof(cbuf));
@@ -160,14 +174,18 @@ void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<ui
     vector<int> loc;
     for (int i = 0 ; i<=maxs; i++)
         loc.push_back(kmers.size()*i/maxs);
+    std::vector<std::future<int>> results;
     for (int thd = 0; thd < 64; thd++)  {
         int st = loc[thd];
         int ed = loc[thd+1];
-        for (int i = st ; i < ed; i++)
-            for (int j = 0 ; j < kmers[i].size(); j++)
-                if (grp == (kmers[i][j] >> shift))
-                    ans[i][j] = oth->queryInt(kmers[i][j]);
+        if (st == ed) continue;    
+        auto lambda = std::bind(queryThreadInPool,
+                  std::ref(*oth), std::ref(ans), std::ref(kmers), (grp), (st), (ed), (shift));
+        std::future<int> x = pool.enqueue(1, lambda);
+        results.emplace_back(std::move(x));
     }
+    for (auto && result: results)
+        result.get();
 
     delete oth;
     return;

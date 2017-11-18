@@ -3,6 +3,7 @@
 #include "othello.h"
 #include <map>
 #include <string>
+#include <threadpool.h>
 
 using namespace std;
 

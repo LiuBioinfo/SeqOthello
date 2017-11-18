@@ -29,6 +29,89 @@ struct ThreadParameter {
     string iobuf;
 };
 
+int queryL2InThreadPool(int i, const shared_ptr<L2Node> pvNode,
+                        const vector<uint64_t> &kmers,
+                        const vector<uint32_t> &TIDs,
+                        const vector<uint32_t> &PosInTranscript,
+                        vector<vector<shared_ptr<string>>> &detailans,
+                        map<int, vector<int> *> &ans,
+                        bool argShowDedatils,
+                        int high,
+                        std::mutex &mu
+                       ) {
+    map<int, vector<int> > mans;
+    map<pair<int,int>, string> mstr;
+//            int high = seqoth->sampleCount;
+    for (int j = 0 ; j < kmers.size(); j++) {
+        auto kmer = kmers[j];
+        auto TID = TIDs[j];
+        vector<uint32_t> ret;
+        vector<uint8_t> retmap;
+        bool respond = pvNode->smartQuery(&kmer, ret, retmap);
+        if (mans.count(TID) == 0) {
+            vector<int> empty(high+1);
+            mans.emplace(TID, empty);
+        }
+        if (argShowDedatils) {
+            string str(high,'.');
+            if (respond) {
+                for (auto &p : ret)
+                    if (p<high)
+                        str[p]='+';
+            }
+            else {
+                for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
+                    auto vec = mans.at(TID);
+                    if (retmap[v>>3] & ( 1<< (v & 7)))
+                        str[v] = '+';
+                }
+            }
+            mstr[make_pair(TID,PosInTranscript[j])] = str;
+        }
+        else {
+            if (respond) {
+                auto &vec = mans.at(TID);
+                for (auto &p : ret)
+                    if (p<=high)
+                        vec[p] ++;
+            }
+            else {
+                for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
+                    auto vec = mans.at(TID);
+                    if (retmap[v>>3] & ( 1<< (v & 7)))
+                        vec[v]++;
+                }
+            }
+        }
+    }
+    {
+        std::unique_lock<std::mutex> lock(mu);
+        if (argShowDedatils) {
+            for (auto &x: mstr) {
+                detailans[x.first.first][x.first.second] = make_shared<string>(x.second);
+            }
+        }
+        else {
+            for (auto &x: mans) {
+                if (ans.count(x.first) == 0)
+                    ans[x.first] = new vector<int>(x.second);
+                else {
+                    auto ip = ans[x.first]->begin();
+                    auto iq = x.second.begin();
+                    while (iq != x.second.end()) {
+                        *ip  += *iq;
+                        ip++;
+                        iq++;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+
+
 void process(const string &type, ThreadParameter *par) {
     char ans[65536];
     vector<int> queryans;
@@ -343,77 +426,34 @@ int main(int argc, char ** argv) {
         }
     }
     L1Resp.clear();
+    ThreadPool pool(nqueryThreads, 1024);
+    std::vector<std::future<int>> results;
+
     for (unsigned int i = 0; i < vnodecnt; i++)
         if (vL2kmer[i] != nullptr) {
             seqoth->loadL2Node(i);
-            L2Node *pvNode = seqoth->vNodes[i].get();
-            map<int, vector<int> > mans;
-            map<pair<int,int>, string> mstr;
-            int high = seqoth->sampleCount;
-            for (int j = 0 ; j < vL2kmer[i]->size(); j++) {
-                auto kmer = (*vL2kmer[i])[j];
-                auto TID = (*vL2TID[i])[j];
-                vector<uint32_t> ret;
-                vector<uint8_t> retmap;
-                bool respond = pvNode->smartQuery(&kmer, ret, retmap);
-                if (mans.count(TID) == 0) {
-                    vector<int> empty(high+1);
-                    mans.emplace(TID, empty);
-                }
-                if (argShowDedatils) {
-                    string str(high,'.');
-                    if (respond) {
-                        for (auto &p : ret)
-                            if (p<high)
-                                str[p]='+';
-                    }
-                    else {
-                        for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
-                            auto vec = mans.at(TID);
-                            if (retmap[v>>3] & ( 1<< (v & 7)))
-                                str[v] = '+';
-                        }
-                    }
-                    mstr[make_pair(TID,(*vL2KmerPosInTranscript[i])[j])] = str;
-                }
-                else {
-                    if (respond) {
-                        auto &vec = mans.at(TID);
-                        for (auto &p : ret)
-                            if (p<=high)
-                                vec[p] ++;
-                    }
-                    else {
-                        for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
-                            auto vec = mans.at(TID);
-                            if (retmap[v>>3] & ( 1<< (v & 7)))
-                                vec[v]++;
-                        }
-                    }
-                }
-            }
-            if (argShowDedatils) {
-                for (auto &x: mstr) {
-                    detailans[x.first.first][x.first.second] = make_shared<string>(x.second);
-                }
-            }
-            else {
-                for (auto &x: mans) {
-                    if (ans.count(x.first) == 0)
-                        ans[x.first] = new vector<int>(x.second);
-                    else {
-                        auto ip = ans[x.first]->begin();
-                        auto iq = x.second.begin();
-                        while (iq != x.second.end()) {
-                            *ip  += *iq;
-                            ip++;
-                            iq++;
-                        }
-                    }
-                }
-            }
+            if (!seqoth->vNodes[i]) continue;
+//            queryL2InThreadPool(i, *pvNode, vL2kmer[i], vL2TID[i], detailans, ans, argShowDedatils,seqoth->high);
+            auto lambda = std::bind(
+                              queryL2InThreadPool,i,
+                              seqoth->vNodes[i],
+                              std::ref(*vL2kmer[i]),
+                              std::ref(*vL2TID[i]),
+                              std::ref(*vL2KmerPosInTranscript[i]),
+                              std::ref(detailans),
+                              std::ref(ans),
+                              ((bool) argShowDedatils),
+                              seqoth->sampleCount,
+                              std::ref(pool.write_mutex)
+                          );
             seqoth->releaseL2Node(i);
+            std::future<int> x = pool.enqueue(1, lambda);
+            results.emplace_back(std::move(x));
+
         }
+    for (auto && result: results)
+        result.get();
+
     printf("Printing\n");
     if (argShowDedatils) {
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);

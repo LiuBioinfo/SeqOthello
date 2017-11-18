@@ -1,3 +1,4 @@
+#pragma once
 /*
  * This file is modified from https://github.com/progschj/ThreadPool
  * -----------------------------------------------------------------
@@ -23,9 +24,8 @@ freely, subject to the following restrictions:
    distribution.
 -------------------------------------
 */
-    
 
-#pragma once
+
 #include <vector>
 #include <queue>
 #include <memory>
@@ -38,32 +38,108 @@ freely, subject to the following restrictions:
 
 class ThreadPool {
 public:
-    ThreadPool(size_t, size_t);
-    template<class F, class... Args>
-    auto enqueue(int x, F&& f, Args&&... args) 
-        -> std::future<typename std::result_of<F(Args...)>::type>;
-    ~ThreadPool();
     using PIF = std::pair<int, std::function<void()> >;
     class Compare {
-        public: bool operator()(PIF& a , PIF& b) {
-                    return a.first > b.first;
+    public:
+        bool operator()(PIF& a , PIF& b) {
+            return a.first > b.first;
         }
     };
+    std::mutex write_mutex;
 private:
     // need to keep track of threads so we can join them
     std::vector< std::thread > workers;
     // the task queue
 
-    std::priority_queue< 
-        PIF,
-        std::vector<PIF>,
-        Compare
-        > tasks;
-    
+    std::priority_queue<
+    PIF,
+    std::vector<PIF>,
+    Compare
+    > tasks;
+
     // synchronization
     std::mutex queue_mutex;
     std::condition_variable condition, condition_resource;
     int resource;
     bool stop;
+
+public:
+// the constructor just launches some amount of workers
+    ThreadPool(size_t threads, size_t _resource)
+        :   resource(_resource), stop(false)
+    {
+        for(size_t i = 0; i<threads; ++i)
+            workers.emplace_back(
+                [this]
+        {
+            for(;;)
+            {
+                std::function<void()> task;
+                int pri;
+                {
+                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+                    this->condition.wait(lock,
+                    [this] { return this->stop || !this->tasks.empty(); });
+                    if(this->stop && this->tasks.empty())
+                        return;
+                    task = std::move(this->tasks.top().second);
+                    pri = this->tasks.top().first;
+                    this->tasks.pop();
+                }
+                {
+                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+                    this->condition_resource.wait(lock,
+                                                  [this] { return this->resource > 0; });
+                    this->resource-=pri;
+                }
+                task();
+                {
+                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+                    this->resource+=pri;
+                }
+                condition_resource.notify_all();
+            }
+        }
+        );
+    }
+
+// add new work item to the pool
+    template<class F>
+    std::future<int> enqueue(int x, F&& f)
+    {
+        using return_type = int;
+
+        auto task = std::make_shared< std::packaged_task<return_type()> >(
+                        std::bind(std::forward<F>(f))
+                    );
+
+        std::future<return_type> res = task->get_future();
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+
+            // don't allow enqueueing after stopping the pool
+            if(stop)
+                throw std::runtime_error("enqueue on stopped ThreadPool");
+
+            tasks.emplace(std::make_pair(x, [task]() {
+                (*task)();
+            }));
+        }
+        condition.notify_one();
+        return res;
+    }
+
+// the destructor joins all threads
+    ~ThreadPool()
+    {
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            stop = true;
+        }
+        condition.notify_all();
+        for(std::thread &worker: workers)
+            worker.join();
+    }
+
 };
- 
+
