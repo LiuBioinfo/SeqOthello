@@ -16,6 +16,7 @@ int main(int argc, char * argv[]) {
     args::ValueFlag<string> argOutputname(parser, "string", "filename for the output binary kmer file", {"out"});
     args::ValueFlag<int> argKmerlength(parser, "integer", "k, length of kmer", {"k"});
     args::ValueFlag<int> nCutoff(parser, "integer", "cutoff, minimal expression value for kmer to be included into the file. ", {"cutoff"});
+    args::Flag   argHistogram(parser, "",  "get histogram", {"histogram"});
 
     try
     {
@@ -59,6 +60,18 @@ int main(int argc, char * argv[]) {
     uint32_t minInputExpression = 0x7FFFFFFF;
     uint64_t k;
     uint32_t v;
+    if (argHistogram) {
+        map<uint32_t, uint32_t> his;
+        while (freader->getNext(&k, &v)) {
+            his[v]++;
+        }
+        FILE *fout = fopen(foutName.c_str(),"w");
+        for (auto &x: his) {
+            fprintf(fout, "%d,%d\n", x.first, x.second);
+        }
+        fclose(fout);
+        return 0;
+    }
     while (freader->getNext(&k, &v)) {
         if (v < minInputExpression)
             minInputExpression = v;

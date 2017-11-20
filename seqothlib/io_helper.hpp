@@ -541,10 +541,16 @@ protected:
     int getKmerLengthfromxml(string fname) {
         fname += ".xml";
         tinyxml2::XMLDocument doc;
-        doc.LoadFile( fname.c_str() );
-        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
         int ret = 0;
-        pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        printf("Reading xml %s\n", fname.c_str());
+        try {
+            doc.LoadFile( fname.c_str() );
+            const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
+            pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        }
+        catch (exception e) {
+            fprintf(stderr, "Error while loading info from %s : %s", fname.c_str(), e.what());
+        }
         return ret;
     }
 public:

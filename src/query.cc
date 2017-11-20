@@ -39,6 +39,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         int high,
                         std::mutex &mu
                        ) {
+    printf("L2 Load %d.\n", i); 
 
     seqoth->loadL2Node(i);
     if (!seqoth->vNodes[i]) return 0;
@@ -47,6 +48,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
     map<pair<int,int>, string> mstr;
     L2Node*  pvNode = (seqoth->vNodes[i]).get(); 
 //            int high = seqoth->sampleCount;
+    printf("L2 got %d kmers.\n", kmers.size()); 
     for (int j = 0 ; j < kmers.size(); j++) {
         auto kmer = kmers[j];
         auto TID = TIDs[j];
@@ -65,8 +67,8 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         str[p]='+';
             }
             else {
-                for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
                     auto vec = mans.at(TID);
+                for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
                     if (retmap[v>>3] & ( 1<< (v & 7)))
                         str[v] = '+';
                 }
@@ -81,14 +83,15 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         vec[p] ++;
             }
             else {
+                auto &vec = mans.at(TID);
                 for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
-                    auto vec = mans.at(TID);
                     if (retmap[v>>3] & ( 1<< (v & 7)))
                         vec[v]++;
                 }
             }
         }
     }
+    printf("finished %d kmers.\n", kmers.size()); 
     {
         std::unique_lock<std::mutex> lock(mu);
         if (argShowDedatils) {
@@ -112,6 +115,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
             }
         }
     }
+    printf("L2 Release %d.\n", i); 
     seqoth->releaseL2Node(i);
     return 0;
 }
