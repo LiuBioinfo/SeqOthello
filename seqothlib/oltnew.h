@@ -361,8 +361,6 @@ public:
         printf("Got %lu kmers.\n", reader->keycount);
         printf("Constructing L1 Node \n");
         writeSeqOthelloInfo(folder, bind(&KmerGroupComposer<keyType>::putSampleInfoToXml, reader, placeholders::_1 ), histogram);
-        l1Node->constructAndWrite(LLfreq, threadsLimit, folder+ L1NODE_PREFIX);
-        delete l1Node;
         vector<thread> vthreadL2;
         uint64_t currL2InQKeycnt = 0;
         uint64_t currL2InQValcnt = 0;
@@ -379,6 +377,8 @@ public:
 
         for (auto &th : vthreadL2) th.join();
         vthreadL2.clear();
+        l1Node->constructAndWrite(LLfreq, threadsLimit, folder+ L1NODE_PREFIX);
+        delete l1Node;
     }
     static vector<uint32_t> estimateParameters(KmerGroupComposer<keyType> *reader, int kmerlimit, uint64_t &estimateKmerCnt) {
         int maxnl = 1;
