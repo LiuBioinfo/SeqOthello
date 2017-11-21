@@ -35,7 +35,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         vector<vector<shared_ptr<string>>> &detailans,
                         map<int, vector<int> *> &ans,
                         bool argShowDedatils,
-                        int high,
+                        unsigned int high,
                         std::mutex &mu
                        ) {
     printf("L2 Load %d.\n", i); 
@@ -47,8 +47,8 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
     map<pair<int,int>, string> mstr;
     L2Node*  pvNode = (seqoth->vNodes[i]).get(); 
 //            int high = seqoth->sampleCount;
-    printf("L2 got %d kmers.\n", kmers.size()); 
-    for (int j = 0 ; j < kmers.size(); j++) {
+    printf("L2 got %lu kmers.\n", kmers.size()); 
+    for (unsigned int j = 0 ; j < kmers.size(); j++) {
         auto kmer = kmers[j];
         auto TID = TIDs[j];
         vector<uint32_t> ret;
@@ -90,7 +90,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
             }
         }
     }
-    printf("finished %d kmers.\n", kmers.size()); 
+    printf("finished %lu kmers.\n", kmers.size()); 
     {
         std::unique_lock<std::mutex> lock(mu);
         if (argShowDedatils) {
@@ -352,7 +352,7 @@ int main(int argc, char ** argv) {
             vSeq.push_back(string(buf));
     }
     fclose(fin);
-    int nSeq = vSeq.size();
+    unsigned int nSeq = vSeq.size();
     string fnameout = args::get(resultsName);
     FILE *fout = fopen(fnameout.c_str(), "w");
 
@@ -362,7 +362,7 @@ int main(int argc, char ** argv) {
     vector<shared_ptr<vector<uint32_t>>> vL2KmerPosInTranscript(vnodecnt, nullptr);
     uint32_t L2IDShift = seqoth->L2IDShift;
     map<int, vector<int> *> ans;
-    for (int i = 0 ; i < nSeq; i++)
+    for (unsigned int i = 0 ; i < nSeq; i++)
         ans.emplace(i, new vector<int> (seqoth->L2IDShift));
 
 //    vector<shared_ptr<unordered_map<int, vector<int>>>> response;
@@ -404,8 +404,8 @@ int main(int argc, char ** argv) {
 
     auto L1Resp = seqoth->QueryL1ByPartition(seqInKmers, nqueryThreads);
 
-    for (int i = 0; i < L1Resp.size(); i++) {
-        for (int j = 0; j < L1Resp[i].size(); j++) {
+    for (unsigned int i = 0; i < L1Resp.size(); i++) {
+        for (unsigned int j = 0; j < L1Resp[i].size(); j++) {
             uint16_t othquery = L1Resp[i].at(j);
             if (othquery ==0) continue;
             if (othquery < L2IDShift) {
@@ -461,9 +461,9 @@ int main(int argc, char ** argv) {
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
         char buf[30];
         memset(buf,0,sizeof(buf));
-        for (int i = 0 ; i < seqInKmers.size(); i++) {
+        for (unsigned int i = 0 ; i < seqInKmers.size(); i++) {
             vector<shared_ptr<string>> &vans = detailans[i];
-            for (int j = 0 ; j < seqInKmers[i].size(); j++) {
+            for (unsigned int j = 0 ; j < seqInKmers[i].size(); j++) {
                 uint64_t key = seqInKmers[i].at(j);
                 if (flag)
                     if (usedreverse[i][j])

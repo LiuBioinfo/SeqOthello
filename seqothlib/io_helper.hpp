@@ -923,7 +923,7 @@ class IOBuf {
         FILE *fin = fopen(fname,"rb");
         size_t max = fread(&v[0], sizeof(keyType), tot, fin);
         if (max != tot) {
-            fprintf(stderr,"Warning reading %s: read %d elements , expected %d elements .\n", fname, max, tot);
+            fprintf(stderr,"Warning reading %s: read %lu elements , expected %lu elements .\n", fname, max, tot);
         }
         load = true;
         fclose(fin);

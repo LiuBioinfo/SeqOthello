@@ -458,9 +458,9 @@ public:
     }
     void printrates() {
         map<int, double> rates = l1Node->printrates();
-        for (int i = 1; i<L2IDShift; i++) 
+        for (unsigned int i = 1; i<L2IDShift; i++) 
             printf("%d : %.8lf 1.0 1.0\n", i, rates[i]);
-        for (int i = 0 ; i < vNodes.size(); i++) {
+        for (unsigned int i = 0 ; i < vNodes.size(); i++) {
             double t;
             double exp = vNodes[i]->expectedOnes(t);
             printf("%d : %.8lf %.5lf %.3lf\n", i+L2IDShift, rates[i+L2IDShift] ,t, exp);

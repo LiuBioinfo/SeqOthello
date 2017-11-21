@@ -60,7 +60,7 @@ public:
     }
     map<int, double> printrates();
     void setfname(string);
-    void queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, int grp, int threads);
+    void queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, unsigned int grp, unsigned int threads);
 };
 
 

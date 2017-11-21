@@ -733,9 +733,9 @@ void Othello<keyType>::getrates(map<int, double> &sum) {
     sum.clear();
     int high =  (1<<L);
     vector<int> LA(high), LB(high);
-    for (int i = 0 ; i < ma; i++) 
+    for (unsigned int i = 0 ; i < ma; i++) 
         LA[get(i) & (high-1) ]++;
-    for (int i = ma; i<ma+mb; i++)
+    for (unsigned int i = ma; i<ma+mb; i++)
         LB[get(i) & (high-1) ]++;
     if (L <= 12) 
     for (int i = 0 ; i < high; i++) {

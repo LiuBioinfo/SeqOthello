@@ -120,11 +120,11 @@ uint32_t valuelistEncode(uint8_t *p, vector<uint32_t> &val, bool really) {
     uint8_t *p0 = p; //starting location
     bool filledhalf = false;
     //inline uint8_t put4b(uint8_t **pp, bool &filledhalf, uint8_t val) {
-    for (int i = 0 ; i < val.size();) {
+    for (unsigned int i = 0 ; i < val.size();) {
         auto x = val[i];
         putvalue(x, pp, filledhalf, really, ans);
         if (x==1) {
-            int j = i;
+            unsigned int j = i;
             while (val[j] == 1) {
                 j++;
                 if (j == val.size()) break;
@@ -483,7 +483,7 @@ double L2ShortValueListNode::expectedOnes(double &prb) {
     L2Node::oth->getrates(tmap);
     prb = 0;
     double ans = 0;
-    for (int i = 1 ; i < uint64list.size(); i++) {
+    for (unsigned int i = 1 ; i < uint64list.size(); i++) {
         ans += tmap[i]*valuecnt;
         prb += tmap[i];
     }
@@ -503,7 +503,7 @@ double L2EncodedValueListNode::expectedOnes(double &prb) {
     }
     double ans = 0;
     prb = 0.0;
-    for (int index = 1; index< lines.size()/IOLengthInBytes; index++) {
+    for (unsigned int index = 1; index< lines.size()/IOLengthInBytes; index++) {
         prb += tmap[index];
         if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
             vector<uint32_t> decode;
@@ -512,7 +512,7 @@ double L2EncodedValueListNode::expectedOnes(double &prb) {
         }
         else {
             int tot = 0;
-            for (int j = index*IOLengthInBytes; j < IOLengthInBytes*(index+1); j++)
+            for (unsigned int j = index*IOLengthInBytes; j < IOLengthInBytes*(index+1); j++)
                 tot += cnt8[lines[j]];
             ans += tot * tmap[index];
         }

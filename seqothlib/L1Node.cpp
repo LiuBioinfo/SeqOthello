@@ -133,19 +133,19 @@ void L1Node::setfname(string str) {
     fname = str;
 }
 
-int queryThreadInPool(Othello<uint64_t> &oth, vector<vector<uint16_t>> &ans, const vector<vector<uint64_t>> &kmers, const int &grp, const int &st, const int &ed, const uint32_t &shift) {
+int queryThreadInPool(Othello<uint64_t> &oth, vector<vector<uint16_t>> &ans, const vector<vector<uint64_t>> &kmers, const unsigned int grp, const unsigned int st, const unsigned int ed, const uint32_t shift) {
     printf("Query L1 grp %d for transcripts from %d to %d\n", grp,st,ed-1);
     int totcnt = 0;
-    for (int i = st ; i < ed; i++)
-            for (int j = 0 ; j < (kmers)[i].size(); j++)
+    for (unsigned int i = st ; i < ed; i++)
+            for (unsigned int j = 0 ; j < (kmers)[i].size(); j++)
                 if (grp == ((kmers)[i][j] >> shift)) {
                     totcnt++;
                     (ans)[i][j] = oth.queryInt((kmers)[i][j]);
                 }
     return totcnt;
 }
-void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, int grp, int threads) {
-    if (grp <0 || grp >= (1<<splitbit))
+void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, unsigned int grp, unsigned int threads) {
+    if (grp >= (1U<<splitbit))
         throw std::invalid_argument("Error group id for L1");
 
     ThreadPool pool(threads, 1024);

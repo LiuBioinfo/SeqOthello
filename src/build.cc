@@ -120,9 +120,9 @@ int main(int argc, char ** argv) {
         xml->SaveFile(output.c_str());
         auto vres = reader->getSampleInfo();
         FILE *fout = fopen("histo.txt","w");
-        for (int i = 0 ; i < samplecount; i++) {
+        for (unsigned int i = 0 ; i < samplecount; i++) {
             fprintf(fout, "%s,", vres[i].c_str());
-            for (int j = 1; j<=samplecount; j++)
+            for (unsigned int j = 1; j<=samplecount; j++)
                 fprintf(fout, "%d,", detailedHisto[i][j]);
             fprintf(fout,"\n");
         }
