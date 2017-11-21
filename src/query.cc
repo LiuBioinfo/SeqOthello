@@ -21,7 +21,6 @@
 using namespace std;
 
 int nqueryThreads = 1;
-int nloadThreads = 1;
 
 struct ThreadParameter {
     TCPSocket * sock;
@@ -262,7 +261,6 @@ int main(int argc, char ** argv) {
     args::Flag   argShowDedatils(parser, "", "Show the detailed query results for the transcripts", {"detail"});
     args::Flag   NoReverseCompliment(parser, "",  "do not use reverse complement", {"noreverse"});
     args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1", {"qthread"});
-    args::ValueFlag<int>  argNLoadThreads(parser, "int", "how many threads to use for loading the files, default = same as qthread", {"lthread"});
 
     args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port ", {"start-server-port"});
 
@@ -304,12 +302,9 @@ int main(int argc, char ** argv) {
     }
 
     if (argNQueryThreads) {
-        nloadThreads = nqueryThreads = args::get(argNQueryThreads);
+        nqueryThreads = args::get(argNQueryThreads);
     }
 
-    if (argNLoadThreads) {
-        nloadThreads = args::get(argNLoadThreads);
-    }
 
     shared_ptr<SeqOthello>  seqoth;
     string filename = args::get(argSeqOthName);
