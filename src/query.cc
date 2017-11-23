@@ -38,16 +38,16 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         unsigned int high,
                         std::mutex &mu
                        ) {
-    printf("L2 Load %d.\n", i); 
+    printf("L2 Load %d.\n", i);
 
     seqoth->loadL2Node(i);
     if (!seqoth->vNodes[i]) return 0;
 
     map<int, vector<int> > mans;
     map<pair<int,int>, string> mstr;
-    L2Node*  pvNode = (seqoth->vNodes[i]).get(); 
+    L2Node*  pvNode = (seqoth->vNodes[i]).get();
 //            int high = seqoth->sampleCount;
-    printf("L2 got %lu kmers.\n", kmers.size()); 
+    printf("L2 got %lu kmers.\n", kmers.size());
     for (unsigned int j = 0 ; j < kmers.size(); j++) {
         auto kmer = kmers[j];
         auto TID = TIDs[j];
@@ -66,7 +66,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         str[p]='+';
             }
             else {
-                    auto vec = mans.at(TID);
+                auto vec = mans.at(TID);
                 for (uint32_t v = 0; v< high; v++) { //ONLY EXP =1...
                     if (retmap[v>>3] & ( 1<< (v & 7)))
                         str[v] = '+';
@@ -90,7 +90,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
             }
         }
     }
-    printf("finished %lu kmers.\n", kmers.size()); 
+    printf("finished %lu kmers.\n", kmers.size());
     {
         std::unique_lock<std::mutex> lock(mu);
         if (argShowDedatils) {
@@ -114,7 +114,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
             }
         }
     }
-    printf("L2 Release %d.\n", i); 
+    printf("L2 Release %d.\n", i);
     seqoth->releaseL2Node(i);
     return 0;
 }
@@ -338,8 +338,10 @@ int main(int argc, char ** argv) {
     }
 
     int kmerLength = seqoth->kmerLength;
-    FILE *fin;
+    FILE *fin = NULL;
     fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
+    if (fin == NULL)
+        throw std::invalid_argument("Error while opening file "+args::get(argTranscriptName));
     char buf[1048576];
     memset(buf,0,sizeof(buf));
     vector<string> vSeq;
@@ -355,6 +357,8 @@ int main(int argc, char ** argv) {
     unsigned int nSeq = vSeq.size();
     string fnameout = args::get(resultsName);
     FILE *fout = fopen(fnameout.c_str(), "w");
+    if (fin == NULL)
+        throw std::invalid_argument("Error while opening file "+(fnameout));
 
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);

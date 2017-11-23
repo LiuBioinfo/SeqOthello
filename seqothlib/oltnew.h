@@ -104,9 +104,26 @@ public:
         folder = _folder;
         tinyxml2::XMLDocument xml;
         auto xmlName = folder + XML_FNAME;
-        xml.LoadFile(xmlName.c_str());
+        bool loadsucc = xml.LoadFile(xmlName.c_str());
+        if (false) {
+                fprintf(stderr,"Fail to load %s\n", xmlName.c_str());
+                throw std::invalid_argument("Fail creating SeqOthello\n");
+        }
+        if (xml.FirstChildElement("Root") == NULL) {
+                fprintf(stderr,"Fail to find Root from xml %s\n", xmlName.c_str());
+                throw std::invalid_argument("Fail creating SeqOthello\n");
+        }
         auto pSeq = xml.FirstChildElement("Root")->FirstChildElement("SeqOthello");
+        if (pSeq == NULL) {
+                fprintf(stderr,"Fail to find SeqOthello from xml %s\n", xmlName.c_str());
+                throw std::invalid_argument("Fail creating SeqOthello\n");
+        }
         auto pL2Nodes = pSeq->FirstChildElement("L2Nodes");
+        if (pL2Nodes == NULL) {
+                fprintf(stderr,"Fail to find L2Nodes from xml %s\n", xmlName.c_str());
+                throw std::invalid_argument("Fail creating SeqOthello\n");
+                return ;
+        }
         vNodes.clear();
         auto L2Node = pL2Nodes->FirstChildElement("L2Node");
         while (L2Node != NULL) {
