@@ -127,7 +127,7 @@ public:
         vNodes.clear();
         auto L2Node = pL2Nodes->FirstChildElement("L2Node");
         while (L2Node != NULL) {
-            vNodes.push_back(L2Node::createL2Node(L2Node));
+            vNodes.push_back(L2Node::createL2Node(L2Node, folder));
             L2Node = L2Node->NextSiblingElement("L2Node");
         }
         pSeq->QueryIntAttribute("SampleCount", (int*) &sampleCount);

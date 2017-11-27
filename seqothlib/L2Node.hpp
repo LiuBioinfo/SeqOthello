@@ -38,7 +38,7 @@ public:
     Othello<uint64_t> *oth = NULL;
     virtual void putInfoToXml(tinyxml2::XMLElement *) = 0;
     virtual uint64_t getvalcnt() = 0;
-    static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p);
+    static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p, string folder="");
     string gzfname;
     virtual double expectedOnes(double &) = 0;
 };
