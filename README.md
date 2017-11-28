@@ -43,11 +43,11 @@ Each line of the generated scripts contains a command to prepare the files. The 
 
 Containment Query
 
-```build/bin/Query --map-folder=out/ --transcript=test.fa --output=queryresult --lthread=16 --qthread=16> querylog```
+```build/bin/Query --map-folder=out/ --transcript=test.fa --output=queryresult --qthread=8 > querylog```
 
 Coverage Query
 
-```build/bin/Query --map-folder=out/ --transcript=test.fa --detail --output=queryresult --lthread=16 > querylog```
+```build/bin/Query --map-folder=out/ --transcript=test.fa --detail --output=queryresult --qthread=8 > querylog```
 
 ##OnlineQuery
 Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
