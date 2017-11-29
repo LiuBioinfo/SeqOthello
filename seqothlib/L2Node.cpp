@@ -150,13 +150,13 @@ void L2Node::constructOth() {
 #pragma GCC diagnostic ignored "-Wsign-compare"
     while ((1<<L)<entrycnt+10) L++;
 #pragma GCC diagnostic pop
-    printf("%s: construct L2Node with %lu keys. Using type %s. with %u-Othello, entrycnt %u.\n", get_thid().c_str(), keys.size(), L2NodeTypes::typestr.at(this->getType()).c_str(), L, entrycnt);
-    oth = new Othello<keyType> (L, keys,values, true, 0);
+    printf("%s: construct L2Node with %lu keys. Using type %s. with %u-Othello, entrycnt %u.\n", get_thid().c_str(), keys->size(), L2NodeTypes::typestr.at(this->getType()).c_str(), L, entrycnt);
+    oth = new Othello<keyType> (L, *keys, *values, true, 0);
     for (auto &k: oth->removedKeys) {
         printf("%s: Removed key vNode %lx\n", get_thid().c_str(), k);
     }
-    keys.clear();
-    values.clear();
+    keys->release();
+    values->release();
 }
 
 #pragma GCC diagnostic push
@@ -232,8 +232,8 @@ void L2ShortValueListNode::add(keyType &k, vector<uint32_t> & valuelist) {
         siz++;
         entrycnt = siz;
     }
-    values.push_back(valuemap[value]);
-    keys.push_back(k);
+    values->push_back(valuemap[value]);
+    keys->push_back(k);
     return;
 
 }
@@ -250,7 +250,7 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
             return;
         }
     }
-    keys.push_back(k);
+    keys->push_back(k);
     keycnt++;
     valuelistEncode(&buff[0], valuelist, true);
     if (IOLengthInBytes<=8) {
@@ -267,7 +267,7 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
             siz += IOLengthInBytes;
             gzwrite(fdata,&buff[0], IOLengthInBytes);
         }
-        values.push_back(valuemap[v64]);
+        values->push_back(valuemap[v64]);
     }
     else {
         if (siz == 0) { //lines.size() == 0) {
@@ -281,7 +281,7 @@ void L2EncodedValueListNode::add(keyType &k, vector<uint32_t> & valuelist) { // 
         siz += IOLengthInBytes;
         entrycnt++;
         gzwrite(fdata,&buff[0], IOLengthInBytes);
-        values.push_back(keycnt);
+        values->push_back(keycnt);
     }
 
 }
@@ -297,7 +297,7 @@ void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
             return;
         }
     }
-    keys.push_back(k);
+    keys->push_back(k);
     //TODO :: Need to pre-pend a record for false positives!
     keycnt++;
     entrycnt++;
@@ -314,7 +314,7 @@ void L2EncodedValueListNode::addMAPP(keyType &k, vector<uint8_t> &mapp) {
     //uint32_t curr = lines.size();
     //lines.insert(lines.end(), mapp.begin(), mapp.end());
     gzwrite(fdata,&mapp[0], IOLengthInBytes);
-    values.push_back(keycnt);
+    values->push_back(keycnt);
     siz += IOLengthInBytes;
 }
 

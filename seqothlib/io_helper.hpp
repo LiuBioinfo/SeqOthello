@@ -911,7 +911,7 @@ public:
 template <typename keyType>
 class IOBuf {
     vector<keyType> v;
-    FILE * fout;
+    FILE * fout = NULL;
     size_t tot = 0;
     bool load = false;
     bool done = false;
@@ -931,18 +931,22 @@ class IOBuf {
             fprintf(stderr,"faile to remove file %s\n", fname);
         }
     }
-public:
-    IOBuf(const char * _fname) {
-        strcpy(fname,_fname);
+    void openfile() {
         fout = fopen(fname,"wb");
         if (fout == NULL) {
             fprintf(stderr,"failed to open file %s\n", fname);
         }
+    }
+public:
+    IOBuf(const char * _fname) {
+        strcpy(fname,_fname);
         v.clear();
     }
     void finishwrite() {
-        if (v.size())
+        if (fout == NULL) openfile();
+        if (v.size()) {
             fwrite(&v[0], v.size(), sizeof(keyType), fout);
+        }
         fclose(fout);
         done = true;
         v.clear();
@@ -951,6 +955,7 @@ public:
         tot ++;
         v.push_back(t);
         if (v.size() == 8192) {
+            if (fout == NULL) openfile();
             fwrite(&v[0], v.size(), sizeof(keyType), fout);
             v.clear();
         }
