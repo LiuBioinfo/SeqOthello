@@ -27,6 +27,49 @@ struct ThreadParameter {
     SeqOthello *oth;
     string iobuf;
 };
+int queryL2ShowSampleonly(int i, const shared_ptr<SeqOthello> seqoth,
+                        const vector<uint64_t> &kmers,
+                        const vector<uint32_t> &TIDs,
+                        const vector<uint32_t> &PosInTranscript,
+                        vector<shared_ptr<vector<int>>> & ansSampleDetails,
+                        int showSampleIndex,
+                        unsigned int high,
+                        std::mutex &mu) {
+    printf("L2 Load %d.\n", i);
+    seqoth->loadL2Node(i);
+    if (!seqoth->vNodes[i]) return 0;
+    L2Node*  pvNode = (seqoth->vNodes[i]).get();
+    printf("L2 got %lu kmers -- try to get sample index %d.\n", kmers.size(), showSampleIndex);
+    unordered_map<int, vector<int>> mans;
+    for (unsigned int j = 0 ; j < kmers.size(); j++) {
+        auto kmer = kmers[j];
+        auto TID = TIDs[j];
+        vector<uint32_t> ret;
+        vector<uint8_t> retmap;
+        bool respond = pvNode->smartQuery(&kmer, ret, retmap);
+        if (respond) {
+            if (find(ret.begin(), ret.end(), showSampleIndex)!=ret.end())
+                mans[TID].push_back(PosInTranscript[j]);
+        } 
+        else {
+            if (retmap[showSampleIndex >> 3] &( 1<< ( showSampleIndex &7)))
+                mans[TID].push_back(PosInTranscript[j]);
+        }
+    }
+    seqoth->releaseL2Node(i);
+    printf("finished %lu kmers.\n", kmers.size());
+    {
+        std::unique_lock<std::mutex> lock(mu);
+        for (auto &x: mans) {
+            if (ansSampleDetails[x.first] == nullptr) 
+                ansSampleDetails[x.first] = make_shared<vector<int>>();
+            auto & refv = *ansSampleDetails[x.first];
+            for (auto &y: x.second)
+                refv.push_back(y);
+        }
+    }
+    printf("L2 Release %d.\n", i);
+}
 
 int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
                         const vector<uint64_t> &kmers,
@@ -90,6 +133,7 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
             }
         }
     }
+    seqoth->releaseL2Node(i);
     printf("finished %lu kmers.\n", kmers.size());
     {
         std::unique_lock<std::mutex> lock(mu);
@@ -115,7 +159,6 @@ int queryL2InThreadPool(int i, const shared_ptr<SeqOthello> seqoth,
         }
     }
     printf("L2 Release %d.\n", i);
-    seqoth->releaseL2Node(i);
     return 0;
 }
 
@@ -263,6 +306,7 @@ int main(int argc, char ** argv) {
     args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1", {"qthread"});
 
     args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port ", {"start-server-port"});
+    args::ValueFlag<int>  argSampleIndex(parser, "int", "printout kmers that matches a sample with index.", {"print-kmers-index"});
 
     try
     {
@@ -287,7 +331,14 @@ int main(int argc, char ** argv) {
     }
 
     bool flag = !args::get(NoReverseCompliment);
-
+    int showSampleIndex = -1;
+    if (argSampleIndex) {
+        if (argShowDedatils || argStartServer) {
+            std::cerr <<" Invalid args." << std::endl;
+            return 1;
+        }
+        showSampleIndex = args::get(argSampleIndex);
+    }
     if (argStartServer) {
         if (argTranscriptName || argTranscriptName || !argSeqOthName || argNQueryThreads) {
             std::cerr <<" Invalid args. to start a server, please specify SeqOthello mapping file." << std:: endl;
@@ -359,7 +410,7 @@ int main(int argc, char ** argv) {
     FILE *fout = fopen(fnameout.c_str(), "w");
     if (fin == NULL)
         throw std::invalid_argument("Error while opening file "+(fnameout));
-
+    
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
@@ -407,7 +458,7 @@ int main(int argc, char ** argv) {
     }
 
     auto L1Resp = seqoth->QueryL1ByPartition(seqInKmers, nqueryThreads);
-
+    vector<shared_ptr<vector<int>>> ansSampleDetails(vSeq.size(), nullptr);
     for (unsigned int i = 0; i < L1Resp.size(); i++) {
         for (unsigned int j = 0; j < L1Resp[i].size(); j++) {
             uint16_t othquery = L1Resp[i].at(j);
@@ -419,25 +470,71 @@ int main(int argc, char ** argv) {
                     str[othquery-1] = '+';
                     detailans[i][j] = make_shared<string>(str);
                 }
+                if (showSampleIndex >=0) 
+                    if (othquery-1 == showSampleIndex) {
+                        if (ansSampleDetails[i] == nullptr) 
+                            ansSampleDetails[i] = make_shared<vector<int>>();
+                        ansSampleDetails[i]->push_back(j);
+                    }             
                 continue;
             }
             if (othquery - L2IDShift >= vnodecnt) continue;
             if (vL2kmer[othquery - L2IDShift ] == nullptr) {
                 vL2kmer[othquery - L2IDShift] = make_shared<vector<uint64_t>>();
                 vL2TID[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
-                if (argShowDedatils)
+                if (argShowDedatils || showSampleIndex >=0)
                     vL2KmerPosInTranscript[othquery - L2IDShift] = make_shared<vector<uint32_t>>();
             }
             vL2kmer[othquery - L2IDShift]->push_back(seqInKmers[i].at(j));
             vL2TID[othquery - L2IDShift]->push_back(i);
-            if (argShowDedatils)
+            if (argShowDedatils || showSampleIndex >=0)
                 vL2KmerPosInTranscript[othquery - L2IDShift]->push_back(j);
         }
     }
     L1Resp.clear();
     ThreadPool pool(nqueryThreads, 1024);
     std::vector<std::future<int>> results;
-
+    if (argSampleIndex) {
+        for (unsigned int i = 0 ; i < vnodecnt; i++) 
+            if (vL2kmer[i] != nullptr) {
+                auto lambda = std::bind(
+                        queryL2ShowSampleonly,
+                        i,
+                        seqoth,
+                        std::ref(*vL2kmer[i]),
+                        std::ref(*vL2TID[i]),
+                        std::ref(*vL2KmerPosInTranscript[i]),
+                        std::ref(ansSampleDetails),
+                        ((int) showSampleIndex),
+                        seqoth->sampleCount,
+                        std::ref(pool.write_mutex)
+                        );
+                std::future<int> x = pool.enqueue(i, lambda);
+               results.emplace_back(std::move(x));
+            }
+        for (auto && result: results)
+            result.get();
+        printf("Printing\n");
+        ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
+        char buf[32];
+        memset(buf,0,sizeof(buf));
+        for (int i = 0 ; i < ansSampleDetails.size(); i++) {
+            fprintf(fout,"Kmers Hit In Transcript %d\n", i);
+            if (ansSampleDetails[i] == nullptr) continue;
+            sort(ansSampleDetails[i]->begin(), ansSampleDetails[i]->end());
+            for (int j = 0 ; j < ansSampleDetails[i]->size(); j++) {
+                int id;
+                uint64_t key = seqInKmers[i].at((id = ansSampleDetails[i]->at(j)));
+                if (flag) if  (usedreverse[i][id]) {
+                        key = helper.reverseComplement(key);
+                }
+                helper.convertstring(buf,&key);
+                fprintf(fout, "%s\n", buf);
+            }
+        }
+        fclose(fout);
+        return 0;
+    }
     for (unsigned int i = 0; i < vnodecnt; i++)
         if (vL2kmer[i] != nullptr) {
 //            queryL2InThreadPool(i, *pvNode, vL2kmer[i], vL2TID[i], detailans, ans, argShowDedatils,seqoth->high);
@@ -463,7 +560,7 @@ int main(int argc, char ** argv) {
     printf("Printing\n");
     if (argShowDedatils) {
         ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
-        char buf[30];
+        char buf[32];
         memset(buf,0,sizeof(buf));
         for (unsigned int i = 0 ; i < seqInKmers.size(); i++) {
             vector<shared_ptr<string>> &vans = detailans[i];
