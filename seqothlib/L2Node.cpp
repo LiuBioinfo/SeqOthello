@@ -442,8 +442,8 @@ L2Node::createL2Node( tinyxml2::XMLElement *p, string folder) {
     std::shared_ptr<L2Node> ptr(NULL);
     string fname(p->Attribute("L2FileName"));
     if (!folder.empty()) {
-       auto pos = fname.find_last_of('/');
-       fname = folder + fname.substr(pos+1);
+        auto pos = fname.find_last_of('/');
+        fname = folder + fname.substr(pos+1);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {

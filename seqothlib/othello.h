@@ -728,23 +728,23 @@ void Othello<keyType>::setAlienPreference(double ideal) {
 }
 
 
-template<class keyType> 
+template<class keyType>
 void Othello<keyType>::getrates(map<int, double> &sum) {
     sum.clear();
     int high =  (1<<L);
     vector<int> LA(high), LB(high);
-    for (unsigned int i = 0 ; i < ma; i++) 
+    for (unsigned int i = 0 ; i < ma; i++)
         LA[get(i) & (high-1) ]++;
     for (unsigned int i = ma; i<ma+mb; i++)
         LB[get(i) & (high-1) ]++;
-    if (L <= 12) 
-    for (int i = 0 ; i < high; i++) {
-        for (int j = 0 ; j < high; j++)
-            sum[i ^ j] += LA[i] * LB[j];
-    }
+    if (L <= 12)
+        for (int i = 0 ; i < high; i++) {
+            for (int j = 0 ; j < high; j++)
+                sum[i ^ j] += LA[i] * LB[j];
+        }
     else {
         long long tot = 0;
-        for (int i = 0 ; i < high; i++) 
+        for (int i = 0 ; i < high; i++)
             tot += ((long long) LA[i])*LB[i];
         long long rest = ma;
         rest *= mb;

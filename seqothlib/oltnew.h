@@ -29,6 +29,8 @@ public:
     uint32_t sampleCount;
     uint32_t L1Splitbit;
     SeqOthello() {}
+    static const Version version;
+    static const Version min_supported_version;
 private:
 #ifndef NDEBUG
     uint32_t L2InQKeyLimit = 1024512;
@@ -42,7 +44,7 @@ private:
     uint32_t L2limit = 1048576*128;
     constexpr static uint32_t L2limit0 = 1048576*128;
     uint32_t L2diff = L2limit/128;
-#endif    
+#endif
     vector<uint32_t> freqToVnodeIdMap;
     string folder;
     string L1NODE_PREFIX="map.L1.p";
@@ -54,8 +56,8 @@ private:
         folder = _folder;
         printf("%s: Starting to load L2 nodes of grop %d/%d from disk\n", get_thid().c_str(), thid, nthread);
         for (uint32_t i = 0; i < vNodes.size(); i++) {
-            if (i<needToLoad.size()) 
-                if (!needToLoad[i]) 
+            if (i<needToLoad.size())
+                if (!needToLoad[i])
                     continue;
             if ( i % nthread == thid)
                 loadL2Node(i);
@@ -98,31 +100,28 @@ public:
         delete l1Node;
     }
     void releaseL2Node(int id) {
-          vNodes[id].reset(); 
+        vNodes[id].reset();
     }
     SeqOthello(string &_folder, int nthread, bool loadall = true) {
         folder = _folder;
         tinyxml2::XMLDocument xml;
         auto xmlName = folder + XML_FNAME;
-        bool loadsucc = xml.LoadFile(xmlName.c_str());
-        if (false) {
-                fprintf(stderr,"Fail to load %s\n", xmlName.c_str());
-                throw std::invalid_argument("Fail creating SeqOthello\n");
-        }
+        tinyxml2::XMLError eResult= xml.LoadFile(xmlName.c_str());
+        XMLCheckResult(xml, eResult);
         if (xml.FirstChildElement("Root") == NULL) {
-                fprintf(stderr,"Fail to find Root from xml %s\n", xmlName.c_str());
-                throw std::invalid_argument("Fail creating SeqOthello\n");
+            fprintf(stderr,"Fail to find Root from xml %s\n", xmlName.c_str());
+            throw std::invalid_argument("Fail creating SeqOthello\n");
         }
         auto pSeq = xml.FirstChildElement("Root")->FirstChildElement("SeqOthello");
         if (pSeq == NULL) {
-                fprintf(stderr,"Fail to find SeqOthello from xml %s\n", xmlName.c_str());
-                throw std::invalid_argument("Fail creating SeqOthello\n");
+            fprintf(stderr,"Fail to find SeqOthello from xml %s\n", xmlName.c_str());
+            throw std::invalid_argument("Fail creating SeqOthello\n");
         }
         auto pL2Nodes = pSeq->FirstChildElement("L2Nodes");
         if (pL2Nodes == NULL) {
-                fprintf(stderr,"Fail to find L2Nodes from xml %s\n", xmlName.c_str());
-                throw std::invalid_argument("Fail creating SeqOthello\n");
-                return ;
+            fprintf(stderr,"Fail to find L2Nodes from xml %s\n", xmlName.c_str());
+            throw std::invalid_argument("Fail creating SeqOthello\n");
+            return ;
         }
         vNodes.clear();
         auto L2Node = pL2Nodes->FirstChildElement("L2Node");
@@ -134,7 +133,16 @@ public:
         pSeq->QueryIntAttribute("KmerLength", (int*) &kmerLength);
         pSeq->QueryIntAttribute("L2IDShift", (int*) &L2IDShift);
         pSeq->QueryIntAttribute("L1SplitBit", (int*) &L1Splitbit);
-
+        const char * retchar = pSeq->Attribute ("SeqOthelloVersion");
+        if (retchar == NULL) {
+            throw std::invalid_argument("SeqOthelloVersion missing");
+        }
+        string str(retchar);
+        Version fileversion(str);
+        if ( fileversion < min_supported_version)  {
+            fprintf(stderr, "Found SeqOthelloMap version %s \n minimal supported %s \n", fileversion.to_string().c_str(), min_supported_version.to_string().c_str());
+            throw std::invalid_argument("SeqOthello version mismatch");
+        }
         /*
         FILE *fin = fopen(fname.c_str(), "rb");
         unsigned char buf[0x20];
@@ -175,6 +183,8 @@ public:
         pSeqOthello->SetAttribute("L2IDShift", L2IDShift);
         pSeqOthello->SetAttribute("SampleCount", sampleCount);
         pSeqOthello->SetAttribute("L1SplitBit", l1Node->getsplitbit());
+        string versionstr = SeqOthello::version.to_string();
+        pSeqOthello->SetAttribute("SeqOthelloVersion", versionstr.c_str());
         auto pL2Nodes = xml.NewElement("L2Nodes");
         auto pL1Node = xml.NewElement("L1Node");
         auto pSamples = xml.NewElement("Samples");
@@ -214,8 +224,8 @@ public:
     }
     set<int> constructedL2;
     void constructL2Node(int id) {
-        if (constructedL2.count(id)) 
-                return;
+        if (constructedL2.count(id))
+            return;
         printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
         vNodes[id]->constructOth();
         vNodes[id]->writeDataToGzipFile();
@@ -468,14 +478,14 @@ public:
         //loadL1(kmerLength);
         vector<vector<uint16_t>> ans;
         for (auto &vk:kmers)
-                ans.push_back(vector<uint16_t>(vk.size()));
+            ans.push_back(vector<uint16_t>(vk.size()));
         for (int grp = 0; grp < (1<<L1Splitbit); grp++)
-                l1Node->queryPartAndPutToVV(ans,kmers,grp,nThreads);
+            l1Node->queryPartAndPutToVV(ans,kmers,grp,nThreads);
         return ans;
     }
     void printrates() {
         map<int, double> rates = l1Node->printrates();
-        for (unsigned int i = 1; i<L2IDShift; i++) 
+        for (unsigned int i = 1; i<L2IDShift; i++)
             printf("%d : %.8lf 1.0 1.0\n", i, rates[i]);
         for (unsigned int i = 0 ; i < vNodes.size(); i++) {
             double t;
@@ -485,4 +495,5 @@ public:
     }
 };
 
-
+const Version SeqOthello::version = Version("1.0.0");
+const Version SeqOthello::min_supported_version = Version("1.0.0");

@@ -973,3 +973,48 @@ public:
     }
 };
 
+class Version
+{
+public:
+    vector<int> vv;
+    Version(std::string version)
+    {
+        for (auto &x: version)
+            if (x == '.') x =' ';
+        stringstream ss(version);
+        int v;
+        while (ss >> v) vv.push_back(v);
+    }
+
+    bool operator < (const Version& other)
+    {
+        for (int i = 0 ; i < vv.size() && i < other.vv.size(); i++)
+            if (vv[i] < other.vv[i]) return true;
+        if (vv.size() < other.vv.size()) return true;
+        return false;
+    }
+
+    bool operator == (const Version& other)
+    {
+        return vv == other.vv;
+    }
+
+    friend std::ostream& operator << (std::ostream& stream, const Version& ver)
+    {
+        for (int i = 0 ; i < ver.vv.size(); i++) {
+            stream << ver.vv[i];
+            if (i<ver.vv.size()-1)
+                stream <<".";
+        }
+        return stream;
+    }
+
+    string to_string() const {
+        stringstream ss;
+        ss << *this;
+        string s;
+        ss >> s;
+        return s;
+    }
+};
+

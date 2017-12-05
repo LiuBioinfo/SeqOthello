@@ -137,11 +137,11 @@ int queryThreadInPool(Othello<uint64_t> &oth, vector<vector<uint16_t>> &ans, con
     printf("Query L1 grp %d for transcripts from %d to %d\n", grp,st,ed-1);
     int totcnt = 0;
     for (unsigned int i = st ; i < ed; i++)
-            for (unsigned int j = 0 ; j < (kmers)[i].size(); j++)
-                if (grp == ((kmers)[i][j] >> shift)) {
-                    totcnt++;
-                    (ans)[i][j] = oth.queryInt((kmers)[i][j]);
-                }
+        for (unsigned int j = 0 ; j < (kmers)[i].size(); j++)
+            if (grp == ((kmers)[i][j] >> shift)) {
+                totcnt++;
+                (ans)[i][j] = oth.queryInt((kmers)[i][j]);
+            }
     return totcnt;
 }
 void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, unsigned int grp, unsigned int threads) {
@@ -178,9 +178,9 @@ void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<ui
     for (int thd = 0; thd < maxs; thd++)  {
         int st = loc[thd];
         int ed = loc[thd+1];
-        if (st == ed) continue;    
+        if (st == ed) continue;
         auto lambda = std::bind(queryThreadInPool,
-                  std::ref(*oth), std::ref(ans), std::ref(kmers), (grp), (st), (ed), (shift));
+                                std::ref(*oth), std::ref(ans), std::ref(kmers), (grp), (st), (ed), (shift));
         std::future<int> x = pool.enqueue(thd, lambda);
         results.emplace_back(std::move(x));
     }
