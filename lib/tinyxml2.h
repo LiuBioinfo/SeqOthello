@@ -1,3 +1,4 @@
+
 /*
 Original code by Lee Thomason (www.grinninglizard.com)
 
@@ -20,6 +21,7 @@ must not be misrepresented as being the original software.
 3. This notice may not be removed or altered from any source
 distribution.
 */
+
 
 #ifndef TINYXML2_INCLUDED
 #define TINYXML2_INCLUDED
@@ -2442,6 +2444,10 @@ private:
 
 #if defined(_MSC_VER)
 #   pragma warning(pop)
+#endif
+
+#ifndef XMLCheckResult
+    #define XMLCheckResult(xmldoc, a_eResult) if (a_eResult != (0)) { fprintf(stderr,"Error: %s\n", xmldoc.ErrorIDToName(a_eResult)); throw std::runtime_error("Tinyxml2 Error"); }
 #endif
 
 #endif // TINYXML2_INCLUDED
