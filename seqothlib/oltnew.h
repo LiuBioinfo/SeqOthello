@@ -125,10 +125,10 @@ public:
                 return ;
         }
         vNodes.clear();
-        auto L2Node = pL2Nodes->FirstChildElement("L2Node");
-        while (L2Node != NULL) {
-            vNodes.push_back(L2Node::createL2Node(L2Node, folder));
-            L2Node = L2Node->NextSiblingElement("L2Node");
+        auto pL2Node = pL2Nodes->FirstChildElement("L2Node");
+        while (pL2Node != NULL) {
+            vNodes.push_back(L2Node::createL2Node(pL2Node, folder));
+            pL2Node = pL2Node->NextSiblingElement("L2Node");
         }
         pSeq->QueryIntAttribute("SampleCount", (int*) &sampleCount);
         pSeq->QueryIntAttribute("KmerLength", (int*) &kmerLength);

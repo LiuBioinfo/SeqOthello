@@ -199,7 +199,7 @@ bool L2EncodedValueListNode::smartQuery(const keyType *k, vector<uint32_t> &ret,
             ret.clear();
             return true;
         }
-        retmap = vector<uint8_t> (lines.begin()+IOLengthInBytes * index , lines.begin() + IOLengthInBytes * (index+1));
+        retmap = vector<uint8_t> (lines.begin()+IOLengthInBytes * index, lines.begin() + IOLengthInBytes * (index+1));
         return false;
     }
 }
@@ -439,11 +439,11 @@ void L2EncodedValueListNode::putInfoToXml(tinyxml2::XMLElement *pe) {
 
 std::shared_ptr<L2Node>
 L2Node::createL2Node( tinyxml2::XMLElement *p, string folder) {
-    std::shared_ptr<L2Node> ptr(NULL);
+    std::shared_ptr<L2Node> ptr(nullptr);
     string fname(p->Attribute("L2FileName"));
     if (!folder.empty()) {
-       auto pos = fname.find_last_of('/');
-       fname = folder + fname.substr(pos+1);
+        auto pos = fname.find_last_of('/');
+        fname = folder + fname.substr(pos+1);
     }
 
     if (strcmp(p->Attribute("Type"), L2NodeTypes::typestr.at(L2NodeTypes::VALUE_INDEX_SHORT).c_str()) == 0) {

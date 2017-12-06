@@ -428,6 +428,10 @@ int main(int argc, char ** argv) {
     int totallength = 0;
     for (auto &str : vSeq)  {
         int ul = str.size()-kmerLength+1;
+        if (ul<1)  {
+            printf("Skipping transcript %s\n", str.c_str());
+            continue;
+        }
         char buf[64];
         memset(buf,0,sizeof(buf));
         vector<uint64_t> kmers;
