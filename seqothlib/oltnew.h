@@ -459,9 +459,12 @@ public:
             printf("%d:%d\t", i, enchisto[i]);
         }
         printf("\n");
+        int myL2limit = L2limit0;
+        if (high>4096) myL2limit*=2;
+        if (high>8192) myL2limit*=2;
 
         for (int i = 1 ; i < high/8+2; i++) {
-            if ((sq+ enchisto[i])*i > L2limit0) {
+            if ((sq+ enchisto[i])*i > myL2limit) {
                 sq = 0;
                 l1id ++;
             }

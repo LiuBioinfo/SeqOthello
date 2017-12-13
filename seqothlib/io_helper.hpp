@@ -297,10 +297,10 @@ template <typename keyType, typename valueType>
 class compressFileReader : public FileReader <keyType, valueType> {
     FILE *f;
     bool fIsSorted;
-    static const int buflen = 1024*8;
+    static const int buflen = 1024*64;
     int curr = 0;
     int  max = 0;
-    unsigned char buf[1024*64];
+    unsigned char buf[1024*64*2];
     uint32_t kl, vl;
 public:
     compressFileReader( const char * fname, IOHelper <keyType, valueType> * _helper, uint32_t klength, uint32_t valuelength, bool _fIsSorted = true) {
@@ -347,7 +347,7 @@ public:
 template <typename keyType, typename valueType>
 class MultivalueFileReaderWriter : public FileReader <keyType, valueType> {
     FILE *f;
-    static const int buflen = 8192*4;
+    static const int buflen = 8192*64;
     int curr = 0;
     int max = 0;
     unsigned char buf[buflen * 2];
@@ -717,7 +717,7 @@ public:
 template <typename KVpair>
 class BinaryKmerReader: public KmerReader<KVpair> {
     FILE * f;
-    static const int buflen = 16384;
+    static const int buflen = 1024*64;
     KVpair buff[buflen*2];
     int curr = 0;
     int max = 0;
@@ -784,7 +784,7 @@ public:
         curr = 0;
         memset(buf,0,sizeof(buf));
     }
-    static const int buflen = 2048;
+    static const int buflen = 2048*64;
     void write(KVpair *p) {
         memcpy(&buf[curr],p,sizeof(buf[curr]));
         curr++;
