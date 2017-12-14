@@ -357,7 +357,7 @@ class MultivalueFileReaderWriter : public FileReader <keyType, valueType> {
     unsigned long long keycount = 0;
 public:
     static const valueType EMPTYVALUE = ~0;
-    bool valid(valueType value) {
+    inline bool valid(valueType value) const {
         if (vl == 1) return value!=0xFF;
         if (vl == 2) return value!=0xFFFF;
         if (vl == 4) return value!=0xFFFFFFFFUL;
@@ -524,11 +524,71 @@ public:
     }
 };
 
-
+template <typename keyType>
+class BufMulReader {
+    MultivalueFileReaderWriter<keyType, uint8_t> * reader;
+    static const int buflen = (1<<16);
+    static const int need_load_threshold = 1<<10;
+    static const int may_load_threshold = 1<<15;
+    static const int bufmask = ((1<<16)-1);
+    vector<keyType> keybuf;
+    vector<vector<uint8_t>> valuebuf;
+    int p,l,valuelen;
+    char fname0[1024];
+    bool finished = false;
+    bool last_load_succ = true;
+public:
+    unsigned long long getpos() {
+            return reader->getpos();
+    }
+    bool valid(uint8_t x) {
+            return reader->valid(x);
+    }
+    bool need_loadbuf() {
+         return (p + need_load_threshold > l && last_load_succ);
+    }
+    bool may_loadbuf() {
+         return (p + may_load_threshold > l && last_load_succ);
+    }
+    void loadbuf() {
+         while (l < p + bufmask) {
+               if (!reader->getNext(&keybuf[l&bufmask], &valuebuf[l&bufmask][0])) {
+                       last_load_succ = false;
+                       return;
+               }
+               l++;
+         }
+    }
+    BufMulReader(const char * fname, int _valuelen) 
+            : keybuf(buflen), valuebuf(buflen, vector<uint8_t>(_valuelen)),
+            p(0), l(0), valuelen(_valuelen) {
+        strcpy(fname0, fname);
+        reader = new MultivalueFileReaderWriter<keyType,uint8_t>(fname0, sizeof(keyType), sizeof(uint8_t), true);
+        loadbuf();
+    }
+    virtual bool getNext(keyType *k, uint8_t *v) {
+        if (finished) return false;
+        if (p == l) {
+                loadbuf();
+                if (p==l) return false;
+        }
+        *k = keybuf[p & bufmask];
+        memcpy(v, &valuebuf[p & bufmask][0], valuelen);
+        p++;
+        return true;
+    }
+    void reset() {
+        delete reader;
+        reader = new MultivalueFileReaderWriter<keyType,uint8_t>(fname0, sizeof(keyType), sizeof(uint8_t), true);
+        p = 0; l = 0; finished = false; last_load_succ = true;
+        loadbuf();
+    }
+    
+};
 
 template <typename keyType>
 class KmerGroupComposer {
-    vector<MultivalueFileReaderWriter<uint64_t,uint8_t> *> readers;
+    vector<BufMulReader<uint64_t> *> readers;
     priority_queue<KIDpair<keyType>> PQ;
 protected:
     bool hasNext = true;
@@ -612,7 +672,7 @@ public:
             totkeycount.push_back(tmpi64);
             tmpval[i].resize(tmpint+1);
             shift.push_back(tmpint + *shift.rbegin());
-            readers.push_back(new MultivalueFileReaderWriter<uint64_t, uint8_t>(fname.c_str(), sizeof(uint64_t), sizeof(uint8_t), true));
+            readers.push_back(new BufMulReader<keyType>(fname.c_str(), tmpint+1));
             keyType k;
             readers[readers.size()-1]->getNext(&k, &tmpval[i][0]);
             KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1)};
@@ -638,7 +698,8 @@ public:
             tid = PQ.top().id;
             keyType nextk;
             readkeys[tid]++;
-            for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
+            //for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
+            for (int i = 0; tmpval[tid][i]!=0xFF; i++) { // for faster speed.
                 ret.push_back(shift[tid] + tmpval[tid][i]);
             }
             PQ.pop();
@@ -649,6 +710,16 @@ public:
                 }
                 KIDpair<keyType> kid = {nextk, (uint32_t) tid};
                 PQ.push(kid);
+                if (readers[tid]->need_loadbuf()) {
+					printf("Loadbuf\n");
+					std::vector<std::thread> workers;
+                    for (auto &x:readers) if (x->may_loadbuf()){
+						workers.push_back(std::thread(&BufMulReader<keyType>::loadbuf, x));
+                    }
+					for (auto &x:workers)
+						x.join();
+					printf("Loadbuf %d\n", workers.size());
+                }
             }
             if (PQ.empty()) break;
         }
