@@ -332,7 +332,10 @@ void L2ShortValueListNode::writeDataToGzipFile() {
     L2Node::oth->writeDataToGzipFile(fout);
     gzclose(fout);
     uint64list.clear();
+    valuemap.clear();
     delete L2Node::oth;
+    delete keys;
+    delete values;
     //for (auto const & vl: uint64list) {
     //  uint64_t rvl = vl;
     //  gzwrite(fdata, &rvl, IOLengthInBytes);
@@ -352,7 +355,11 @@ void L2EncodedValueListNode::writeDataToGzipFile() {
     L2Node::oth->exportInfo(buf);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->writeDataToGzipFile(fout);
+    lines.clear();
     //gzwrite(fdata, &lines[0], lines.size());
+    delete L2Node::oth;
+    delete keys;
+    delete values;
     gzclose(fout);
     gzclose(fdata);
 }
