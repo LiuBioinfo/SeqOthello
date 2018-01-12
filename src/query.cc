@@ -28,13 +28,13 @@ struct ThreadParameter {
     string iobuf;
 };
 int queryL2ShowSampleonly(int i, const shared_ptr<SeqOthello> seqoth,
-                        const vector<uint64_t> &kmers,
-                        const vector<uint32_t> &TIDs,
-                        const vector<uint32_t> &PosInTranscript,
-                        vector<shared_ptr<vector<int>>> & ansSampleDetails,
-                        int showSampleIndex,
-                        unsigned int high,
-                        std::mutex &mu) {
+                          const vector<uint64_t> &kmers,
+                          const vector<uint32_t> &TIDs,
+                          const vector<uint32_t> &PosInTranscript,
+                          vector<shared_ptr<vector<int>>> & ansSampleDetails,
+                          int showSampleIndex,
+                          unsigned int high,
+                          std::mutex &mu) {
     printf("L2 Load %d.\n", i);
     seqoth->loadL2Node(i);
     if (!seqoth->vNodes[i]) return 0;
@@ -50,7 +50,7 @@ int queryL2ShowSampleonly(int i, const shared_ptr<SeqOthello> seqoth,
         if (respond) {
             if (find(ret.begin(), ret.end(), showSampleIndex)!=ret.end())
                 mans[TID].push_back(PosInTranscript[j]);
-        } 
+        }
         else {
             if (retmap[showSampleIndex >> 3] &( 1<< ( showSampleIndex &7)))
                 mans[TID].push_back(PosInTranscript[j]);
@@ -61,7 +61,7 @@ int queryL2ShowSampleonly(int i, const shared_ptr<SeqOthello> seqoth,
     {
         std::unique_lock<std::mutex> lock(mu);
         for (auto &x: mans) {
-            if (ansSampleDetails[x.first] == nullptr) 
+            if (ansSampleDetails[x.first] == nullptr)
                 ansSampleDetails[x.first] = make_shared<vector<int>>();
             auto & refv = *ansSampleDetails[x.first];
             for (auto &y: x.second)
@@ -399,6 +399,9 @@ int main(int argc, char ** argv) {
     while ( fgets(buf,sizeof(buf),fin)!= NULL) {
         char * p;
         p = &buf[0];
+        if (strlen(buf) > 1000000) {
+            throw std::invalid_argument("Transcript too long, we only support 1000000.");
+        }
         while (*p == 'A' || *p == 'T' || *p == 'G' || *p == 'C' || *p == 'N') p++;
         *p = '\0';
         if (strlen(buf)>=3)
@@ -410,7 +413,7 @@ int main(int argc, char ** argv) {
     FILE *fout = fopen(fnameout.c_str(), "w");
     if (fin == NULL)
         throw std::invalid_argument("Error while opening file "+(fnameout));
-    
+
     unsigned int vnodecnt = seqoth->vNodes.size();
     vector<shared_ptr<vector<uint64_t>>> vL2kmer(vnodecnt, nullptr);
     vector<shared_ptr<vector<uint32_t>>> vL2TID(vnodecnt, nullptr);
@@ -426,10 +429,14 @@ int main(int argc, char ** argv) {
     vector<vector<shared_ptr<string>>> detailans;
     ConstantLengthKmerHelper<uint64_t, uint16_t> helper(kmerLength,0);
     int totallength = 0;
+    set<int> skipped;
+    int id = -1;
     for (auto &str : vSeq)  {
         int ul = str.size()-kmerLength+1;
+        id++;
         if (ul<1)  {
-            printf("Skipping transcript %s\n", str.c_str());
+            printf("Skipping transcript # %d, %s\n", id, str.c_str());
+            skipped.insert(id);
             continue;
         }
         char buf[64];
@@ -474,12 +481,12 @@ int main(int argc, char ** argv) {
                     str[othquery-1] = '+';
                     detailans[i][j] = make_shared<string>(str);
                 }
-                if (showSampleIndex >=0) 
+                if (showSampleIndex >=0)
                     if (othquery-1 == showSampleIndex) {
-                        if (ansSampleDetails[i] == nullptr) 
+                        if (ansSampleDetails[i] == nullptr)
                             ansSampleDetails[i] = make_shared<vector<int>>();
                         ansSampleDetails[i]->push_back(j);
-                    }             
+                    }
                 continue;
             }
             if (othquery - L2IDShift >= vnodecnt) continue;
@@ -499,22 +506,22 @@ int main(int argc, char ** argv) {
     ThreadPool pool(nqueryThreads, 1024);
     std::vector<std::future<int>> results;
     if (argSampleIndex) {
-        for (unsigned int i = 0 ; i < vnodecnt; i++) 
+        for (unsigned int i = 0 ; i < vnodecnt; i++)
             if (vL2kmer[i] != nullptr) {
                 auto lambda = std::bind(
-                        queryL2ShowSampleonly,
-                        i,
-                        seqoth,
-                        std::ref(*vL2kmer[i]),
-                        std::ref(*vL2TID[i]),
-                        std::ref(*vL2KmerPosInTranscript[i]),
-                        std::ref(ansSampleDetails),
-                        ((int) showSampleIndex),
-                        seqoth->sampleCount,
-                        std::ref(pool.write_mutex)
-                        );
+                                  queryL2ShowSampleonly,
+                                  i,
+                                  seqoth,
+                                  std::ref(*vL2kmer[i]),
+                                  std::ref(*vL2TID[i]),
+                                  std::ref(*vL2KmerPosInTranscript[i]),
+                                  std::ref(ansSampleDetails),
+                                  ((int) showSampleIndex),
+                                  seqoth->sampleCount,
+                                  std::ref(pool.write_mutex)
+                              );
                 std::future<int> x = pool.enqueue(i, lambda);
-               results.emplace_back(std::move(x));
+                results.emplace_back(std::move(x));
             }
         for (auto && result: results)
             result.get();
@@ -531,7 +538,7 @@ int main(int argc, char ** argv) {
                 uint64_t key = seqInKmers[i].at((id = ansSampleDetails[i]->at(j)));
                 if (flag) if  (usedreverse[i][id]) {
                         key = helper.reverseComplement(key);
-                }
+                    }
                 helper.convertstring(buf,&key);
                 fprintf(fout, "%s\n", buf);
             }
@@ -584,8 +591,16 @@ int main(int argc, char ** argv) {
             }
         }
     } else {
+        int skippedcount = 0;
         for (auto &res : ans) {
-            fprintf(fout,"transcript# %d\t", res.first);
+            while (skipped.count(res.first + skippedcount)) {
+                fprintf(fout,"transcript# %d\t", res.first+skippedcount);
+                for (unsigned int i = 0 ; i < seqoth->sampleCount; i++)
+                    fprintf(fout, "0\t");
+                fprintf(fout,"\n");
+                skippedcount ++;
+            }
+            fprintf(fout,"transcript# %d\t", res.first+skippedcount);
             for (unsigned int i = 0 ; i < seqoth->sampleCount; i++)
                 fprintf(fout, "%d\t", (*res.second)[i]);
             fprintf(fout, "\n");
