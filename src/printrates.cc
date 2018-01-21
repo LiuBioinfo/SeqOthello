@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
     args::ArgumentParser parser("Query SeqOthello! \n");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     args::ValueFlag<string> argSeqOthName(parser, "string", "the path contains SeqOthello mapping file.", {"map-folder"});
-
+    args::ValueFlag<int> argL2(parser, "int", "L2 Node ID", {"L2"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -43,10 +43,29 @@ int main(int argc, char ** argv) {
         std::cerr << parser;
         return 1;
     }
-
     SeqOthello * seqoth;
     string filename = args::get(argSeqOthName);
     seqoth = new SeqOthello (filename, 16 ,false);
-    seqoth->loadAll(16);
+    if (!argL2) {
+    seqoth->loadL1(seqoth->kmerLength);
     seqoth->printrates();
+    }
+    if (argL2) {
+            int L2id = args::get(argL2);
+            seqoth->loadL2Node(L2id);
+            if (!seqoth->vNodes[L2id]) return 0;
+            auto othProvalues = seqoth->vNodes[L2id]->getRates();
+            auto retmap = seqoth->vNodes[L2id]->computeProb(othProvalues);
+            int entrycnt = seqoth->vNodes[L2id]->getEntrycnt();
+            double zeroRate =0;
+            for (auto &x:othProvalues) {
+                  if (x.first ==0 || x.first>entrycnt)
+                          zeroRate += x.second;
+            }
+            printf("L2 Node %d, entrycnt %d\n", L2id, entrycnt);
+            for (auto &x: retmap)
+                    printf("%d %.8lf\n", x.first,x.second);
+            printf("Zero %.8lf\n", zeroRate);
+    }
+
 }

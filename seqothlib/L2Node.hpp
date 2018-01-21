@@ -41,6 +41,9 @@ public:
     static std::shared_ptr<L2Node> createL2Node( tinyxml2::XMLElement *p, string folder="");
     string gzfname;
     virtual double expectedOnes(double &) = 0;
+    map<int,double> getRates();
+    virtual map<int,double> computeProb(map<int,double> &) = 0;
+    virtual int getEntrycnt() = 0;
 };
 
 class L2ShortValueListNode : public L2Node {
@@ -78,6 +81,8 @@ public:
     void putInfoToXml(tinyxml2::XMLElement *) override;
     uint64_t getvalcnt() override;
     double expectedOnes(double &) override;
+    map<int,double> computeProb(map<int,double> &);
+    int getEntrycnt();
 };
 
 class L2EncodedValueListNode : public L2Node {
@@ -107,5 +112,7 @@ public:
     void putInfoToXml(tinyxml2::XMLElement *) override;
     uint64_t getvalcnt() override;
     double expectedOnes(double &) override;
+    map<int,double> computeProb(map<int,double> &) override;
+    int getEntrycnt();
 };
 

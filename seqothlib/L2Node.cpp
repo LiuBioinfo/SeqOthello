@@ -477,7 +477,6 @@ L2Node::createL2Node( tinyxml2::XMLElement *p, string folder) {
             ptr = make_shared<L2EncodedValueListNode>(IOL, type,fname);
     }
     return ptr;
-
 }
 
 uint64_t
@@ -530,4 +529,60 @@ double L2EncodedValueListNode::expectedOnes(double &prb) {
         }
     }
     return ans;
+}
+
+map<int,double> L2Node::getRates() {
+    map<int,double> tmap;
+    oth->getrates(tmap);
+    return tmap;
+}
+
+int L2ShortValueListNode::getEntrycnt() {
+        return uint64list.size();
+}
+
+int L2EncodedValueListNode::getEntrycnt() {
+        return lines.size()/IOLengthInBytes;
+}
+
+map<int,double> L2ShortValueListNode::computeProb(map<int,double> &p) {
+    map<int,double> ret;
+    for (int i = 1; i< uint64list.size(); i++) {
+    uint64_t vl = uint64list[i];
+    uint32_t valcnt = valuecnt;
+    while (valcnt -- ) {
+        uint32_t pq = vl & mask;
+        vl >>= maxnl;
+        ret[pq] += p[i];
+    }
+    }
+    return ret;
+}
+
+map<int,double> L2EncodedValueListNode::computeProb(map<int,double> &p) {
+    map<int,double> ret;
+    if (encodetype == L2NodeTypes::VALUE_INDEX_ENCODED) {
+        int high = lines.size()/IOLengthInBytes;
+        for (int i = 1; i<high; i++) {
+        vector<uint32_t> decode;
+        valuelistDecode(&lines[IOLengthInBytes*i], decode, IOLengthInBytes);
+        if (decode.size()==0) continue;
+        uint32_t last=0;
+        for (uint32_t v = 0; v< decode.size(); v++) {
+            last += decode[v];
+            ret[last] += p[i];
+        }
+        }
+    }
+    if (encodetype == L2NodeTypes::MAPP) {
+        int high = lines.size()/IOLengthInBytes;
+        for (int i = 1; i<high; i++) {
+           auto retmap = vector<uint8_t> (lines.begin()+IOLengthInBytes * i, lines.begin() + IOLengthInBytes * (i+1));
+           for (int q = 0; q<retmap.size(); q++)
+               for (int bit = 0 ;  bit < 7; bit++)
+                   if (retmap[q] & (1<<bit))
+                           ret[(q<<3)+bit]+=p[i];
+        }
+    }
+    return ret;
 }

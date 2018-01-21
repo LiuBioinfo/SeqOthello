@@ -65,7 +65,7 @@ private:
     }
     thread * L1LoadThread;
     vector<thread *> L2LoadThreads;
-private:
+public:    
     void loadL1(uint32_t kmerLength) {
         l1Node = new L1Node();
         l1Node->setsplitbit(kmerLength,L1Splitbit);
@@ -83,6 +83,7 @@ private:
         fin);
         */
     }
+private:
     void startloadL2(int nthread, vector<bool> _needToLoad = vector<bool>()) {
         needToLoad = _needToLoad;
         for (int thid = 0; thid < nthread; thid++)
@@ -488,13 +489,32 @@ public:
     }
     void printrates() {
         map<int, double> rates = l1Node->printrates();
+        for (auto &x: rates) {
+                printf("L1 return %d: %.8lf\n", x.first, x.second);
+        }
+        /*
+        vector<map<int,double>> L2Rates;
+        vector<double> L2ZeroRates;
+        for (unsigned int i = 0 ; i < vNodes.size(); i++) {
+            if (!vNodes[i]) continue;
+            double zeroRate = 0;
+            auto othProvalues = vNodes[i]->getRates();
+            auto retmap = vNodes[i]->computeProb(othProvalues);
+            L2Rates.push_back(retmap);
+            L2ZeroRates.push_back(zeroRate);
+            printf("L2 Node %d\n", i);
+            for (auto &x: retmap)
+                    printf("%d %lf\t", x.first,x.second);
+        }
+          */ 
+        /*
         for (unsigned int i = 1; i<L2IDShift; i++)
             printf("%d : %.8lf 1.0 1.0\n", i, rates[i]);
         for (unsigned int i = 0 ; i < vNodes.size(); i++) {
             double t;
             double exp = vNodes[i]->expectedOnes(t);
             printf("%d : %.8lf %.5lf %.3lf\n", i+L2IDShift, rates[i+L2IDShift] ,t, exp);
-        }
+        }*/
     }
 };
 
