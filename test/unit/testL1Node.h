@@ -1,3 +1,5 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include "gtest/gtest.h"
 
 // The fixture for testing class Foo.

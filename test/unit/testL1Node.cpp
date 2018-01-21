@@ -20,14 +20,14 @@ TEST_F(L1NodeTest, TestL1BuildQuery) {
          v.push_back(rand()%0xFFFF);
     }
     sort(k.begin(), k.end());
-    L1Node * p = new L1Node(1048576*128*4, 12);
+    L1Node * p = new L1Node(1048576*128*4, 12,"testtmp");
     for (int i = 0 ; i < n ; i++) {
             p->add(k[i], v[i]);
     }
     p->constructAndWrite(12, 4, "test");
     int splitbit = p->getsplitbit();
     printf("%d", splitbit);
-    L1Node *q = new L1Node(0,12);
+    L1Node *q = new L1Node(0,12,"testtmp");
     q->setsplitbit(12, splitbit);
     q->loadFromFile("test");
     int uneq = 0;

@@ -1,3 +1,4 @@
+// This file is a part of SeqOthello. Please refer to LICENSE.TXT for the LICENSE
 #pragma once
 /*!
  \file othello.h
@@ -281,6 +282,13 @@ public:
     template<typename VT>
     Othello(uint8_t _L,  vector<keyType> &keys,  vector<VT> &values, bool _autoclear = true, int32_t allowed_conflicts = -1) :
         Othello(_L, & (keys[0]),keys.size(), _autoclear, &(values[0]), sizeof(VT), allowed_conflicts)
+    {
+    }
+
+    //!\brief Construct othello with vectors.
+    template<typename VT>
+    Othello(uint8_t _L,  IOBuf<keyType> &keys,  IOBuf<VT> &values, bool _autoclear = true, int32_t allowed_conflicts = -1) :
+        Othello(_L, keys.getstart(), keys.size(), _autoclear, values.getstart(), sizeof(VT), allowed_conflicts)
     {
     }
 
@@ -720,23 +728,23 @@ void Othello<keyType>::setAlienPreference(double ideal) {
 }
 
 
-template<class keyType> 
+template<class keyType>
 void Othello<keyType>::getrates(map<int, double> &sum) {
     sum.clear();
     int high =  (1<<L);
     vector<int> LA(high), LB(high);
-    for (int i = 0 ; i < ma; i++) 
+    for (unsigned int i = 0 ; i < ma; i++)
         LA[get(i) & (high-1) ]++;
-    for (int i = ma; i<ma+mb; i++)
+    for (unsigned int i = ma; i<ma+mb; i++)
         LB[get(i) & (high-1) ]++;
-    if (L <= 5) 
-    for (int i = 0 ; i < high; i++) {
-        for (int j = 0 ; j < high; j++)
-            sum[i ^ j] += LA[i] * LB[j];
-    }
+    if (L <= 12)
+        for (int i = 0 ; i < high; i++) {
+            for (int j = 0 ; j < high; j++)
+                sum[i ^ j] += LA[i] * LB[j];
+        }
     else {
         long long tot = 0;
-        for (int i = 0 ; i < high; i++) 
+        for (int i = 0 ; i < high; i++)
             tot += ((long long) LA[i])*LB[i];
         long long rest = ma;
         rest *= mb;

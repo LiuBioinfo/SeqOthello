@@ -1,3 +1,4 @@
+// This file is a part of SeqOthello. Please refer to LICENSE.TXT for the LICENSE
 #include <L1Node.hpp>
 #include <cstdlib>
 #include <cstdio>
@@ -12,13 +13,13 @@ int main(int argc, char* argv [] ) {
     vector<uint64_t> k;
     vector<uint16_t> v;
     for (int i = 0 ; i < n ; i++) {
-         k.push_back((rand()^(rand()<<12))&0xFFFFFFFULL);
-         v.push_back(rand()%0xFFFF);
+        k.push_back((rand()^(rand()<<12))&0xFFFFFFFULL);
+        v.push_back(rand()%0xFFFF);
     }
     sort(k.begin(), k.end());
-    L1Node * p = new L1Node(1048575*128*4, 14);
+    L1Node * p = new L1Node(1048575*128*4, 14, "testloc");
     for (int i = 0 ; i < n ; i++) {
-            p->add(k[i], v[i]);
+        p->add(k[i], v[i]);
     }
     p->constructAndWrite(14, thread, "test");
     int splitbit = p->getsplitbit();
@@ -35,7 +36,7 @@ int main(int argc, char* argv [] ) {
         uneq++;
         }
     }
-*/
+    */
 }
 /*
 void testVAL(vector<uint32_t> val) {
@@ -49,8 +50,8 @@ void testVAL(vector<uint32_t> val) {
         vector<uint32_t> valret;
         uint32_t ql = valuelistDecode(&buf[0], valret, 64);
         EXPECT_EQ(ql, valret.size());
-        EXPECT_EQ(valret, val); 
-        
+        EXPECT_EQ(valret, val);
+
 }
 TEST_F(L2NodeTest, TestEncodeDecode) {
     for (int i = 0 ; i < 100; i++) {
@@ -71,13 +72,13 @@ TEST_F(L2NodeTest, TestEncodeDecode) {
 }
 
 TEST_F(L2NodeTest, TestL2Short) {
-    
+
     L2Node *N = new L2ShortValueListNode (5,8);
     int NN = 20;
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis(0, 0x6FFFFFFFULL);
-    vector<uint64_t> vK; 
+    vector<uint64_t> vK;
     for (uint64_t i=0; i<NN; i++) {
         uint64_t tmp = dis(gen);
         vK.push_back(tmp  ^ (tmp<<16));
@@ -162,7 +163,7 @@ TEST_F(L2NodeTest, TestL2MAPP) {
         bool ret = N->smartQuery(&k, vret, vretmap);
         bool ret2 = N->smartQuery(&k, vret, vretmap2);
         EXPECT_EQ(ret, false);
-        EXPECT_EQ(ret2, false); 
+        EXPECT_EQ(ret2, false);
 		EXPECT_EQ(vretmap, tmp);
 		EXPECT_EQ(vretmap2, tmp);
     }
@@ -186,9 +187,9 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
        uint32_t upper = dis2(gen) % 15 + 1;
        for (int i = 1 ; i<= upper; i++) {
            last += (dis(gen) + 1);
-           if (dis2(gen) & 1) 
+           if (dis2(gen) & 1)
                last += dis(gen);
-           if (dis2(gen) & 3) 
+           if (dis2(gen) & 3)
                last += dis(gen);
            vec.push_back(last);
        }
@@ -198,7 +199,7 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
            diff.push_back(vec[i] - vec[i-1]);
        uint32_t encodelength = valuelistEncode(NULL, diff, false);
        if (encodelength > maxlength) maxlength = encodelength + 1;
-       
+
     }
     for (uint64_t i=0; i<totN; i++) {
         uint64_t tmp = dis2(gen);
@@ -232,7 +233,7 @@ TEST_F(L2NodeTest, TestL2EncodeLong) {
         bool ret = N->smartQuery(&k, vret, vretmap);
         bool ret2 = N->smartQuery(&k, vret2, vretmap2);
         EXPECT_EQ(ret, true);
-        EXPECT_EQ(ret2, true); 
+        EXPECT_EQ(ret2, true);
         vector<uint32_t> vl = vlists[i];
 		EXPECT_EQ(vret, vl);
 		EXPECT_EQ(vret2, vl);

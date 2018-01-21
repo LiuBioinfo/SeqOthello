@@ -1,8 +1,10 @@
+// This file is a part of SeqOthello. Please refer to LICENSE.TXT for the LICENSE
 #include <L1Node.hpp>
 #include <vector>
 #include <string>
 #include <thread>
 #include <zlib.h>
+#include <future>
 using namespace std;
 
 L1Node::~L1Node() {
@@ -49,6 +51,8 @@ void L1Node::constructothello(uint32_t id, uint32_t L, string fname) {
         othello->exportInfo(buf);
         gzwrite(fout, buf, sizeof(buf));
         othello->writeDataToGzipFile(fout);
+        kV[id]->release();
+        vV[id]->release();
     }
     else
         gzwrite(fout,buf,sizeof(buf));
@@ -119,8 +123,70 @@ map<int,double> L1Node::printrates() {
     for (auto *p: othellos) {
         map<int,double> tmap;
         p->getrates(tmap);
-        for (auto &x: tmap) 
+        for (auto &x: tmap)
             sum[x.first] += x.second;
     }
     return sum;
+}
+
+void L1Node::setfname(string str) {
+    fname = str;
+}
+
+int queryThreadInPool(Othello<uint64_t> &oth, vector<vector<uint16_t>> &ans, const vector<vector<uint64_t>> &kmers, const unsigned int grp, const unsigned int st, const unsigned int ed, const uint32_t shift) {
+    printf("Query L1 grp %d for transcripts from %d to %d\n", grp,st,ed-1);
+    int totcnt = 0;
+    for (unsigned int i = st ; i < ed; i++)
+        for (unsigned int j = 0 ; j < (kmers)[i].size(); j++)
+            if (grp == ((kmers)[i][j] >> shift)) {
+                totcnt++;
+                (ans)[i][j] = oth.queryInt((kmers)[i][j]);
+            }
+    return totcnt;
+}
+void L1Node::queryPartAndPutToVV(vector<vector<uint16_t>> &ans, vector<vector<uint64_t>> &kmers, unsigned int grp, unsigned int threads) {
+    if (grp >= (1U<<splitbit))
+        throw std::invalid_argument("Error group id for L1");
+
+    ThreadPool pool(threads, 1024);
+
+    char cbuf[0x400];
+    memset(cbuf,0,sizeof(cbuf));
+    sprintf(cbuf,"%s.%d",fname.c_str(), grp);
+    gzFile fin = gzopen(cbuf, "rb");
+    unsigned char buf[0x20];
+    gzread(fin, buf,sizeof(buf));
+    unsigned char buf0[0x20];
+    memset(buf0,0,sizeof(buf0));
+    Othello<uint64_t> *oth;
+    if (memcmp(buf, buf0, 0x20) ==0) {
+        return;
+    }
+    else {
+        oth = new Othello<uint64_t> (buf);
+        oth->loadDataFromGzipFile(fin);
+        if (!oth->loaded) {
+            delete oth;
+            return;
+        }
+    }
+    int maxs = 32;
+    vector<int> loc;
+    for (int i = 0 ; i<=maxs; i++)
+        loc.push_back(kmers.size()*i/maxs);
+    std::vector<std::future<int>> results;
+    for (int thd = 0; thd < maxs; thd++)  {
+        int st = loc[thd];
+        int ed = loc[thd+1];
+        if (st == ed) continue;
+        auto lambda = std::bind(queryThreadInPool,
+                                std::ref(*oth), std::ref(ans), std::ref(kmers), (grp), (st), (ed), (shift));
+        std::future<int> x = pool.enqueue(thd, lambda);
+        results.emplace_back(std::move(x));
+    }
+    for (auto && result: results)
+        result.get();
+
+    delete oth;
+    return;
 }

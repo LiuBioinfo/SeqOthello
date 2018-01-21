@@ -1,6 +1,5 @@
-SeqOthello
 
-#README for SeqOthello
+#README 
 _SeqOthello_ supports fast coverage query and containment query. 
 ##Compile
 _SeqOthello_ is tested on linux platform with the following system settings. The performance is optimized for Intel CPUs with SSE4.2 support.
@@ -44,11 +43,11 @@ Each line of the generated scripts contains a command to prepare the files. The 
 
 Containment Query
 
-```build/bin/Query --map-folder=out/ --transcript=test.fa --output=queryresult --lthread=16 --qthread=16> querylog```
+```build/bin/Query --map-folder=out/ --transcript=test.fa --output=queryresult --qthread=8 > querylog```
 
 Coverage Query
 
-```build/bin/Query --map-folder=out/ --transcript=test.fa --detail --output=queryresult --lthread=16 > querylog```
+```build/bin/Query --map-folder=out/ --transcript=test.fa --detail --output=queryresult --qthread=8 > querylog```
 
 ##OnlineQuery
 Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
@@ -57,3 +56,11 @@ Use the following command to start a server on the machine, (e.g., on TCP port 3
 
 In another terminal, run the Client program.
 ```build/bin/Client --transcript=kmer/test.fa --coverage --output=result --port=3333```
+
+
+#License 
+Please refer to LICENSE.TXT.
+
+#Contact
+Please contact us at SeqOthello@googlegroups.com
+

@@ -1,3 +1,4 @@
+// This file is a part of SeqOthello. Please refer to LICENSE.TXT for the LICENSE
 #pragma once
 #include <unordered_map>
 #include <thread>
@@ -27,25 +28,36 @@ public:
     uint32_t L2IDShift;
     uint32_t sampleCount;
     uint32_t L1Splitbit;
+    SeqOthello() {}
+    static const Version version;
+    static const Version min_supported_version;
 private:
+#ifndef NDEBUG
+    uint32_t L2InQKeyLimit = 1024512;
+    uint64_t L2InQValLimit = 1024ULL*32ULL;
+    uint32_t L2limit = 128;
+    constexpr static uint32_t L2limit0 = 128;
+    uint32_t L2diff = L2limit;
+#else
     uint32_t L2InQKeyLimit = 1048576*512;
     uint64_t L2InQValLimit = 1048576ULL*1024ULL*32ULL;
-    constexpr static uint32_t L2limit = 1048576*128;
+    uint32_t L2limit = 1048576*128;
+    constexpr static uint32_t L2limit0 = 1048576*128;
+    uint32_t L2diff = L2limit/128;
+#endif
     vector<uint32_t> freqToVnodeIdMap;
     string folder;
     string L1NODE_PREFIX="map.L1.p";
     string L2NODE_PREFIX="map.L2.";
     string XML_FNAME="map.xml";
     vector<bool> needToLoad;
-public:
-    SeqOthello() {}
 
     void loadL2NodeBatch(uint32_t thid, string _folder, uint32_t nthread) {
         folder = _folder;
         printf("%s: Starting to load L2 nodes of grop %d/%d from disk\n", get_thid().c_str(), thid, nthread);
         for (uint32_t i = 0; i < vNodes.size(); i++) {
-            if (i<needToLoad.size()) 
-                if (!needToLoad[i]) 
+            if (i<needToLoad.size())
+                if (!needToLoad[i])
                     continue;
             if ( i % nthread == thid)
                 loadL2Node(i);
@@ -53,6 +65,7 @@ public:
     }
     thread * L1LoadThread;
     vector<thread *> L2LoadThreads;
+private:
     void loadL1(uint32_t kmerLength) {
         l1Node = new L1Node();
         l1Node->setsplitbit(kmerLength,L1Splitbit);
@@ -82,27 +95,54 @@ public:
         L2LoadThreads.clear();
         printf("Load L2 finished \n");
     }
+public:
     void releaseL1() {
         delete l1Node;
+    }
+    void releaseL2Node(int id) {
+        vNodes[id].reset();
     }
     SeqOthello(string &_folder, int nthread, bool loadall = true) {
         folder = _folder;
         tinyxml2::XMLDocument xml;
         auto xmlName = folder + XML_FNAME;
-        xml.LoadFile(xmlName.c_str());
+        tinyxml2::XMLError eResult= xml.LoadFile(xmlName.c_str());
+        XMLCheckResult(xml, eResult);
+        if (xml.FirstChildElement("Root") == NULL) {
+            fprintf(stderr,"Fail to find Root from xml %s\n", xmlName.c_str());
+            throw std::invalid_argument("Fail creating SeqOthello\n");
+        }
         auto pSeq = xml.FirstChildElement("Root")->FirstChildElement("SeqOthello");
+        if (pSeq == NULL) {
+            fprintf(stderr,"Fail to find SeqOthello from xml %s\n", xmlName.c_str());
+            throw std::invalid_argument("Fail creating SeqOthello\n");
+        }
         auto pL2Nodes = pSeq->FirstChildElement("L2Nodes");
+        if (pL2Nodes == NULL) {
+            fprintf(stderr,"Fail to find L2Nodes from xml %s\n", xmlName.c_str());
+            throw std::invalid_argument("Fail creating SeqOthello\n");
+            return ;
+        }
         vNodes.clear();
-        auto L2Node = pL2Nodes->FirstChildElement("L2Node");
-        while (L2Node != NULL) {
-            vNodes.push_back(L2Node::createL2Node(L2Node));
-            L2Node = L2Node->NextSiblingElement("L2Node");
+        auto pL2Node = pL2Nodes->FirstChildElement("L2Node");
+        while (pL2Node != NULL) {
+            vNodes.push_back(L2Node::createL2Node(pL2Node, folder));
+            pL2Node = pL2Node->NextSiblingElement("L2Node");
         }
         pSeq->QueryIntAttribute("SampleCount", (int*) &sampleCount);
         pSeq->QueryIntAttribute("KmerLength", (int*) &kmerLength);
         pSeq->QueryIntAttribute("L2IDShift", (int*) &L2IDShift);
         pSeq->QueryIntAttribute("L1SplitBit", (int*) &L1Splitbit);
-
+        const char * retchar = pSeq->Attribute ("SeqOthelloVersion");
+        if (retchar == NULL) {
+            throw std::invalid_argument("SeqOthelloVersion missing");
+        }
+        string str(retchar);
+        Version fileversion(str);
+        if ( fileversion < min_supported_version)  {
+            fprintf(stderr, "Found SeqOthelloMap version %s \n minimal supported %s \n", fileversion.to_string().c_str(), min_supported_version.to_string().c_str());
+            throw std::invalid_argument("SeqOthello version mismatch");
+        }
         /*
         FILE *fin = fopen(fname.c_str(), "rb");
         unsigned char buf[0x20];
@@ -143,6 +183,8 @@ public:
         pSeqOthello->SetAttribute("L2IDShift", L2IDShift);
         pSeqOthello->SetAttribute("SampleCount", sampleCount);
         pSeqOthello->SetAttribute("L1SplitBit", l1Node->getsplitbit());
+        string versionstr = SeqOthello::version.to_string();
+        pSeqOthello->SetAttribute("SeqOthelloVersion", versionstr.c_str());
         auto pL2Nodes = xml.NewElement("L2Nodes");
         auto pL1Node = xml.NewElement("L1Node");
         auto pSamples = xml.NewElement("Samples");
@@ -161,7 +203,6 @@ public:
         for (uint32_t i = 0 ; i < vNodes.size(); i++) {
             auto pL2Node = xml.NewElement("L2Node");
             vNodes[i]->putInfoToXml(pL2Node);
-            pL2Node->SetAttribute("L2NodeID", i);
             pL2Nodes->InsertEndChild(pL2Node);
         }
         pSeqOthello->InsertEndChild(pL2Nodes);
@@ -173,29 +214,35 @@ public:
         auto xmlName = folder + XML_FNAME;
         xml.SaveFile(xmlName.c_str());
     }
-    void constructL2Node(int id) {
-        printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
+    string toL2Name(int id) {
         stringstream ss;
         ss<<folder;
         ss<<L2NODE_PREFIX<<id;
         string fname2;
         ss >> fname2;
-        vNodes[id]->constructOth();
-        vNodes[id]->writeDataToGzipFile(fname2);
+        return fname2;
     }
-
+    set<int> constructedL2;
+    void constructL2Node(int id) {
+        if (constructedL2.count(id))
+            return;
+        printf("%s: constructing L2 Node %d\n", get_thid().c_str(), id);
+        vNodes[id]->constructOth();
+        vNodes[id]->writeDataToGzipFile();
+        constructedL2.insert(id);
+    }
+    void startBuildOneL2(int id) {
+        // TODO : start a thread...
+        constructL2Node(id);
+    }
     void loadL2Node(int id) {
         if (!vNodes[id]) {
             printf("%s : Skipping empty L2Node %d\n", get_thid().c_str(), id);
             return;
         }
-        stringstream ss;
-        ss<<folder;
-        ss<<L2NODE_PREFIX<<id;
-        string fname2;
-        ss >> fname2;
+        string fname2 = toL2Name(id);
         printf("%s : Loading %s\n", get_thid().c_str(), fname2.c_str());
-        vNodes[id]->loadDataFromGzipFile(fname2);
+        vNodes[id]->loadDataFromGzipFile();
         printf("%s : Finished %s\n", get_thid().c_str(), fname2.c_str());
         if (vNodes[id]->oth)
             if (vNodes[id]->oth->loaded)
@@ -203,18 +250,16 @@ public:
         printf("Empty L2 Node %d.\n", id);
         vNodes[id].reset();
     }
-
     void loadAll(int nloadThreads) {
         loadL1(kmerLength);
         startloadL2(nloadThreads);
         waitloadL2();
     }
-
     void constructFromReader(KmerGroupComposer<keyType> *reader, string filename, uint32_t threadsLimit, vector<uint32_t> enclGrpmap, uint64_t estimatedKmerCount) {
         kmerLength = reader->getKmerLength();
         folder = filename;
         keyType k;
-        l1Node = new L1Node(estimatedKmerCount, kmerLength);
+        l1Node = new L1Node(estimatedKmerCount, kmerLength, filename+"tmp");
         printf("We will use at most %d threads to construct.\n", threadsLimit);
         printf("Use encode length to split L2 nodes at: ");
         for (uint32_t i = 1; i < enclGrpmap.size(); i++) {
@@ -244,18 +289,18 @@ public:
 
 
         for (unsigned int i = 2; i<=limitsingle; i++) {
-            vNodes.push_back(std::make_shared<L2ShortValueListNode>(i, maxnl));
+            vNodes.push_back(std::make_shared<L2ShortValueListNode>(i, maxnl, toL2Name(vNodes.size())));
             valshortIDmap[i] = vNodes.size()-1;
         }
         for (unsigned int i = 0 ; i < enclGrpIDmap.size(); i++) {
-            vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[i], L2NodeTypes::VALUE_INDEX_ENCODED));
+            vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[i], L2NodeTypes::VALUE_INDEX_ENCODED,toL2Name(vNodes.size())));
             enclGrpIDmap[i] = vNodes.size()-1;
         }
 
         uint32_t MAPPlength = high/8;
         if (high &7) MAPPlength++;
 
-        vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength,L2NodeTypes::MAPP));
+        vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength,L2NodeTypes::MAPP, toL2Name(vNodes.size())));
         uint32_t MAPPID = vNodes.size()-1;
         uint32_t MAPPcnt = 0;
 
@@ -275,10 +320,14 @@ public:
             //cnt = 2 ~ limit (encode within 64)
             if (valcnt <= limitsingle) {
                 if (valshortcnt[valcnt] * valcnt < L2limit) {
+
                     valshortcnt[valcnt]++;
                 } else {
                     valshortcnt[valcnt] = 0;
-                    vNodes.push_back(std::make_shared<L2ShortValueListNode>(valcnt, maxnl));
+                    startBuildOneL2(valshortIDmap[valcnt]);
+                    vNodes.push_back(std::make_shared<L2ShortValueListNode>(valcnt, maxnl, toL2Name(vNodes.size())));
+                    L2limit+=(vNodes.size()*L2diff);
+                    if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
                     valshortIDmap[valcnt] = vNodes.size() - 1;
                 }
                 vNodes[valshortIDmap[valcnt]]->add(k, ret);
@@ -302,7 +351,10 @@ public:
                     enclGrpcnt[grpid]++;
                 } else {
                     enclGrpcnt[grpid] = 0;
-                    vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[grpid], L2NodeTypes::VALUE_INDEX_ENCODED));
+                    startBuildOneL2(enclGrpIDmap[grpid]);
+                    vNodes.push_back(std::make_shared<L2EncodedValueListNode>(enclGrplen[grpid], L2NodeTypes::VALUE_INDEX_ENCODED, toL2Name(vNodes.size())));
+                    L2limit+=(vNodes.size()*L2diff);
+                    if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
                     enclGrpIDmap[grpid] = vNodes.size() - 1;
                 }
                 vNodes[enclGrpIDmap[grpid]]->add(k, diff);
@@ -312,7 +364,10 @@ public:
             }
             if (MAPPcnt * MAPPlength > L2limit)  {
                 MAPPcnt = 0;
-                vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP));
+                startBuildOneL2(MAPPID);
+                vNodes.push_back(std::make_shared<L2EncodedValueListNode>(MAPPlength, L2NodeTypes::MAPP, toL2Name(vNodes.size())));
+                L2limit+=(vNodes.size()*L2diff);
+                if (((512 - vNodes.size()) & (511-vNodes.size()))== 0) L2diff*=2;
                 MAPPID = vNodes.size() - 1;
             }
             MAPPcnt++;
@@ -333,8 +388,6 @@ public:
         printf("Got %lu kmers.\n", reader->keycount);
         printf("Constructing L1 Node \n");
         writeSeqOthelloInfo(folder, bind(&KmerGroupComposer<keyType>::putSampleInfoToXml, reader, placeholders::_1 ), histogram);
-        l1Node->constructAndWrite(LLfreq, threadsLimit, folder+ L1NODE_PREFIX);
-        delete l1Node;
         vector<thread> vthreadL2;
         uint64_t currL2InQKeycnt = 0;
         uint64_t currL2InQValcnt = 0;
@@ -351,8 +404,9 @@ public:
 
         for (auto &th : vthreadL2) th.join();
         vthreadL2.clear();
+        l1Node->constructAndWrite(LLfreq, threadsLimit, folder+ L1NODE_PREFIX);
+        delete l1Node;
     }
-public:
     static vector<uint32_t> estimateParameters(KmerGroupComposer<keyType> *reader, int kmerlimit, uint64_t &estimateKmerCnt) {
         int maxnl = 1;
         int high = reader->gethigh();
@@ -405,9 +459,12 @@ public:
             printf("%d:%d\t", i, enchisto[i]);
         }
         printf("\n");
+        int myL2limit = L2limit0;
+        if (high>4096) myL2limit*=2;
+        if (high>8192) myL2limit*=2;
 
         for (int i = 1 ; i < high/8+2; i++) {
-            if ((sq+ enchisto[i])*i > L2limit) {
+            if ((sq+ enchisto[i])*i > myL2limit) {
                 sq = 0;
                 l1id ++;
             }
@@ -417,16 +474,29 @@ public:
         reader->reset();
         return encodeLengthToL1ID;
     }
+    vector<vector<uint16_t>> QueryL1ByPartition(vector<vector<uint64_t>> &kmers, int nThreads) {
+        l1Node = new L1Node();
+        l1Node->setsplitbit(kmerLength,L1Splitbit);
+        l1Node->setfname(folder + L1NODE_PREFIX);
+        //loadL1(kmerLength);
+        vector<vector<uint16_t>> ans;
+        for (auto &vk:kmers)
+            ans.push_back(vector<uint16_t>(vk.size()));
+        for (int grp = 0; grp < (1<<L1Splitbit); grp++)
+            l1Node->queryPartAndPutToVV(ans,kmers,grp,nThreads);
+        return ans;
+    }
     void printrates() {
         map<int, double> rates = l1Node->printrates();
-        for (int i = 1; i<L2IDShift; i++) 
+        for (unsigned int i = 1; i<L2IDShift; i++)
             printf("%d : %.8lf 1.0 1.0\n", i, rates[i]);
-        for (int i = 0 ; i < vNodes.size(); i++) {
+        for (unsigned int i = 0 ; i < vNodes.size(); i++) {
             double t;
             double exp = vNodes[i]->expectedOnes(t);
             printf("%d : %.8lf %.5lf %.3lf\n", i+L2IDShift, rates[i+L2IDShift] ,t, exp);
         }
-        
     }
 };
 
+const Version SeqOthello::version = Version("1.0.0");
+const Version SeqOthello::min_supported_version = Version("1.0.0");

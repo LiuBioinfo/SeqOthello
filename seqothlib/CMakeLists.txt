@@ -30,3 +30,8 @@ include_directories(libL2Node PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ../lib/
 )
+
+include_directories(libL1Node PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ../lib/
+)

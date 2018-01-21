@@ -297,10 +297,10 @@ template <typename keyType, typename valueType>
 class compressFileReader : public FileReader <keyType, valueType> {
     FILE *f;
     bool fIsSorted;
-    static const int buflen = 1024*8;
+    static const int buflen = 1024*64;
     int curr = 0;
     int  max = 0;
-    unsigned char buf[1024*64];
+    unsigned char buf[1024*64*2];
     uint32_t kl, vl;
 public:
     compressFileReader( const char * fname, IOHelper <keyType, valueType> * _helper, uint32_t klength, uint32_t valuelength, bool _fIsSorted = true) {
@@ -347,7 +347,7 @@ public:
 template <typename keyType, typename valueType>
 class MultivalueFileReaderWriter : public FileReader <keyType, valueType> {
     FILE *f;
-    static const int buflen = 8192*4;
+    static const int buflen = 8192*64;
     int curr = 0;
     int max = 0;
     unsigned char buf[buflen * 2];
@@ -357,7 +357,7 @@ class MultivalueFileReaderWriter : public FileReader <keyType, valueType> {
     unsigned long long keycount = 0;
 public:
     static const valueType EMPTYVALUE = ~0;
-    bool valid(valueType value) {
+    inline bool valid(valueType value) const {
         if (vl == 1) return value!=0xFF;
         if (vl == 2) return value!=0xFFFF;
         if (vl == 4) return value!=0xFFFFFFFFUL;
@@ -524,11 +524,71 @@ public:
     }
 };
 
-
+template <typename keyType>
+class BufMulReader {
+    MultivalueFileReaderWriter<keyType, uint8_t> * reader;
+    static const int buflen = (1<<16);
+    static const int need_load_threshold = 1<<10;
+    static const int may_load_threshold = 1<<15;
+    static const int bufmask = ((1<<16)-1);
+    vector<keyType> keybuf;
+    vector<vector<uint8_t>> valuebuf;
+    int p,l,valuelen;
+    char fname0[1024];
+    bool finished = false;
+    bool last_load_succ = true;
+public:
+    unsigned long long getpos() {
+            return reader->getpos();
+    }
+    bool valid(uint8_t x) {
+            return reader->valid(x);
+    }
+    bool need_loadbuf() {
+         return (p + need_load_threshold > l && last_load_succ);
+    }
+    bool may_loadbuf() {
+         return (p + may_load_threshold > l && last_load_succ);
+    }
+    void loadbuf() {
+         while (l < p + bufmask) {
+               if (!reader->getNext(&keybuf[l&bufmask], &valuebuf[l&bufmask][0])) {
+                       last_load_succ = false;
+                       return;
+               }
+               l++;
+         }
+    }
+    BufMulReader(const char * fname, int _valuelen) 
+            : keybuf(buflen), valuebuf(buflen, vector<uint8_t>(_valuelen)),
+            p(0), l(0), valuelen(_valuelen) {
+        strcpy(fname0, fname);
+        reader = new MultivalueFileReaderWriter<keyType,uint8_t>(fname0, sizeof(keyType), sizeof(uint8_t), true);
+        loadbuf();
+    }
+    virtual bool getNext(keyType *k, uint8_t *v) {
+        if (finished) return false;
+        if (p == l) {
+                loadbuf();
+                if (p==l) return false;
+        }
+        *k = keybuf[p & bufmask];
+        memcpy(v, &valuebuf[p & bufmask][0], valuelen);
+        p++;
+        return true;
+    }
+    void reset() {
+        delete reader;
+        reader = new MultivalueFileReaderWriter<keyType,uint8_t>(fname0, sizeof(keyType), sizeof(uint8_t), true);
+        p = 0; l = 0; finished = false; last_load_succ = true;
+        loadbuf();
+    }
+    
+};
 
 template <typename keyType>
 class KmerGroupComposer {
-    vector<MultivalueFileReaderWriter<uint64_t,uint8_t> *> readers;
+    vector<BufMulReader<uint64_t> *> readers;
     priority_queue<KIDpair<keyType>> PQ;
 protected:
     bool hasNext = true;
@@ -541,10 +601,16 @@ protected:
     int getKmerLengthfromxml(string fname) {
         fname += ".xml";
         tinyxml2::XMLDocument doc;
-        doc.LoadFile( fname.c_str() );
-        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
         int ret = 0;
-        pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        printf("Reading xml %s\n", fname.c_str());
+        try {
+            doc.LoadFile( fname.c_str() );
+            const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
+            pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        }
+        catch (exception e) {
+            fprintf(stderr, "Error while loading info from %s : %s", fname.c_str(), e.what());
+        }
         return ret;
     }
 public:
@@ -562,6 +628,21 @@ public:
                 p->InsertEndChild(cpyNode);
             }
         }
+    }
+    vector<string> getSampleInfo() {
+        vector<string> ans;
+        for (auto s:fnames) {
+            string grpfname = s + ".xml";
+            tinyxml2::XMLDocument doc;
+            doc.LoadFile(grpfname.c_str());
+            for (tinyxml2::XMLElement *q = doc.FirstChildElement("Root")->FirstChildElement("Samples")->FirstChildElement("SampleInfo"); q!= NULL; q=q->NextSiblingElement("SampleInfo")) {
+                string fname (q->Attribute("BinaryFile")); //, &fname);
+                string count (q->Attribute("KmerCount")); //, &count);
+                string cutoff (q->Attribute("MinExpressionInKmerFile"));//,&cutoff);
+                ans.push_back(fname+":Cnt:"+count+"Cut:"+cutoff);
+            }
+        }
+        return ans;
     }
     KmerGroupComposer(vector<string> & _fnames): fnames(_fnames) {
 
@@ -591,7 +672,7 @@ public:
             totkeycount.push_back(tmpi64);
             tmpval[i].resize(tmpint+1);
             shift.push_back(tmpint + *shift.rbegin());
-            readers.push_back(new MultivalueFileReaderWriter<uint64_t, uint8_t>(fname.c_str(), sizeof(uint64_t), sizeof(uint8_t), true));
+            readers.push_back(new BufMulReader<keyType>(fname.c_str(), tmpint+1));
             keyType k;
             readers[readers.size()-1]->getNext(&k, &tmpval[i][0]);
             KIDpair<keyType> kid = {k, (uint32_t) (readers.size()-1)};
@@ -617,7 +698,8 @@ public:
             tid = PQ.top().id;
             keyType nextk;
             readkeys[tid]++;
-            for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
+            //for (int i = 0; readers[tid]->valid(tmpval[tid][i]); i++) {
+            for (int i = 0; tmpval[tid][i]!=0xFF; i++) { // for faster speed.
                 ret.push_back(shift[tid] + tmpval[tid][i]);
             }
             PQ.pop();
@@ -628,6 +710,16 @@ public:
                 }
                 KIDpair<keyType> kid = {nextk, (uint32_t) tid};
                 PQ.push(kid);
+                if (readers[tid]->need_loadbuf()) {
+					printf("Loadbuf\n");
+					std::vector<std::thread> workers;
+                    for (auto &x:readers) if (x->may_loadbuf()){
+						workers.push_back(std::thread(&BufMulReader<keyType>::loadbuf, x));
+                    }
+					for (auto &x:workers)
+						x.join();
+					printf("Loadbuf %d\n", workers.size());
+                }
             }
             if (PQ.empty()) break;
         }
@@ -696,7 +788,7 @@ public:
 template <typename KVpair>
 class BinaryKmerReader: public KmerReader<KVpair> {
     FILE * f;
-    static const int buflen = 8192;
+    static const int buflen = 1024*64;
     KVpair buff[buflen*2];
     int curr = 0;
     int max = 0;
@@ -752,7 +844,7 @@ class BinaryKmerWriter {
     FILE *f;
     int curr = 0;
 public:
-    KVpair buf[1024];
+    KVpair buf[4096];
     BinaryKmerWriter( const char * fname) {
         char buf[1024];
         strcpy(buf,fname);
@@ -763,7 +855,7 @@ public:
         curr = 0;
         memset(buf,0,sizeof(buf));
     }
-    static const int buflen = 16;
+    static const int buflen = 2048*64;
     void write(KVpair *p) {
         memcpy(&buf[curr],p,sizeof(buf[curr]));
         curr++;
@@ -886,4 +978,114 @@ public:
     }
 };
 //__attribute__((packed));
+
+template <typename keyType>
+class IOBuf {
+    vector<keyType> v;
+    FILE * fout = NULL;
+    size_t tot = 0;
+    bool load = false;
+    bool done = false;
+    char fname[1024];
+    void load_from_file() {
+        if (!done)
+            finishwrite();
+        v.resize(tot);
+        FILE *fin = fopen(fname,"rb");
+        size_t max = fread(&v[0], sizeof(keyType), tot, fin);
+        if (max != tot) {
+            fprintf(stderr,"Warning reading %s: read %lu elements , expected %lu elements .\n", fname, max, tot);
+        }
+        load = true;
+        fclose(fin);
+        if ( remove(fname) != 0) {
+            fprintf(stderr,"faile to remove file %s\n", fname);
+        }
+    }
+    void openfile() {
+        fout = fopen(fname,"wb");
+        if (fout == NULL) {
+            fprintf(stderr,"failed to open file %s\n", fname);
+        }
+    }
+public:
+    IOBuf(const char * _fname) {
+        strcpy(fname,_fname);
+        v.clear();
+    }
+    void finishwrite() {
+        if (fout == NULL) openfile();
+        if (v.size()) {
+            fwrite(&v[0], v.size(), sizeof(keyType), fout);
+        }
+        fclose(fout);
+        done = true;
+        v.clear();
+    }
+    void push_back(const keyType &t) {
+        tot ++;
+        v.push_back(t);
+        if (v.size() == 8192) {
+            if (fout == NULL) openfile();
+            fwrite(&v[0], v.size(), sizeof(keyType), fout);
+            v.clear();
+        }
+    }
+    void release() {
+        v.clear();
+    }
+    size_t size() {
+        return tot;
+    }
+    keyType * getstart() {
+        if (!load)
+            load_from_file();
+        return &v[0];
+    }
+};
+
+class Version
+{
+public:
+    vector<int> vv;
+    Version(std::string version)
+    {
+        for (auto &x: version)
+            if (x == '.') x =' ';
+        stringstream ss(version);
+        int v;
+        while (ss >> v) vv.push_back(v);
+    }
+
+    bool operator < (const Version& other)
+    {
+        for (int i = 0 ; i < vv.size() && i < other.vv.size(); i++)
+            if (vv[i] < other.vv[i]) return true;
+        if (vv.size() < other.vv.size()) return true;
+        return false;
+    }
+
+    bool operator == (const Version& other)
+    {
+        return vv == other.vv;
+    }
+
+    friend std::ostream& operator << (std::ostream& stream, const Version& ver)
+    {
+        for (int i = 0 ; i < ver.vv.size(); i++) {
+            stream << ver.vv[i];
+            if (i<ver.vv.size()-1)
+                stream <<".";
+        }
+        return stream;
+    }
+
+    string to_string() const {
+        stringstream ss;
+        ss << *this;
+        string s;
+        ss >> s;
+        return s;
+    }
+};
 
