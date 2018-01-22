@@ -3,6 +3,7 @@ INCLUDE_DIRECTORIES(../lib ../seqothlib)
 find_package(Threads REQUIRED)
 
 ADD_EXECUTABLE(datagen datagen.cc)
+ADD_EXECUTABLE(comp comp.cc)
 
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)

@@ -731,17 +731,25 @@ void Othello<keyType>::setAlienPreference(double ideal) {
 template<class keyType>
 void Othello<keyType>::getrates(map<int, double> &sum) {
     sum.clear();
+    map<int,long long> sumint;
     int high =  (1<<L);
-    vector<int> LA(high), LB(high);
+    vector<long long> LA(high), LB(high);
     for (unsigned int i = 0 ; i < ma; i++)
         LA[get(i) & (high-1) ]++;
     for (unsigned int i = ma; i<ma+mb; i++)
         LB[get(i) & (high-1) ]++;
-    if (L <= 12)
+    int suma = 0, sumb=0;
+    for (auto &x: LA) suma += x;
+    for (auto &x: LB) sumb+= x;
+    printf("%d %d\n", suma, sumb);
+    if (L <= 12){
         for (int i = 0 ; i < high; i++) {
             for (int j = 0 ; j < high; j++)
-                sum[i ^ j] += LA[i] * LB[j];
+                sumint[i ^ j] += LA[i] * LB[j];
         }
+        for (auto &x: sumint) 
+                printf("%d : %lld \n",x.first, x.second);
+    }
     else {
         long long tot = 0;
         for (int i = 0 ; i < high; i++)
@@ -749,12 +757,13 @@ void Othello<keyType>::getrates(map<int, double> &sum) {
         long long rest = ma;
         rest *= mb;
         rest -= tot;
-        rest/=high;
-        sum[0] = tot*1.0;
+        rest/=(high-1);
+        sumint[0] = tot;
         for (int i = 1 ; i < high; i++)
-            sum[i] = rest;
-    }
-    for (auto &x: sum) {
-        x.second/=((long long) ma* (long long)mb);
+            sumint[i] = rest;
+        printf("%lld + %lld + %lld \n", tot, rest, high);
+    } 
+    for (auto &x: sumint) {
+        sum[x.first]=((double ) 1.0 * x.second)/((long long) ma* (long long)mb);
     }
 }
