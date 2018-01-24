@@ -484,7 +484,7 @@ public:
             }
         return true;
     }
-    virtual bool write(keyType *k ,valueType *v) {
+    virtual bool write(keyType *k,valueType *v) {
         keycount++;
         if (!testkey(k)) return false;
         add((void *) k, kl);
@@ -539,29 +539,29 @@ class BufMulReader {
     bool last_load_succ = true;
 public:
     unsigned long long getpos() {
-            return reader->getpos();
+        return reader->getpos();
     }
     bool valid(uint8_t x) {
-            return reader->valid(x);
+        return reader->valid(x);
     }
     bool need_loadbuf() {
-         return (p + need_load_threshold > l && last_load_succ);
+        return (p + need_load_threshold > l && last_load_succ);
     }
     bool may_loadbuf() {
-         return (p + may_load_threshold > l && last_load_succ);
+        return (p + may_load_threshold > l && last_load_succ);
     }
     void loadbuf() {
-         while (l < p + bufmask) {
-               if (!reader->getNext(&keybuf[l&bufmask], &valuebuf[l&bufmask][0])) {
-                       last_load_succ = false;
-                       return;
-               }
-               l++;
-         }
+        while (l < p + bufmask) {
+            if (!reader->getNext(&keybuf[l&bufmask], &valuebuf[l&bufmask][0])) {
+                last_load_succ = false;
+                return;
+            }
+            l++;
+        }
     }
-    BufMulReader(const char * fname, int _valuelen) 
-            : keybuf(buflen), valuebuf(buflen, vector<uint8_t>(_valuelen)),
-            p(0), l(0), valuelen(_valuelen) {
+    BufMulReader(const char * fname, int _valuelen)
+        : keybuf(buflen), valuebuf(buflen, vector<uint8_t>(_valuelen)),
+          p(0), l(0), valuelen(_valuelen) {
         strcpy(fname0, fname);
         reader = new MultivalueFileReaderWriter<keyType,uint8_t>(fname0, sizeof(keyType), sizeof(uint8_t), true);
         loadbuf();
@@ -569,8 +569,8 @@ public:
     virtual bool getNext(keyType *k, uint8_t *v) {
         if (finished) return false;
         if (p == l) {
-                loadbuf();
-                if (p==l) return false;
+            loadbuf();
+            if (p==l) return false;
         }
         *k = keybuf[p & bufmask];
         memcpy(v, &valuebuf[p & bufmask][0], valuelen);
@@ -580,10 +580,13 @@ public:
     void reset() {
         delete reader;
         reader = new MultivalueFileReaderWriter<keyType,uint8_t>(fname0, sizeof(keyType), sizeof(uint8_t), true);
-        p = 0; l = 0; finished = false; last_load_succ = true;
+        p = 0;
+        l = 0;
+        finished = false;
+        last_load_succ = true;
         loadbuf();
     }
-    
+
 };
 
 template <typename keyType>
@@ -711,14 +714,14 @@ public:
                 KIDpair<keyType> kid = {nextk, (uint32_t) tid};
                 PQ.push(kid);
                 if (readers[tid]->need_loadbuf()) {
-					printf("Loadbuf\n");
-					std::vector<std::thread> workers;
-                    for (auto &x:readers) if (x->may_loadbuf()){
-						workers.push_back(std::thread(&BufMulReader<keyType>::loadbuf, x));
-                    }
-					for (auto &x:workers)
-						x.join();
-					printf("Loadbuf %d\n", workers.size());
+                    printf("Loadbuf\n");
+                    std::vector<std::thread> workers;
+                    for (auto &x:readers) if (x->may_loadbuf()) {
+                            workers.push_back(std::thread(&BufMulReader<keyType>::loadbuf, x));
+                        }
+                    for (auto &x:workers)
+                        x.join();
+                    printf("Loadbuf %d\n", workers.size());
                 }
             }
             if (PQ.empty()) break;

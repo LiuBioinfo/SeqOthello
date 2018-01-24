@@ -65,7 +65,7 @@ private:
     }
     thread * L1LoadThread;
     vector<thread *> L2LoadThreads;
-public:    
+public:
     void loadL1(uint32_t kmerLength) {
         l1Node = new L1Node();
         l1Node->setsplitbit(kmerLength,L1Splitbit);
@@ -490,7 +490,7 @@ public:
     void printrates() {
         map<int, double> rates = l1Node->printrates();
         for (auto &x: rates) {
-                printf("L1 return %d: %.8lf\n", x.first, x.second);
+            printf("L1 return %d: %.8lf\n", x.first, x.second);
         }
         /*
         vector<map<int,double>> L2Rates;
@@ -506,7 +506,7 @@ public:
             for (auto &x: retmap)
                     printf("%d %lf\t", x.first,x.second);
         }
-          */ 
+          */
         /*
         for (unsigned int i = 1; i<L2IDShift; i++)
             printf("%d : %.8lf 1.0 1.0\n", i, rates[i]);

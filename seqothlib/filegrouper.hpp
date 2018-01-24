@@ -106,7 +106,7 @@ public:
         printf(" Do not support reset() \n");
     }
     KmerGroupedReader() {}
-    KmerGroupedReader(const char * NCBIfname, const char * fnameprefix, const char * tmpFileDirectory, uint32_t _KmerLength, bool useBinaryKmerFile = true , bool _Detailmap = true, KmerReader<keyType> *_filter = NULL  ) {
+    KmerGroupedReader(const char * NCBIfname, const char * fnameprefix, const char * tmpFileDirectory, uint32_t _KmerLength, bool useBinaryKmerFile = true, bool _Detailmap = true, KmerReader<keyType> *_filter = NULL  ) {
         detailmap = _Detailmap;
         KmerLength = _KmerLength;
         ConstantLengthKmerHelper<keyType,uint8_t> helper(KmerLength,-1);
@@ -421,7 +421,7 @@ public:
                 kvpair->setvalue(a.first);
             if (VALUEBIT > 1) {
                 int id = (a.first);
-                (*kvpair).setvalue(id, a.second & ((1<<VALUEBIT) - 1) , VALUEBIT);
+                (*kvpair).setvalue(id, a.second & ((1<<VALUEBIT) - 1), VALUEBIT);
             }
         }
         KmerGroupedReader<keyType,NNL*VALUEBIT>:: updatekeycount();

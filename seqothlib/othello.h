@@ -741,14 +741,14 @@ void Othello<keyType>::getrates(map<int, double> &sum) {
     int suma = 0, sumb=0;
     for (auto &x: LA) suma += x;
     for (auto &x: LB) sumb+= x;
-    printf("%d %d\n", suma, sumb);
-    if (L <= 12){
+    //printf("%d %d\n", suma, sumb);
+    if (L <= 12) {
         for (int i = 0 ; i < high; i++) {
             for (int j = 0 ; j < high; j++)
                 sumint[i ^ j] += LA[i] * LB[j];
         }
-        for (auto &x: sumint) 
-                printf("%d : %lld \n",x.first, x.second);
+        //for (auto &x: sumint)
+        //printf("%d : %lld \n",x.first, x.second);
     }
     else {
         long long tot = 0;
@@ -761,8 +761,8 @@ void Othello<keyType>::getrates(map<int, double> &sum) {
         sumint[0] = tot;
         for (int i = 1 ; i < high; i++)
             sumint[i] = rest;
-        printf("%lld + %lld + %lld \n", tot, rest, high);
-    } 
+        //printf("%lld + %lld + %lld \n", tot, rest, high);
+    }
     for (auto &x: sumint) {
         sum[x.first]=((double ) 1.0 * x.second)/((long long) ma* (long long)mb);
     }

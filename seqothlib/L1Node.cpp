@@ -127,7 +127,7 @@ map<int,double> L1Node::printrates() {
             sum[x.first] += x.second;
     }
     for (auto &p: sum)
-            p.second/=othellos.size();
+        p.second/=othellos.size();
     return sum;
 }
 
