@@ -59,4 +59,7 @@ aws s3 cp ${TMPDIR}/${GRPNAME}.Grp ${S3_DEST}${GRPNAME}.Grp || error_exit "exit"
 aws s3 cp ${TMPDIR}/${GRPNAME}.Grp.xml ${S3_DEST}${GRPNAME}.Grp.xml || error_exit "exit"
 TMPDIR="$(mktemp -d -t tmp.XXXXXXXXX)" || error_exit "Failed to create temp directory."
 
-rm -rf ${TMPDIR}
+#if [ -z "$4" ]; then
+ rm -rf ${TMPDIR}
+#fi
+
