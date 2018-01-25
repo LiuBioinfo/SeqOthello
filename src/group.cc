@@ -17,13 +17,18 @@
 
 using namespace std;
 
-int getKmerLengthfromxml(string fname) {
+int getKmerLengthfromxml(string fname,bool argGroup) {
     fname += ".xml";
     tinyxml2::XMLDocument doc;
     doc.LoadFile( fname.c_str() );
-    const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
     int ret = 0;
-    pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+    if (argGroup) {
+       const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
+       pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+    } else {
+       const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
+       pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+    }
     return ret;
 }
 int main(int argc, char ** argv) {
@@ -35,6 +40,7 @@ int main(int argc, char ** argv) {
     args::ValueFlag<string> argFolder(parser, "string", "where to find this file", {"folder"});
     args::ValueFlag<string> argOut(parser, "string", "output file", {"output"});
     args::ValueFlag<int> argMaxKmerCount(parser, "integer", "stop after getting this number of kmers. Note: for test small data set only.", {"limit"});
+    args::Flag argGroup(parser,"","Create a group using some group files", {"group"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -82,7 +88,7 @@ int main(int argc, char ** argv) {
     //check kmer length consistent;
     set<int> kmerlengthset;
     for (auto s:fnames) {
-        int kl = getKmerLengthfromxml(s);
+        int kl = getKmerLengthfromxml(s, argGroup);
         kmerlengthset.insert(kl);
     }
     if (kmerlengthset.size() > 1) {
@@ -95,17 +101,22 @@ int main(int argc, char ** argv) {
 
     }
     int KmerLength = *kmerlengthset.begin();
-    auto const reader = new KmerGroupReader<
-    uint64_t, BinaryKmerReader<uint64_t>
-    >(fnames);
+    std::function<bool(uint64_t &, vector<uint32_t> &)> func;
+    if (!argGroup) {
+      auto const reader = new KmerGroupReader<	uint64_t, BinaryKmerReader<uint64_t>    >(fnames);
+      func = std::bind(& KmerGroupReader< uint64_t, BinaryKmerReader<uint64_t>>::getNextValueList, reader, placeholders::_1, placeholders::_2);
+    }
+    else {
+      auto const reader = new KmerGroupComposer<uint64_t>(fnames);
+      func = std::bind( & KmerGroupComposer<uint64_t>::getNextValueList, reader, placeholders::_1, placeholders::_2);
+    }
     uint64_t k;
     vector<uint32_t> ret;
     auto writer = new MultivalueFileReaderWriter<uint64_t, uint8_t> (args::get(argOut).c_str(), sizeof(uint64_t), sizeof(uint8_t), false);
 
-    vector<uint64_t> vhistogram(255,0);
+    vector<uint64_t> vhistogram(16384,0);
     uint64_t cnt = 0;
-
-    while (reader->getNextValueList(k, ret) && (limit -- >0)) {
+    while (func(k, ret) && (limit -- >0)) {
         vhistogram[ret.size()] ++;
         sort(ret.begin(), ret.end());
         vector<uint8_t> res;
@@ -123,6 +134,7 @@ int main(int argc, char ** argv) {
     }
     writer->finish();
     tinyxml2::XMLDocument xml;
+    int filecnt = 0;
     auto pRoot = xml.NewElement("Root");
     auto pSamples = xml.NewElement("Samples");
     for (auto &fname : fnames) {
@@ -130,22 +142,34 @@ int main(int argc, char ** argv) {
         printf("%s\n", sampleXmlF.c_str());
         tinyxml2::XMLDocument doc;
         doc.LoadFile( sampleXmlF.c_str() );
-        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
-        string str;
-        const auto attr = pSampleInfo->FindAttribute("KmerFile");
-        if (attr)
-            printf("query: %s\n", attr->Value());
-        tinyxml2::XMLNode * cpyNode = pSampleInfo->DeepClone(&xml);
-        pSamples->InsertEndChild(cpyNode);
+        if (!argGroup) {
+          filecnt++;
+          const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
+          string str;
+          const auto attr = pSampleInfo->FindAttribute("KmerFile");
+          if (attr)
+              printf("query: %s\n", attr->Value());
+          tinyxml2::XMLNode * cpyNode = pSampleInfo->DeepClone(&xml);
+          pSamples->InsertEndChild(cpyNode);
+        }
+        else {
+          tinyxml2::XMLElement * pSamplesFrom = doc.FirstChildElement( "Root" )->FirstChildElement( "Samples" );
+          for (tinyxml2::XMLElement * child = pSamplesFrom->FirstChildElement("SampleInfo"); child != NULL; child = child->NextSiblingElement()) {
+             tinyxml2::XMLNode * cpyNode = child->DeepClone(&xml);
+             pSamples->InsertEndChild(cpyNode);
+             filecnt++;
+          }
+          
+        }
     }
     auto pGroupInfo = xml.NewElement("GroupInfo");
-    pGroupInfo->SetAttribute("TotalSamples", (uint32_t) fnames.size());
+    pGroupInfo->SetAttribute("TotalSamples", (uint32_t) filecnt);
     pGroupInfo->SetAttribute("KmerLength", (uint32_t) KmerLength);
     pGroupInfo->SetAttribute("GroupFile", args::get(argOut).c_str() );
     pGroupInfo->SetAttribute("Keycount", (int64_t) cnt);
     pRoot->InsertFirstChild(pGroupInfo);
     auto pHistogram = xml.NewElement("Histogram");
-    for (int i = 1; i< 255; i++)
+    for (int i = 1; i< 16384; i++)
         if (vhistogram[i]) {
             auto pHisNode = xml.NewElement("entry");
             pHisNode->SetAttribute("freq", i);
