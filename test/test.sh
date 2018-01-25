@@ -12,13 +12,24 @@ echo group
 ls *.grp > grplist
 mv *.grp grp/
 mv *.grp.xml grp/
+
+echo buildLargeGroup
+../build/bin/Group --flist=grplist --folder=./grp/ --output=GrpAll.grp --group > grplog
+mv *.grp grp/
+mv *.grp.xml grp/
+echo 'GrpAll.grp' > grplistsingle
+
 #echo Count
 #../countkey --flist=grplist --folder=./grp/ -e > keycountlog
-rm -rf mapOut
+rm -rf mapOut mapOutGrp
 mkdir mapOut
+mkdir mapOutGrp
 echo Build
 ../build/bin/Build --flist=grplist --folder=./grp/ --out-folder=mapOut/ --count-only> Buildlog
 ../build/bin/Build --flist=grplist --folder=./grp/ --out-folder=mapOut/ > Buildlog.tt
+echo BuildOneGroup
+../build/bin/Build --flist=grplistsingle --folder=./grp/ --out-folder=mapOutGrp/ --count-only> BuildlogGrp
+../build/bin/Build --flist=grplistsingle --folder=./grp/ --out-folder=mapOutGrp/ > Buildlog.ttGrp
 echo Query
 ../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --detail --output queryresult > querylog
 ../build/bin/Query --map-folder=mapOut/ --transcript=testTT.fa --qthread=4 --output queryresultAgg > querylogAgg
