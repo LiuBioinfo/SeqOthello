@@ -23,11 +23,11 @@ int getKmerLengthfromxml(string fname,bool argGroup) {
     doc.LoadFile( fname.c_str() );
     int ret = 0;
     if (argGroup) {
-       const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
-       pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "GroupInfo" );
+        pSampleInfo->QueryIntAttribute("KmerLength", &ret);
     } else {
-       const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
-       pSampleInfo->QueryIntAttribute("KmerLength", &ret);
+        const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
+        pSampleInfo->QueryIntAttribute("KmerLength", &ret);
     }
     return ret;
 }
@@ -103,12 +103,12 @@ int main(int argc, char ** argv) {
     int KmerLength = *kmerlengthset.begin();
     std::function<bool(uint64_t &, vector<uint32_t> &)> func;
     if (!argGroup) {
-      auto const reader = new KmerGroupReader<	uint64_t, BinaryKmerReader<uint64_t>    >(fnames);
-      func = std::bind(& KmerGroupReader< uint64_t, BinaryKmerReader<uint64_t>>::getNextValueList, reader, placeholders::_1, placeholders::_2);
+        auto const reader = new KmerGroupReader<	uint64_t, BinaryKmerReader<uint64_t>    >(fnames);
+        func = std::bind(& KmerGroupReader< uint64_t, BinaryKmerReader<uint64_t>>::getNextValueList, reader, placeholders::_1, placeholders::_2);
     }
     else {
-      auto const reader = new KmerGroupComposer<uint64_t>(fnames);
-      func = std::bind( & KmerGroupComposer<uint64_t>::getNextValueList, reader, placeholders::_1, placeholders::_2);
+        auto const reader = new KmerGroupComposer<uint64_t>(fnames);
+        func = std::bind( & KmerGroupComposer<uint64_t>::getNextValueList, reader, placeholders::_1, placeholders::_2);
     }
     uint64_t k;
     vector<uint32_t> ret;
@@ -143,23 +143,23 @@ int main(int argc, char ** argv) {
         tinyxml2::XMLDocument doc;
         doc.LoadFile( sampleXmlF.c_str() );
         if (!argGroup) {
-          filecnt++;
-          const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
-          string str;
-          const auto attr = pSampleInfo->FindAttribute("KmerFile");
-          if (attr)
-              printf("query: %s\n", attr->Value());
-          tinyxml2::XMLNode * cpyNode = pSampleInfo->DeepClone(&xml);
-          pSamples->InsertEndChild(cpyNode);
+            filecnt++;
+            const tinyxml2::XMLElement * pSampleInfo = doc.FirstChildElement( "Root" )->FirstChildElement( "SampleInfo" );
+            string str;
+            const auto attr = pSampleInfo->FindAttribute("KmerFile");
+            if (attr)
+                printf("query: %s\n", attr->Value());
+            tinyxml2::XMLNode * cpyNode = pSampleInfo->DeepClone(&xml);
+            pSamples->InsertEndChild(cpyNode);
         }
         else {
-          tinyxml2::XMLElement * pSamplesFrom = doc.FirstChildElement( "Root" )->FirstChildElement( "Samples" );
-          for (tinyxml2::XMLElement * child = pSamplesFrom->FirstChildElement("SampleInfo"); child != NULL; child = child->NextSiblingElement()) {
-             tinyxml2::XMLNode * cpyNode = child->DeepClone(&xml);
-             pSamples->InsertEndChild(cpyNode);
-             filecnt++;
-          }
-          
+            tinyxml2::XMLElement * pSamplesFrom = doc.FirstChildElement( "Root" )->FirstChildElement( "Samples" );
+            for (tinyxml2::XMLElement * child = pSamplesFrom->FirstChildElement("SampleInfo"); child != NULL; child = child->NextSiblingElement()) {
+                tinyxml2::XMLNode * cpyNode = child->DeepClone(&xml);
+                pSamples->InsertEndChild(cpyNode);
+                filecnt++;
+            }
+
         }
     }
     auto pGroupInfo = xml.NewElement("GroupInfo");
