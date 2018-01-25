@@ -48,14 +48,12 @@ echo GRPNAME $GRPNAME
 echo GRPNAMEFULL $GRPNAMEFULL
 aws s3 cp ${S3_GRP_DESCRIPTION} ${TMPDIR}/${GRPNAME}.GrpDescripton || error_exit "exit"
 
-while read -r i; do
-     aws s3 cp ${S3_SRC_PREFIX}${i} ${TMPDIR}/${i} || error_exit "exit"
-     aws s3 cp ${S3_SRC_PREFIX}${i}.xml ${TMPDIR}/${i}.xml || error_exit "exit"
-     echo ${i} >> ${TMPDIR}/${GRPNAME}.SeqOGroup
-done < ${TMPDIR}/${GRPNAME}.GrpDescripton
 
-echo Running Group --flist=${TMPDIR}/${GRPNAME}.SeqOGroup --folder=${TMPDIR}/ --output=${TMPDIR}/${GRPNAME}.Grp
-Group --flist=${TMPDIR}/${GRPNAME}.SeqOGroup --folder=${TMPDIR}/ --output=${TMPDIR}/${GRPNAME}.Grp || error_exit "Error while grouping"
+parallel aws s3 cp ${S3_SRC_PREFIX}{1} ${TMPDIR}/{1} :::: ${TMPDIR}/${GRPNAME}.GrpDescripton
+parallel aws s3 cp ${S3_SRC_PREFIX}{1}.xml ${TMPDIR}/{1}.xml :::: ${TMPDIR}/${GRPNAME}.GrpDescripton
+
+echo Running Group --flist=${TMPDIR}/${GRPNAME}.GrpDescripton --folder=${TMPDIR}/ --output=${TMPDIR}/${GRPNAME}.Grp --group
+Group --flist=${TMPDIR}/${GRPNAME}.GrpDescripton --folder=${TMPDIR}/ --output=${TMPDIR}/${GRPNAME}.Grp --group || error_exit "Error while grouping"
 
 aws s3 cp ${TMPDIR}/${GRPNAME}.Grp ${S3_DEST}${GRPNAME}.Grp || error_exit "exit"
 aws s3 cp ${TMPDIR}/${GRPNAME}.Grp.xml ${S3_DEST}${GRPNAME}.Grp.xml || error_exit "exit"
