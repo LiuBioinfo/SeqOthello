@@ -3,7 +3,7 @@
 _SeqOthello_ supports fast coverage query and containment query.
 
 ## SeqOthello Installation
-----
+
 ### Requirements
 __SeqOthello__ is tested on linux platform with the following system settings. The performance is optimized for Intel CPUs with SSE4.2 support.
 
@@ -31,7 +31,7 @@ __SeqOthello__ is tested on linux platform with the following system settings. T
     ``build/bin/``
 
     ```
-    ls build/binary
+    ls build/bin
     ```
 
 ## Run SeqOthello
@@ -89,12 +89,10 @@ For demonstration purpose, we added ``createToy.sh`` to create a toy set of expe
     BuildSeqOthello.sh
     ls map/
     ```
-```
-
 
 #### Build SeqOthello in parallel
 
-2 of the steps in __SeqOthello__ construction can be easily paralleled. Foe example, with GNU Parallel, you can convert _k_-mer files with:
+2 of the steps in __SeqOthello__ construction can be easily paralleled. For example, with GNU Parallel, you can convert _k_-mer files with:
 
 ```
 cat ConvertToBinary.sh | parallel
@@ -108,21 +106,47 @@ cat MakeGroup.sh | parallel
 
 ### Transcripts Query
 
-Containment Query
+__SeqOthello__ supports Containment and Coverage query modes.
 
-```build/bin/Query --map-folder=out/ --transcript=test.fa --output=queryresult --qthread=8 > querylog```
+#### Containment Query
+Containment Query will ***Description***
 
-Coverage Query
+```
+build/bin/Query --map-folder=example/out/ \
+--transcript=example/kmer/test.fa \
+--output=example/re_containment \
+--qthread=8
+```
 
-```build/bin/Query --map-folder=out/ --transcript=test.fa --detail --output=queryresult --qthread=8 > querylog```
+#### Coverage Query
+Coverage Query will ***Description***
 
-##OnlineQuery
+```
+build/bin/Query --map-folder=example/out/ \
+--transcript=example/kmer/test.fa \
+--output=example/re_coverage \
+--detail \
+--qthread=8
+```
+
+## SeqOthello Online
+
 Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
 
-```build/bin/Query --map-folder=out/ --start-server-port 3322```
+```
+build/bin/Query \
+--map-folder=example/out/ \
+--start-server-port 3322
+```
 
 In another terminal, run the Client program.
-```build/bin/Client --transcript=kmer/test.fa --coverage --output=result --port=3333```
+```
+build/bin/Client \
+--transcript=kmer/test.fa \
+--coverage \
+--output=example/re_coverage_online \
+--port=3333
+```
 
 
 
