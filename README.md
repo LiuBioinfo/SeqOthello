@@ -7,7 +7,7 @@ _SeqOthello_ is tested on linux platform with the following system settings. The
 ```
 cmake >= 2.8.4
 gcc >= 4.9.1
-libz >= 1.2.3
+zlib >= 1.2.3
 ```
 These tools can be installed on Ubuntu using apt
 ```
@@ -36,6 +36,7 @@ To build the SeqOthello structure, please first prepare the Jellyfish-generated 
 ```
 There are three steps in building SeqOthello: 1. Convert the Kmer files to binary files. 2. Group them together. 3. Execute the Build program. 
 You can simply prepare the commands using the wrapper. Simply execute the tool to generate the scripts to build the SeqOthello map, by
+
 ```
 ./genBuildFromJellyfishKmers.sh
 ```
@@ -55,9 +56,13 @@ Each line of the generated scripts contains a command to prepare the files. The 
 To execute the query please use the _Query_ command. For test purpose, we prepared a set of transcripts in _test/testTT.fa_. To execute the query, run the folloiwng command in the source folder.
 
 Containment Query
+
 ```build/bin/Query --map-folder=out/ --transcript=kmer/test.fa --output=queryResultContainment --qthread=8 > querylog```
+
 Coverage Query
+
 ```build/bin/Query --map-folder=out/ --transcript=kmer/test.fa --detail --output=queryResultCoverage --qthread=8 > querylog```
+
 
 ## Online Query (Client / Server Mode)
 Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
@@ -65,6 +70,7 @@ Use the following command to start a server on the machine, (e.g., on TCP port 3
 ```build/bin/Query --map-folder=out/ --start-server-port 3322```
 
 In another terminal, run the Client program.
+
 ```build/bin/Client --transcript=kmer/test.fa --coverage --output=result --port=3322```
 
 # License 
@@ -75,6 +81,7 @@ Please contact us at SeqOthello@googlegroups.com
 
 # Known Issues
 1. Usually, on Linux systems, there is a limit on the number of files that can be opened simutaiously. The _Build_ program of SeqOthello may hit such limit. To edit this limit, set ulimit to larger numbers. e.g, 
+
 ```
 ulimit -nS 4096
 ```
