@@ -324,8 +324,8 @@ void L2ShortValueListNode::writeDataToGzipFile() {
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     memcpy(buf, &valuecnt, 4);
-    memcpy(buf+4, &maxnl, 4);
-    memcpy(buf+8, &siz, 4);
+    memcpy(&buf[4], &maxnl, 4);
+    memcpy(&buf[8], &siz, 4);
     gzwrite(fout, buf,sizeof(buf));
     L2Node::oth->exportInfo(buf);
     gzwrite(fout, buf,sizeof(buf));
@@ -372,15 +372,10 @@ void L2ShortValueListNode::loadDataFromGzipFile() {
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
-    void *p;
-    p = &buf;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpointer-arith"
-    memcpy(&valuecnt, p, 4);
-    memcpy(&maxnl, p+0x4, 4);
+    memcpy(&valuecnt, buf, 4);
+    memcpy(&maxnl, &buf[4], 4);
     uint32_t siz;
-    memcpy(&siz, p+0x8, 4);
-#pragma GCC diagnostic pop
+    memcpy(&siz, &buf[8], 4);
     gzread(fin, buf,sizeof(buf));
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);
@@ -404,15 +399,10 @@ void L2EncodedValueListNode::loadDataFromGzipFile() {
     unsigned char buf[0x20];
     memset(buf,0,sizeof(buf));
     gzread(fin, buf,sizeof(buf));
-    void *p;
-    p = &buf;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpointer-arith"
-    memcpy(&IOLengthInBytes, p, 4);
-    memcpy(&encodetype, p+0x4, 4);
+    memcpy(&IOLengthInBytes, buf, 4);
+    memcpy(&encodetype, &buf[4], 4);
     uint32_t siz;
-    memcpy(&siz, p+0x8, 4);
-#pragma GCC diagnostic pop
+    memcpy(&siz, &buf[8], 4);
     gzread(fin, buf,sizeof(buf));
     L2Node::oth = new Othello<uint64_t> (buf);
     L2Node::oth->loadDataFromGzipFile(fin);

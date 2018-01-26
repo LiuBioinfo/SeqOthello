@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <thread>
 #include <vector>
+#include <numeric>
 #include "othello.h"
 #define GITVERSION "none"
 #include <cstring>
@@ -16,6 +17,8 @@
 #include <tinyxml2.h>
 #include <L1Node.hpp>
 #include <functional>
+#include <algorithm>
+
 using namespace std;
 class SeqOthello {
 

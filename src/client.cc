@@ -65,7 +65,11 @@ int main(int argc, char ** argv) {
             std::cerr << "must specify args --transcript, --output, --port" << std::endl;
             return 1;
         }
+#ifdef __APPLE__
+        fin = fopen(args::get(argTranscriptName).c_str(),"rb");
+#else
         fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
+#endif
         string fnameout = args::get(resultsName);
         fout = fopen(fnameout.c_str(), "w");
 
