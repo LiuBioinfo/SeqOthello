@@ -1,7 +1,7 @@
 
-#README 
+# README 
 _SeqOthello_ supports fast coverage query and containment query. 
-##Compile
+## Compile
 _SeqOthello_ is tested on linux platform with the following system settings. The performance is optimized for Intel CPUs with SSE4.2 support.
 ```
 cmake >= 2.8.4
@@ -14,7 +14,7 @@ To compile the SeqOthello tool chain, decompress the source code and execute the
 ```
 Then you can find the compile resutls in the ```build/bin``` folder. 
 
-##Build
+## Build
 To build the SeqOthello structure, please first prepare the Jellyfish-generated Kmer files. For test purpose, 
    please use the following command to generate a toy set of Kmers in the _kmer_ folder, and then we will build SeqOthello from it.
 ```
@@ -34,12 +34,12 @@ For all prompted input questions, just press Enter to use the default value for 
 ```
 And the generated SeqOthello file can be found in _out_ folder.
 
-###Prepare the kmers in parallel
+### Prepare the kmers in parallel
 Each line of the generated scripts contains a command to prepare the files. The commands in each of the generated scripts can be executed in parallel. For example, with GNU Parallel, you can run 
 
 ``` cat ConvertToBinary.sh | parallel ```
 
-##Query
+## Query
 
 Containment Query
 
@@ -58,9 +58,9 @@ In another terminal, run the Client program.
 ```build/bin/Client --transcript=kmer/test.fa --coverage --output=result --port=3333```
 
 
-#License 
+# License 
 Please refer to LICENSE.TXT.
 
-#Contact
+# Contact
 Please contact us at SeqOthello@googlegroups.com
 
