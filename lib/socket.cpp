@@ -152,7 +152,7 @@ void TCPSocket::sendmsg(const char * buf, uint32_t len)
         this->send((void *) (&sendlen), sizeof(int32_t));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpointer-arith"
-        this->send((void *) (buf)+ shift*BUFLEN, sendlen<0?-sendlen:sendlen);
+        this->send(& buf[shift*BUFLEN], sendlen<0?-sendlen:sendlen);
   //      printf("Send sub mesg: %d\n",  sendlen);
 #pragma GCC diagnostic pop
     }

@@ -390,7 +390,11 @@ int main(int argc, char ** argv) {
 
     int kmerLength = seqoth->kmerLength;
     FILE *fin = NULL;
+#ifdef __APPLE__
+    fin = fopen(args::get(argTranscriptName).c_str(),"rb");
+#else
     fin = fopen64(args::get(argTranscriptName).c_str(),"rb");
+#endif
     if (fin == NULL)
         throw std::invalid_argument("Error while opening file "+args::get(argTranscriptName));
     char buf[1048576];
