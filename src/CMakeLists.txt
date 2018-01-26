@@ -11,7 +11,7 @@ ADD_EXECUTABLE(PreProcess ${PREPROCESS_SRC})
 TARGET_LINK_LIBRARIES(PreProcess tinyxml2)
 
 ADD_EXECUTABLE(Group ${GROUP_SRC})
-TARGET_LINK_LIBRARIES(Group tinyxml2 libUtil)
+TARGET_LINK_LIBRARIES(Group pthread tinyxml2 libUtil)
 
 ADD_EXECUTABLE(Build ${BUILD_SRC})
 TARGET_LINK_LIBRARIES(Build tinyxml2 z pthread libL2Node libL1Node)

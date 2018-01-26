@@ -714,14 +714,12 @@ public:
                 KIDpair<keyType> kid = {nextk, (uint32_t) tid};
                 PQ.push(kid);
                 if (readers[tid]->need_loadbuf()) {
-                    printf("Loadbuf\n");
                     std::vector<std::thread> workers;
                     for (auto &x:readers) if (x->may_loadbuf()) {
                             workers.push_back(std::thread(&BufMulReader<keyType>::loadbuf, x));
                         }
                     for (auto &x:workers)
                         x.join();
-                    printf("Loadbuf %d\n", workers.size());
                 }
             }
             if (PQ.empty()) break;
