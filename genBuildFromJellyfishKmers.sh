@@ -9,7 +9,7 @@ while [ ! -f ${TOOLCHAIN_PATH}/Build ]; do
     TOOLCHAIN_PATH="${INPUT:-$TOOLCHAIN_PATH_DEFAULT}"
 done
 
-KMER_PATH_DEFAULT=`pwd`/kmer
+KMER_PATH_DEFAULT=`pwd`/example/kmer
 read -e -p "Please enter the folder that contains all Jellyfish generated Kmer files [default: $KMER_PATH_DEFAULT]: " INPUT
 KMER_PATH="${INPUT:-$KMER_PATH_DEFAULT}"
 while [ ! -d ${KMER_PATH} ]; do 
@@ -28,10 +28,10 @@ while [ ! -f ${KMER_FLIST} ]; do
     KMER_FLIST="${INPUT:-$KMER_FLIST_DEFAULT}"
 done
 
-read -e -p "Where can we keep some temporary files? [default: `pwd`]: " INPUT
-TEMP_FOLDER="${INPUT:-`pwd`}"
+read -e -p "Where can we keep some temporary files? [default: `pwd`/example]: " INPUT
+TEMP_FOLDER="${INPUT:-`pwd`/example}"
 
-if [ ! -d ${TEMP_FOLDER}/bin ]; then 
+if [ ! -d ${TEMP_FOLDER}/bin/ ]; then 
     echo 'folder' ${TEMP_FOLDER}'/bin/ does not exist, creating.'
     mkdir -p ${TEMP_FOLDER}/bin
 fi
@@ -41,8 +41,8 @@ read -e -p "Please enter the value of k [default : 20]: " INPUT
 k=${INPUT:-20}
 
 NUM_CONVERTED=0
-CONVERT_TO_BINARY=ConvertToBinary.sh
-BINARY_LIST=BinaryList
+CONVERT_TO_BINARY=example/ConvertToBinary.sh
+BINARY_LIST=example/BinaryList
 BINARY_LIST_PREFIX=BinaryList.Part.
 
 if [ -f ${BINARY_LIST} ]; then
@@ -66,7 +66,7 @@ echo '        Prepared the script of converting '${NUM_CONVERTED}' kmer files' a
 echo '        These binaryKmer files are listed in '  ${BINARY_LIST}
 
 echo 'Step 2: Group the binaryKmer files.'
-
+echo ${TEMP_FOLDER}
 FILE_PER_GROUP=30
 while [ $((FILE_PER_GROUP * FILE_PER_GROUP)) -le $NUM_CONVERTED  ] ; do
     ((FILE_PER_GROUP++))
@@ -82,18 +82,19 @@ if [ ! -d ${TEMP_FOLDER}/grp ]; then
     mkdir  -p ${TEMP_FOLDER}/grp
 fi
 
-MAKE_GROUP=MakeGroup.sh
+MAKE_GROUP=example/MakeGroup.sh
 if [ -f ${MAKE_GROUP} ]; then
     echo ${MAKE_GROUP} 'exists. rebuilding this file.'
     rm -rf ${MAKE_GROUP}
 fi
 
-GRPLIST=GrpList
+GRPLIST=`pwd`/example/GrpList
 if [ -d ${GRPLIST} ]; then
     echo ${GRPLIST} 'exists.' rebuilding this file.
     rm -rf ${GRPLIST}
 fi
 GRP_CONVERTED=0
+echo ${TEMP_FOLDER}
 for flist in `ls -m1 ${TEMP_FOLDER}/${BINARY_LIST_PREFIX}*`; do 
     echo ${TOOLCHAIN_PATH}/Group --flist=$flist --folder=${TEMP_FOLDER}/bin/ --output=${TEMP_FOLDER}/grp/Grp"${flist##*.}" >> ${MAKE_GROUP}
     echo Grp"${flist##*.}" >> ${GRPLIST}
@@ -106,9 +107,9 @@ echo '        These group are located in in '  ${TEMP_FOLDER}/grp
 
 echo 'Step 3: Build the SeqOthello structure'
 
-BUILD_SCRIPT=BuildSeqOthello.sh
+BUILD_SCRIPT=example/BuildSeqOthello.sh
 
-EXPORT_FOLDER_DEFAULT=`pwd`/out
+EXPORT_FOLDER_DEFAULT=`pwd`/example/out
 read -e -p "Please enter the folder to put the SeqOthello files. [default: $EXPORT_FOLDER_DEFAULT]: " INPUT
 EXPORT_FOLDER="${INPUT:-$EXPORT_FOLDER_DEFAULT}"
 
