@@ -72,7 +72,7 @@ For demonstration purpose, we provide ``createToy.sh`` to create a toy set of 18
     example
       |-- bin     # folder for binary files
       |-- grp     # folder for group files
-      |-- kmer    # kmer files
+      |-- kmer    # kmer files, F0.Kmer, F1.Kmer ...
       `-- out     # SeqOthello structure
     ```
 
@@ -121,7 +121,7 @@ For demonstration purpose, we provide ``createToy.sh`` to create a toy set of 18
 
 __SeqOthello__ supports Containment and Coverage query modes.
 
-1. Containment Query
+1. __Containment Query__
 
 Containment Query will return the total number of _k_-mer hits in each
 experiment in a tab-delimited table. Run the code below to query the
@@ -134,7 +134,7 @@ build/bin/Query --map-folder=example/out/ \
 --qthread=8
 ```
 
-Check the query results of transcript# 0 for the first 11 experiments
+Check the query results of the first transcript (# 0) for the first 11 experiments
 ```
 cut -f1-12 example/re_containment
 ```
@@ -143,8 +143,7 @@ cut -f1-12 example/re_containment
 |--|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |# 0|1211|1211|1211|1211|1211|1211|1211|1211|1211|1211|8267|
 
-
-1. Coverage Query
+2. __Coverage Query__
 
 Coverage query will return the detailed _k_-mer hits for each of _k_-mer
 in the queried transcripts.
