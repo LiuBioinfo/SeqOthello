@@ -6,5 +6,5 @@ cd $KMER_DIR
 $CURR_DIR/build/test/datagen -f 182 -k 15300 > genlog
 echo '>xxxxxxxxx|yyyyyyyyyy' > test.fa
 tail -n 1 genlog >> test.fa
-ls -m1 *.Kmer > flist
+for i in {0..181}; do echo F$i.Kmer ; done > flist
 cd $CURR_DIR

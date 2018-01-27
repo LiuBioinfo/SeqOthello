@@ -62,11 +62,11 @@ For demonstration purpose, we provide ``createToy.sh`` to create a toy set of 18
 
 1. Create example set of k-mers and the script to construct SeqOthello.
    
-    Execute ``createToy.sh`` in the source folder, and the following folder/files will be generated. 
+    After compiling, execute ``createToy.sh`` in the source folder.
 
     ```./createToy.sh```
 
-    Run ``tree -d example/`` to list the generated files.
+    The following folder/files will be generated. You may run ``tree -d example/`` to list the generated files.
 
     ```
     example
@@ -133,14 +133,13 @@ build/bin/Query --map-folder=example/out/ \
 --output=example/re_containment \
 --qthread=8
 
-# check the query results of transcript# 0 for the first
-# 5 experiments
+# check the query results of transcript# 0 for the first 11 experiments
 cut -f1-6 example/re_containment
 ```
 
-|Transcript index | F0 | F100 | F101 | F102 | F103 |
-|--|:--:|:--:|:--:|:--:|:--:|
-|# 0|1211|1218|1218|1218|1218|
+|Transcript index | F0 | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 |
+|--|:--:|:--:|:--:|:--:|:--:||:--:|:--:|:--:|:--:|:--:|:--:|
+|# 0|1211|1211|1211|1211|1211|1211|1211|1211|1211|8267|
 
 
 #### Coverage Query
@@ -156,13 +155,14 @@ build/bin/Query --map-folder=example/out/ \
 ```
 
 
-The coverage result has two columns. Column 1 shows the _k_-mer
+The coverage result has two columns. The first column shows the _k_-mer
 sequence. Column 2 use ``+`` and ``.`` signs to indicate the the _k_-mer hits status for each experiment in the
-SeqOthello map. A ``+`` sign indicates a hit, whearas ``.`` indicates missing.
+SeqOthello map. A ``+`` sign indicates the k-mer exists in the experiment, whearas ``.`` indicates otherwise.
+
+Run ``head -n 1 example/re_coverage` to observe the first line of the coverage query result.
 
 ```
-head -1 example/re_coverage
-GGATAGCCCGGGTACGGACG +..........+..........+..........+..........+..........+..........+..........+....++++++++++++..........+..........+..........+..........+..........+..........+..........+..........+
+GGATAGCCCGGGTACGGACG ++++++++++++++++++++..........................................................................................................................................................++++++++++++++++++++++++++++..........................................................................................................................................................++++++++
 ```
 
 ## SeqOthello Online
