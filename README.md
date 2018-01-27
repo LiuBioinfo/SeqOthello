@@ -7,7 +7,8 @@ __SeqOthello__ is an ultra-fast and memory-efficient indexing structure to suppo
 ## SeqOthello Installation
 
 ### Requirements
-__SeqOthello__ is tested on linux platforms with the following system settings. The performance is optimized for Intel CPUs with SSE4.2 support.
+__SeqOthello__ is tested on linux platforms with the following system settings.
+ The performance is optimized for Intel CPUs with SSE4.2 support.
 
   * cmake >= 2.8.4
   * gcc >= 4.9.1
@@ -80,33 +81,109 @@ For demonstration purpose, we added ``createToy.sh`` to create a toy set of 186 
     ```
 
 1. Make __SeqOthello__ binary kmer files
-    ``ConvertToBinary.sh`` will convert _k_-mer files in ``kmer/`` to binary and store them in ``example/bin/``.
+
+    ``ConvertToBinary.sh`` will convert all _k_-mer files listed in ``example/kmer/flist`` to the binary format and store them in ``example/bin/``. In this example, all kmers will be
+    used to build __SeqOthello__. In practice, you can further filter the kmers
+     by setting a threshold using _k_-mer counts. _k_-mers with counts below the threshold will be removed from the experiment. Please see the [manual](manual.md)
+     for detailed usage.
 
     ```
     example/ConvertToBinary.sh
     ls example/bin/
     ```
 
-2. Make __SeqOthello__  group files
-    ``MakeGroup.sh`` obtain the _k_-mer occurrence maps within small subsets of experiments, where each group contains approximately 50 samples.
+1. Make __SeqOthello__  group files
+
+    ``MakeGroup.sh`` obtain the _k_-mer occurrence maps within small subsets of
+    experiments, where each group contains approximately 50 samples.
 
     ```
     example/MakeGroup.sh
     ls example/grp/
     ```
 
-3. Build __SeqOthello__ mapping
+1. Build __SeqOthello__ mapping
 
-    ``BuildSeqOthello.sh`` build __SeqOthello__ mapping between the entire set of _k_-mers and their experiment ids.
+    ``BuildSeqOthello.sh`` build __SeqOthello__ mapping between the entire set
+    of _k_-mers and their experiment ids.
 
     ```
     example/BuildSeqOthello.sh
     ls example/map/
     ```
 
-#### Build SeqOthello in parallel
+### Transcripts Query
 
-2 of the steps in __SeqOthello__ construction can be easily paralleled. For example, with GNU Parallel, you can convert _k_-mer files with:
+__SeqOthello__ supports Containment and Coverage query modes.
+
+#### Containment Query
+
+Containment Query will return the total number of _k_-mer hits in each
+experiment in a tab-delimited table. Run the code below to query the
+transcript ``example/kmer/test.fa`` in the example __SeqOthello__ map.
+
+```
+build/bin/Query --map-folder=example/out/ \
+--transcript=example/kmer/test.fa \
+--output=example/re_containment \
+--qthread=8
+
+# check the query results of transcript# 0 for the first
+# 5 experiments
+cut -f1-6 example/re_containment
+```
+
+|Transcript index | F0 | F100 | F101 | F102 | F103 |
+|--|:--:|:--:|:--:|:--:|:--:|
+|# 0|1211|1218|1218|1218|1218|
+
+
+#### Coverage Query
+Coverage query will return the detailed _k_-mer hits for each of _k_-mer
+in the queried transcripts.
+
+```
+build/bin/Query --map-folder=example/out/ \
+--transcript=example/kmer/test.fa \
+--output=example/re_coverage \
+--detail \
+--qthread=8
+```
+
+The coverage result has two columns. Column 1 shows the _k_-mer
+sequence. Column 2 use ``+`` and ``.`` signs to indicate the the _k_-mer hits status for each experiment in the
+SeqOthello map. A ``+`` sign indicates a hit, whearas ``.`` indicates missing.
+
+```
+head -1 example/re_coverage
+GGATAGCCCGGGTACGGACG +..........+..........+..........+..........+..........+..........+..........+....++++++++++++..........+..........+..........+..........+..........+..........+..........+..........+
+```
+
+## SeqOthello Online
+
+__SeqOthello__ also accommodates online features for small-batch queries. Online queries preload the entire index into memory prior to querying, and can be executed in approximately 0.09 seconds per transcript.
+
+Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
+
+```
+build/bin/Query \
+--map-folder=example/out/ \
+--start-server-port 3322
+```
+
+Open a new terminal, run the Client program for containment query.
+
+```
+build/bin/Client \
+--transcript=kmer/test.fa \
+--output=example/re_coverage_online \
+--port=3322
+```
+
+## Build SeqOthello in parallel
+
+2 of the steps in __SeqOthello__ construction can be easily paralleled.
+For example, with GNU Parallel, you can convert _k_-mer files with:
 
 ```
 cat ConvertToBinary.sh | parallel
@@ -117,51 +194,6 @@ Then, you can make the group files with:
 ```
 cat MakeGroup.sh | parallel
 ```
-
-### Transcripts Query
-
-__SeqOthello__ supports Containment and Coverage query modes.
-
-#### Containment Query
-Containment Query will ***Description***
-
-```
-build/bin/Query --map-folder=example/out/ \
---transcript=example/kmer/test.fa \
---output=example/re_containment \
---qthread=8
-```
-
-#### Coverage Query
-Coverage Query will ***Description***
-
-```
-build/bin/Query --map-folder=example/out/ \
---transcript=example/kmer/test.fa \
---output=example/re_coverage \
---detail \
---qthread=8
-```
-
-## SeqOthello Online
-
-Use the following command to start a server on the machine, (e.g., on TCP port 3322). The service will run as a deamon.
-
-```
-build/bin/Query \
---map-folder=example/out/ \
---start-server-port 3322
-```
-
-In another terminal, run the Client program.
-```
-build/bin/Client \
---transcript=kmer/test.fa \
---coverage \
---output=example/re_coverage_online \
---port=3333
-```
-
 
 
 ## License
