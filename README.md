@@ -154,7 +154,7 @@ experiment_09
 
     ```
     mkdir -p map
-    
+
     ../build/bin/Build \
     --flist=tmp/grp_list \
     --folder=tmp/grp/ \
@@ -201,7 +201,6 @@ grep "ENST" transcripts.fa
     Coverage query will return the detailed _k_-mer hits for each of _k_-mer
     in the queried transcripts. The coverage result has two columns. The first column is the _k_-mer sequence of the transcript. Column 2 use + and . signs to indicate the the k-mer hits status for the individual experiment in the SeqOthello map. A + sign indicates the k-mer exists in the experiment, whearas . indicates otherwise.
 
-
     ```
     ../build/bin/Query --map-folder=map/ \
     --transcript=transcripts.fa \
@@ -211,6 +210,7 @@ grep "ENST" transcripts.fa
     ```
 
     Observe the first 10 _k_-mers in transcript ``ENST00000431542``.
+
     ```
     head -10 coverage.query.txt
     GTGGGAGTCGCCACCGCACCC ..........
@@ -243,6 +243,7 @@ Open a new terminal, run the Client program for containment query.
 ../build/bin/Client \
 --transcript=transcripts.fa \
 --output=online.query.txt \
+--containment \
 --port=3322
 ```
 
