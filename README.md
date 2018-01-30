@@ -85,22 +85,22 @@ experiment_09
     * ``-t 8 `` run Jellyfish with 1 threads
     * ``-L 1`` _k_-mer count cutoff
 
-  ```
-  mkdir -p tmp/kmers
-  while IFS= read -r exp;
-  do
-      jellyfish count -s 10M \
-      -m 21 -C -t 1 -o tmp/kmers/${exp}.jf \
-      fq/${exp}.R1.fastq \
-      fq/${exp}.R2.fastq;
+    ```
+    mkdir -p tmp/kmers
+    while IFS= read -r exp;
+    do
+        jellyfish count -s 10M \
+        -m 21 -C -t 1 -o tmp/kmers/${exp}.jf \
+        fq/${exp}.R1.fastq \
+        fq/${exp}.R2.fastq;
 
-      jellyfish dump -t -L 1 \
-      -c tmp/kmers/${exp}.jf \
-      -o tmp/kmers/${exp}.kmer;
+        jellyfish dump -t -L 1 \
+        -c tmp/kmers/${exp}.jf \
+        -o tmp/kmers/${exp}.kmer;
 
-      rm tmp/kmers/${exp}.jf;
-  done < experiments_list.10.txt
-  ```
+        rm tmp/kmers/${exp}.jf;
+    done < experiments_list.10.txt
+    ```
 
 1. Convert _k_-mer files to __SeqOthello__ binary format.
 
