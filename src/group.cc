@@ -32,13 +32,13 @@ int getKmerLengthfromxml(string fname,bool argGroup) {
     return ret;
 }
 int main(int argc, char ** argv) {
-    args::ArgumentParser parser("Convert binary files to grouped files for SeqOthello.");
+    args::ArgumentParser parser("Use a subset of the experiments to build the SeqOthello Group file.");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     args::ValueFlag<string> argFname(parser, "string", "a file containing the filenames of the binary files. Each line of the [flist] must contain exactly one file name, e.g, xxxx.bin", {"flist"});
-    args::ValueFlag<string> argFolder(parser, "string", " The binary file and the corresponding xml file should be generated using PreProcess, and put in [folder] .", {"folder"});
-    args::ValueFlag<string> argOut(parser, "string", "output file", {"output"});
-    args::ValueFlag<int> argMaxKmerCount(parser, "integer", "stop after getting this number of kmers. Note: for test purpose on small data set only.", {"limit"});
-    args::Flag argGroup(parser,"","Create a group using some group files. Experimental.", {"group"});
+    args::ValueFlag<string> argFolder(parser, "string", "The directory to the output binary files.", {"folder"});
+    args::ValueFlag<string> argOut(parser, "string", "The filename of the output Group file.", {"output"});
+    args::ValueFlag<int> argMaxKmerCount(parser, "integer", "The maximum number of kmers used to build the Group file. Note: this function is for testing purpose only.", {"limit"});
+    args::Flag argGroup(parser,"","Create a group using some group files (debugging only).", {"group"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -61,7 +61,8 @@ int main(int argc, char ** argv) {
         return 1;
     }
     if (!(argFname && argFolder && argOut)) {
-        std::cerr << "Must specify args. Try --help." << std::endl;
+        // std::cerr << "Must specify args. Try --help." << std::endl;
+        std::cerr << parser;
         return 1;
     }
     int limit = 0x7FFFFFFF;

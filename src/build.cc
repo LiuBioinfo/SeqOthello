@@ -19,14 +19,14 @@ using namespace std;
 
 
 int main(int argc, char ** argv) {
-    args::ArgumentParser parser("Build SeqOthello! \n");
-    args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argInputname(parser, "string", "a file containing the filenames of Grp files, these Grp files should be created by the Group tool. Each line should contain one file name. ", {"flist"});
-    args::ValueFlag<string> argFolder(parser, "string", "a folder that contains the Grp files. ", {"folder","grp-folder"});
-    args::ValueFlag<string> argOutputname(parser, "string", "a folder to put the generated SeqOthello map.", {"out-folder"});
+    args::ArgumentParser parser("Build SeqOthello map from Group files.\n");
+    args::HelpFlag help(parser, "help", "Display the help menu.", {'h', "help"});
+    args::ValueFlag<string> argInputname(parser, "string", "The file list containing the names of Group files created by the Group function.", {"flist"});
+    args::ValueFlag<string> argFolder(parser, "string", "The directory to the Group files.", {"folder","grp-folder"});
+    args::ValueFlag<string> argOutputname(parser, "string", "The directory to the SeqOthello map.", {"out-folder"});
     //args::ValueFlag<int> argThread(parser, "int", "number of parallel threads to build SeqOthello", {"thread"});
-    args::ValueFlag<int> argLimit(parser, "int", "number of k-mers used to estimate the distribution. Default 10485760.", {"estimate-limit"});
-    args::Flag argCountOnly(parser, "count-only", "only count the keys and the histogram, do not build the seqOthello.", {"count-only"});
+    args::ValueFlag<int> argLimit(parser, "int", "Nuumber of kmers used to estimate the distribution. Default 10485760.", {"estimate-limit"});
+    args::Flag argCountOnly(parser, "count-only", "Only count the keys and the histogram, do not build the seqOthello.", {"count-only"});
     //args::ValueFlag<int> argEXP(parser, "int", "Expression bits, optional: None, 1, 2, 4", {"exp"});
 
 
@@ -52,7 +52,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
     if (!(argInputname && argFolder && argOutputname)) {
-        std::cerr << "must specify args" << std::endl;
+        std::cerr << parser;
         return 1;
     }
     int nThreads = 1;
