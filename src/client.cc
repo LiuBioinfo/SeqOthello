@@ -19,15 +19,15 @@ using namespace std;
 
 
 int main(int argc, char ** argv) {
-    args::ArgumentParser parser("The client to query SeqOthello from a server \n");
-    args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argTranscriptName(parser, "string", "file containing transcripts", {"transcript"});
-    args::ValueFlag<string> resultsName(parser, "string", "where to put the results", {"output"});
-    args::ValueFlag<int>  argServerPort(parser, "int", "connect to SeqOthello Server at port ", {"port"});
-    args::ValueFlag<string>  argServerAdd(parser, "string", "start a SeqOthello Server at address (default: localhost)", {"server"});
-    args::Flag   argInteractive(parser, "",  "start interactive CLI", {"interactive"});
-    args::Flag   argContainmentQuery(parser, "",  "containment query", {"containment"});
-    args::Flag   argCoverageQuery(parser, "",  "coverage query", {"coverage"});
+    args::ArgumentParser parser("The client to query SeqOthello from a server. \n");
+    args::HelpFlag help(parser, "help", "Display the help menu.", {'h', "help"});
+    args::ValueFlag<string> argTranscriptName(parser, "string", "The filename of the transcript fasta file.", {"transcript"});
+    args::ValueFlag<string> resultsName(parser, "string", "The filename of the output.", {"output"});
+    args::ValueFlag<int>  argServerPort(parser, "int", "The port number of the SeqOthello Server.", {"port"});
+    args::ValueFlag<string>  argServerAdd(parser, "string", "Start a SeqOthello Server at address (default: localhost).", {"server"});
+    args::Flag   argInteractive(parser, "",  "Start interactive CLI.", {"interactive"});
+    args::Flag   argContainmentQuery(parser, "",  "Return the total number of k-mer hits.", {"kmer-hit"});
+    args::Flag   argCoverageQuery(parser, "",  "Return detailed k-mer presence/absence information for the transcript, limited to one trascript per query.", {"kmer-hit-map"});
 
     try
     {

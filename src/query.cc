@@ -296,16 +296,16 @@ void *ServerThreadMain(void *par) {
 }
 
 int main(int argc, char ** argv) {
-    args::ArgumentParser parser("Query SeqOthello! \n");
-    args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argSeqOthName(parser, "string", "the path contains SeqOthello mapping file.", {"map-folder"});
-    args::ValueFlag<string> argTranscriptName(parser, "string", "file containing transcripts", {"transcript"});
-    args::ValueFlag<string> resultsName(parser, "string", "where to put the results", {"output"});
-    args::Flag   argShowDedatils(parser, "", "Show the detailed query results for the transcripts", {"detail"});
-    args::Flag   NoReverseCompliment(parser, "",  "do not use reverse complement", {"noreverse"});
-    args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1", {"qthread"});
+    args::ArgumentParser parser("Transcript query on SeqOthello.\n");
+    args::HelpFlag help(parser, "help", "Display the help menu.", {'h', "help"});
+    args::ValueFlag<string> argSeqOthName(parser, "string", "The directory to SeqOthello map.", {"map-folder"});
+    args::ValueFlag<string> argTranscriptName(parser, "string", "The filename of the transcript fasta file.", {"transcript"});
+    args::ValueFlag<string> resultsName(parser, "string", "The filename of the output.", {"output"});
+    args::Flag   argShowDedatils(parser, "", "Return detailed k-mer presence/absence information for the transcript, limited to one trascript per query.", {"detail"});
+    args::Flag   NoReverseCompliment(parser, "",  "Do not use reverse complement.", {"noreverse"});
+    args::ValueFlag<int>  argNQueryThreads(parser, "int", "how many threads to use for query, default = 1.", {"qthread"});
 
-    args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port ", {"start-server-port"});
+    args::ValueFlag<int>  argStartServer(parser, "int", "start a SeqOthello Server at port.", {"start-server-port"});
     args::ValueFlag<int>  argSampleIndex(parser, "int", "printout kmers that matches a sample with index.", {"print-kmers-index"});
 
     try
@@ -347,7 +347,8 @@ int main(int argc, char ** argv) {
     }
     else {
         if (!(argSeqOthName && argTranscriptName && resultsName)) {
-            std::cerr << "must specify args" << std::endl;
+            // std::cerr << "must specify args" << std::endl;
+            std::cerr << parser;
             return 1;
         }
     }
