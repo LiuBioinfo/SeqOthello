@@ -73,20 +73,22 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
 
     The second step is to convert k-mer files to SeqOthello binary format using ``PreProcess``.
     For the given example, we provide a shell scripts for this step ``STEP2_Binary.sh``. You may execute the script in ``example`` folder
+    
     ```
     ./STEP2_Binary.sh
     ```
 
 
 1. Make __SeqOthello__  group files
-In the third step, binary files are grouped by the ``Group`` tool, into small subsets for further process. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, we build two groups in tmp/grp/, where ``Grp_00`` contains experiments specified in ``tmp/binary_list.part00``, which is corresponds to the first 5 lines of ``experiments_list.10.txt``. The reset 5 examples are included in ``Grp_01``. We put these two filenames in ``tmp/grp_list``. 
+   In the third step, binary files are grouped by the ``Group`` tool, into small subsets for further process. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, we build two groups in tmp/grp/, where ``Grp_00`` contains experiments specified in ``tmp/binary_list.part00``, which is corresponds to the first 5 lines of ``experiments_list.10.txt``. The reset 5 examples are included in ``Grp_01``. We put these two filenames in ``tmp/grp_list``. 
 
-For the given example, we provide a shell scripts for this step ``STEP3_Group.sh``. You may execute the script in ``example`` folder
+   For the given example, we provide a shell scripts for this step ``STEP3_Group.sh``. You may execute the script in ``example`` folder
+
     ```
     ./STEP3_Group.sh
     ```
-    
-    
+
+
 1. Build __SeqOthello__ mapping
 
     Now, we can build the __SeqOthello__ mapping between the entire set of _k_-mers and their experiment ids using the ``Build`` tool. The indexes groups are speicified by ``--flist`` parameter, order of group files essentially determines the orders of the experiments stored in SeqOthello.
@@ -98,7 +100,7 @@ For the given example, we provide a shell scripts for this step ``STEP3_Group.sh
     ../build/bin/Build --flist=tmp/grp_list --grp-folder=tmp/grp/ --out-folder=map/
 
     ```
-And then you will find the SeqOthello mapping in the ``map`` folder. The file ``map.xml`` provides the metadata of the SeqOthello structure. 
+   And then you will find the SeqOthello mapping in the ``map`` folder. The file ``map.xml`` provides the metadata of the SeqOthello structure. 
 
 ### Transcripts Query
 
