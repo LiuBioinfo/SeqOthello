@@ -1,19 +1,18 @@
 # SeqOthello
 
-__SeqOthello__ is an ultra-fast and memory-efficient indexing structure to support arbitrary sequence query against large collections of RNA-seq experiments.
+__SeqOthello__ is an ultra-fast and memory-efficient indexing structure to support arbitrary sequence query against large collections of RNA-seq experiments. Taking a sequence as query input, SeqOthello returns either the total _k_-mer hits of the query sequence or the detailed presence/absence information of individual k-mers across all the indexed experiments.
 
 
 
 ## SeqOthello Installation
 
-### Requirements
+### System Requirements
 __SeqOthello__ is tested on linux platforms with the following system settings.
  The performance is optimized for Intel CPUs with SSE4.2 support.
 
   * cmake >= 2.8.4
   * gcc >= 4.9.1
   * zlib >= 1.2.3
-  * Jellyfish
 
 Ubuntu
 ```
@@ -37,7 +36,7 @@ brew install cmake
     git clone https://github.com/LiuBioinfo/SeqOthello.git
     ```
 
-1. Build SeqOthello:
+1. Build and install:
 
     ```
     cd SeqOthello/
@@ -52,8 +51,6 @@ brew install cmake
 
 
 ## Manual
-
-## Run SeqOthello
 
 ### Build SeqOthello with an example.
 
@@ -85,29 +82,35 @@ experiment_09
 
     Jellyfish parameters:
     * ``-m 21`` extract length 21 _k_-mer
-    * ``-t 8 `` run Jellyfish with 8 threads
+    * ``-t 8 `` run Jellyfish with 1 threads
     * ``-L 1`` _k_-mer count cutoff
 
-    ```
-    mkdir -p tmp/kmers
-    while IFS= read -r exp;
-    do
-        jellyfish count -s 1000M \
-        -m 21 -C -t 8 -o tmp/kmers/${exp}.jf \
-        fq/${exp}.R1.fastq \
-        fq/${exp}.R2.fastq;
+  ```
+  mkdir -p tmp/kmers
+  while IFS= read -r exp;
+  do
+      jellyfish count -s 10M \
+      -m 21 -C -t 1 -o tmp/kmers/${exp}.jf \
+      fq/${exp}.R1.fastq \
+      fq/${exp}.R2.fastq;
 
-        jellyfish dump -t -L 1 \
-        -c tmp/kmers/${exp}.jf \
-        -o tmp/kmers/${exp}.kmer;
+      jellyfish dump -t -L 1 \
+      -c tmp/kmers/${exp}.jf \
+      -o tmp/kmers/${exp}.kmer;
 
-        rm tmp/kmers/${exp}.jf;
-    done < experiments_list.10.txt
-    ```
+      rm tmp/kmers/${exp}.jf;
+  done < experiments_list.10.txt
+  ```
 
 1. Convert _k_-mer files to __SeqOthello__ binary format.
 
-    Then, we preprocess all _k_-mer files to convert them to the binary format and save them in ``tmp/kmer_bins``. ``--cutoff=N`` allows you to further filter the _k_-mers by their counts. _k_-mers with at least N counts will be kept for building __SeqOthello__. In this example, we set it to ``1`` to include all the _k_-mers. ``--k`` sets the _k_-mer length in the input file.
+    All _k_-mer files are first converted into binary format and are saved in the direcotry ``tmp/kmer_bins``.
+
+    ``--cutoff=N`` allows you to further filter the _k_-mers by their counts. Only k-mers with at least N counts are kept for building __SeqOthello__.
+
+    ``sets`` the _k_-mer length in the input file.
+
+    The following example converted each of __-mer files into binary format. All 21-mers with N=1 are kept for SeqOthello construction.
 
     ```
     mkdir -p tmp/kmer_bins
@@ -125,8 +128,7 @@ experiment_09
 
 1. Make __SeqOthello__  group files
 
-    We group the binary files into small subsets to obtain the _k_-mer occurrence maps within the each group of
-    the experiments. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, only 1 group will be generated in ``tmp/grp/``.
+    In this step, binary files are grouped into small subsets to obtain the k-mer occurrence maps within each group. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, only 1 group will be generated in ``tmp/grp/``.
 
     Create the group list for the binary files.
     ```
@@ -164,8 +166,9 @@ experiment_09
 
 ### Transcripts Query
 
-__SeqOthello__ ``Query`` supports _Containment_ and _Coverage_ query modes. You
-can use ``transcripts.fa`` for testing. This file has 3 human transcript sequences.
+__SeqOthello__ ``Query`` takes ``.fa`` files as input and can generate output in the following tow format.
+
+The file ``transcripts.fa`` contains 3 human transcript sequences and are used in the following example to demonstrate query results.
 
 ```
 grep "ENST" transcripts.fa
@@ -174,22 +177,22 @@ grep "ENST" transcripts.fa
 >ENST00000628538
 ```
 
-1. __Containment Query__
+1. Number of _k_-mer hits per sequence
 
-    Containment Query will return the total number of _k_-mer hits for each
-    experiment in a tab-delimited table.
+    By default, for each transcript in the query, __SeqOthello__ returns the
+    total number of _k_-mer hits of each experiment in a tab-delimited table.
 
     ```
     ../build/bin/Query --map-folder=map/ \
     --transcript=transcripts.fa \
-    --output=containment.query.txt \
-    --qthread=8
+    --output=query.hits.txt \
+    --qthread=1
     ```
 
-    The query results has 3 rows, one transcript per row. The first column indicates the transcripts index matching the order in ``transcript.fa``. The rest of the columns are the query results for all the experiments in the __SeqOthello__ map.
+    The query results has three rows, one transcript per row. The first column indicates the transcripts index matching the order in ``transcript.fa``. The rest of the columns are the query results for all the experiments in the __SeqOthello__ map.
 
     ```
-    cat containment.query.txt
+    cat query.hits.txt
     transcript# 0   222     214     200     150     160     215     209     220     193     233
     transcript# 1   205     205     168     210     217     202     190     211     160     196
     transcript# 2   115     115     115     115     115     115     115     115     115     115
@@ -198,21 +201,24 @@ grep "ENST" transcripts.fa
 
 2. __Coverage Query__
 
-    Coverage query will return the detailed _k_-mer hits for each of _k_-mer
-    in the queried transcripts. The coverage result has two columns. The first column is the _k_-mer sequence of the transcript. Column 2 use + and . signs to indicate the the k-mer hits status for the individual experiment in the SeqOthello map. A + sign indicates the k-mer exists in the experiment, whearas . indicates otherwise.
+    If ``--detail`` is used, __SeqOthello__ may return the detailed map regarding individual _k_-mer’s presence/absence information across all the indexed experiments. This mode is limited to one transcript per query due to the large amount of output generated.
 
     ```
+    head -1 transcripts.fa > ENST00000431542.fa
+
     ../build/bin/Query --map-folder=map/ \
-    --transcript=transcripts.fa \
-    --output=coverage.query.txt \
+    --transcript=ENST00000431542.fa \
+    --output=ENST00000431542.hits.txt \
     --detail \
     --qthread=8
     ```
 
-    Observe the first 10 _k_-mers in transcript ``ENST00000431542``.
+    The output has two columns. The first column is the _k_-mer sequence and the following set of columns contains the detailed hit map across all indexed experiments. We use ``+`` and ``.`` sign to indicate whether a _k_-mer is present or absence in an indexed experiment respectively.
+
+    Here is an example output showing the first 10 _k_-mers in transcript ENST00000431542.
 
     ```
-    head -10 coverage.query.txt
+    head -10 ENST00000431542.hits.txt
     GTGGGAGTCGCCACCGCACCC ..........
     CGTGGGAGTCGCCACCGCACC .........+
     CCGTGGGAGTCGCCACCGCAC .........+
@@ -270,5 +276,6 @@ For questions running __SeqOthello__, please post to [SeqOthello Google Group](h
 
 ## Known issues
 
-Usually, on Linux systems, there is a limit on the number of files that can be opened simutaiously. The Build program of SeqOthello may hit such limit. To edit this limit, set ulimit to larger numbers. e.g,
-``ulimit -nS 4096``
+  * Usually, on Linux systems, there is a limit on the number of files that can be opened simutaiously. The Build program of SeqOthello may hit such limit. To edit this limit, set ulimit to larger numbers. e.g,``ulimit -nS 4096``
+
+  * The maximum size of k-mers supported as of now is 31.
