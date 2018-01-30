@@ -21,11 +21,11 @@ using namespace std;
 int main(int argc, char ** argv) {
     args::ArgumentParser parser("Build SeqOthello! \n");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argInputname(parser, "string", "a file containing the filenames of Grp files, these Grp files should be created by the Preprocess tool. Each line should contain one file name. ", {"flist"});
-    args::ValueFlag<string> argFolder(parser, "string", "where to find these Grp files. i.e. , a path that contains the Grp files. ", {"folder"});
+    args::ValueFlag<string> argInputname(parser, "string", "a file containing the filenames of Grp files, these Grp files should be created by the Group tool. Each line should contain one file name. ", {"flist"});
+    args::ValueFlag<string> argFolder(parser, "string", "a folder that contains the Grp files. ", {"folder","grp-folder"});
     args::ValueFlag<string> argOutputname(parser, "string", "a folder to put the generated SeqOthello map.", {"out-folder"});
     //args::ValueFlag<int> argThread(parser, "int", "number of parallel threads to build SeqOthello", {"thread"});
-    args::ValueFlag<int> argLimit(parser, "int", "read this number of Kmers to estimate the distribution.", {"estimate-limit"});
+    args::ValueFlag<int> argLimit(parser, "int", "number of k-mers used to estimate the distribution. Default 10485760.", {"estimate-limit"});
     args::Flag argCountOnly(parser, "count-only", "only count the keys and the histogram, do not build the seqOthello.", {"count-only"});
     //args::ValueFlag<int> argEXP(parser, "int", "Expression bits, optional: None, 1, 2, 4", {"exp"});
 

@@ -32,15 +32,13 @@ int getKmerLengthfromxml(string fname,bool argGroup) {
     return ret;
 }
 int main(int argc, char ** argv) {
-    args::ArgumentParser parser("Preprocess binary files to grouped files. \n"
-                                "Each line of the file must contain exactly one file name, e.g, xxxx.bin\n"
-                                "The file should be in 64bit kmer format, the xml file must present in the same folder. xxxx.bin.xml" , "");
+    args::ArgumentParser parser("Convert binary files to grouped files for SeqOthello.");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argFname(parser, "string", "a file containing the filenames", {"flist"});
-    args::ValueFlag<string> argFolder(parser, "string", "where to find this file", {"folder"});
+    args::ValueFlag<string> argFname(parser, "string", "a file containing the filenames of the binary files. Each line of the [flist] must contain exactly one file name, e.g, xxxx.bin", {"flist"});
+    args::ValueFlag<string> argFolder(parser, "string", " The binary file and the corresponding xml file should be generated using PreProcess, and put in [folder] .", {"folder"});
     args::ValueFlag<string> argOut(parser, "string", "output file", {"output"});
-    args::ValueFlag<int> argMaxKmerCount(parser, "integer", "stop after getting this number of kmers. Note: for test small data set only.", {"limit"});
-    args::Flag argGroup(parser,"","Create a group using some group files", {"group"});
+    args::ValueFlag<int> argMaxKmerCount(parser, "integer", "stop after getting this number of kmers. Note: for test purpose on small data set only.", {"limit"});
+    args::Flag argGroup(parser,"","Create a group using some group files. Experimental.", {"group"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -183,6 +181,6 @@ int main(int argc, char ** argv) {
     xml.SaveFile(xmlName.c_str());
 
     delete writer;
-    cout << "wrote "<<cnt<<"keys";
+    cout << "wrote "<<cnt<<" keys" << endl;
     return 0;
 }

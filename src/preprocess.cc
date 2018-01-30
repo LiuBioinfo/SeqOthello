@@ -10,13 +10,13 @@
 
 using namespace std;
 int main(int argc, char * argv[]) {
-    args::ArgumentParser parser("Convert a Jellyfish output file to a sorted binary file. ", "");
+    args::ArgumentParser parser("Convert a Jellyfish output file to binary format supported by SeqOthello.", "");
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     args::ValueFlag<string> argInputname(parser, "string", "filename for the input kmer file", {"in"});
     args::ValueFlag<string> argOutputname(parser, "string", "filename for the output binary kmer file", {"out"});
     args::ValueFlag<int> argKmerlength(parser, "integer", "k, length of kmer", {"k"});
-    args::ValueFlag<int> nCutoff(parser, "integer", "cutoff, minimal expression value for kmer to be included into the file. ", {"cutoff"});
-    args::Flag   argHistogram(parser, "",  "get histogram", {"histogram"});
+    args::ValueFlag<int> nCutoff(parser, "integer", "Optional value. Only k-mers with at least [cutoff] counts are kept for building SeqOthello. ", {"cutoff"});
+    args::Flag   argHistogram(parser, "",  "Use this command to generate a histogram of k-mer expression.", {"histogram"});
 
     try
     {
