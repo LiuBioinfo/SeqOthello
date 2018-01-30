@@ -166,7 +166,7 @@ experiment_09
 
 ### Transcripts Query
 
-__SeqOthello__ ``Query`` takes ``.fa`` files as input and can generate output in the following tow format.
+__SeqOthello__ ``Query`` takes ``.fa`` files as input and can generate output in the following two format.
 
 The file ``transcripts.fa`` contains 3 human transcript sequences and are used in the following example to demonstrate query results.
 
@@ -199,7 +199,7 @@ grep "ENST" transcripts.fa
     ```
 
 
-2. __Coverage Query__
+2. Detailed _k_-mer hit map per query
 
     If ``--detail`` is used, __SeqOthello__ may return the detailed map regarding individual _k_-mer’s presence/absence information across all the indexed experiments. This mode is limited to one transcript per query due to the large amount of output generated.
 
