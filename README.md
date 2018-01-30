@@ -82,7 +82,7 @@ experiment_09
 
     Jellyfish parameters:
     * ``-m 21`` extract length 21 _k_-mer
-    * ``-t 8 `` run Jellyfish with 1 threads
+    * ``-t 1 `` run Jellyfish with 1 thread
     * ``-L 1`` _k_-mer count cutoff
 
     ```
@@ -210,7 +210,7 @@ grep "ENST" transcripts.fa
     --transcript=ENST00000431542.fa \
     --output=ENST00000431542.hits.txt \
     --detail \
-    --qthread=8
+    --qthread=1
     ```
 
     The output has two columns. The first column is the _k_-mer sequence and the following set of columns contains the detailed hit map across all indexed experiments. We use ``+`` and ``.`` sign to indicate whether a _k_-mer is present or absence in an indexed experiment respectively.
