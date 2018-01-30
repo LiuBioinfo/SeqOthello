@@ -1,19 +1,18 @@
 # SeqOthello
 
-__SeqOthello__ is an ultra-fast and memory-efficient indexing structure to support arbitrary sequence query against large collections of RNA-seq experiments.
+__SeqOthello__ is an ultra-fast and memory-efficient indexing structure to support arbitrary sequence query against large collections of RNA-seq experiments. Taking a sequence as query input, SeqOthello returns either the total k-mer hits of the query sequence or the detailed presence/absence information of individual k-mers across all the indexed experiments. 
 
 
 
 ## SeqOthello Installation
 
-### Requirements
+### System Requirements
 __SeqOthello__ is tested on linux platforms with the following system settings.
  The performance is optimized for Intel CPUs with SSE4.2 support.
 
   * cmake >= 2.8.4
   * gcc >= 4.9.1
   * zlib >= 1.2.3
-  * Jellyfish
 
 Ubuntu
 ```
@@ -53,8 +52,6 @@ brew install cmake
 
 ## Manual
 
-## Run SeqOthello
-
 ### Build SeqOthello with an example.
 
 The construction of __SeqOthello__ requires the input of a list of
@@ -81,84 +78,79 @@ experiment_09
 
 1. Extract _k_-mer count using [Jellyfish](https://github.com/gmarcais/Jellyfish)
 
-    First, we use Jellyfish to generate _k_-mer files for the experiments included in ``experiments_list.10.txt`` and save them in the temporary folder ``tmp/kmers``. This setup may take a little while to run.
-
-    Jellyfish parameters:
-    * ``-m 21`` extract length 21 _k_-mer
-    * ``-t 8 `` run Jellyfish with 8 threads
-    * ``-L 1`` _k_-mer count cutoff
-
+    First, use Jellyfish to generate _k_-mer files for the experiments included in ``experiments_list.10.txt`` and save them in the temporary folder ``tmp/kmers``. This setup may take about 10 seconds. For the given example, we provide a shell scripts for this step ``STEP1_Jellyfish.sh``. You may execute the script in ``example`` folder:
     ```
-    mkdir -p tmp/kmers
-    while IFS= read -r exp;
-    do
-        jellyfish count -s 1000M \
-        -m 21 -C -t 8 -o tmp/kmers/${exp}.jf \
-        fq/${exp}.R1.fastq \
-        fq/${exp}.R2.fastq;
-
-        jellyfish dump -t -L 1 \
-        -c tmp/kmers/${exp}.jf \
-        -o tmp/kmers/${exp}.kmer;
-
-        rm tmp/kmers/${exp}.jf;
-    done < experiments_list.10.txt
+    ./STEP1_Jellyfish.sh
     ```
 
 1. Convert _k_-mer files to __SeqOthello__ binary format.
 
-    Then, we preprocess all _k_-mer files to convert them to the binary format and save them in ``tmp/kmer_bins``. ``--cutoff=N`` allows you to further filter the _k_-mers by their counts. _k_-mers with at least N counts will be kept for building __SeqOthello__. In this example, we set it to ``1`` to include all the _k_-mers. ``--k`` sets the _k_-mer length in the input file.
+The second step is to convert k-mer files to SeqOthello binary format using ``PreProcess``.
 
+```  
+   PreProcess {OPTIONS}
+    Convert a Jellyfish output file to binary format supported by SeqOthello.
+  OPTIONS:
+      --in=[string]                     filename for the input kmer file
+      --out=[string]                    filename for the output binary kmer file
+      --k=[integer]                     k, the k-mer length in the input file.
+      --cutoff=[integer]                cutoff. Optional value. Only k-mers with at least [cutoff]
+                                        counts are kept for building SeqOthello.
+      --histogram                       Use this command to generate a histogram of k-mer expression.
+
+```
+For the given example, we provide a shell scripts for this step ``STEP2_Binary.sh``. You may execute the script in ``example`` folder
     ```
-    mkdir -p tmp/kmer_bins
-
-    while IFS= read -r exp
-    do
-        ../build/bin/PreProcess \
-        --k=21 \
-        --cutoff=1 \
-        --in=tmp/kmers/${exp}.kmer \
-        --out=tmp/kmer_bins/${exp}.bin
-
-    done < experiments_list.10.txt
+    ./STEP2_Binary.sh
     ```
+
+
 
 1. Make __SeqOthello__  group files
+In the third step, binary files are grouped by the ``Group`` tool, into small subsets for further process. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, we build two groups in tmp/grp/, each containing 5 samples.
 
-    We group the binary files into small subsets to obtain the _k_-mer occurrence maps within the each group of
-    the experiments. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, only 1 group will be generated in ``tmp/grp/``.
+The commandline to use ``Group`` is:
 
-    Create the group list for the binary files.
+```
+    Group {OPTIONS}
+    Convert binary files to grouped files for SeqOthello.
+  OPTIONS:
+      --flist=[string]                  a file containing the filenames of the
+                                        binary files. Each line of the [flist]
+                                        must contain exactly one file name, e.g,
+                                        xxxx.bin
+      --folder=[string]                 The binary file and the corresponding
+                                        xml file should be generated using
+                                        PreProcess, and put in [folder] .
+      --output=[string]                 output file
+```
+
+For the given example, we provide a shell scripts for this step ``STEP3_Group.sh``. You may execute the script in ``example`` folder
     ```
-    sed "s/$/\.bin/g" \
-    experiments_list.10.txt \
-    > tmp/binary_list.part00
+    ./STEP3_Group.sh
     ```
-
-    Build occurrence map for the group.
-    ```
-    mkdir tmp/grp
-
-    ../build/bin/Group \
-    --flist=tmp/binary_list.part00 \
-    --folder=tmp/kmer_bins/ \
-    --output=tmp/grp/Grp_00
-
-    echo Grp_00 > tmp/grp_list
-
-    ```
-
+    
+    
 1. Build __SeqOthello__ mapping
 
-    Now, we can build the __SeqOthello__ mapping between the entire set of _k_-mers and their experiment ids.
+    Now, we can build the __SeqOthello__ mapping between the entire set of _k_-mers and their experiment ids using the ``Build`` tool.
+```
+    Build {OPTIONS}
+    Build SeqOthello!
+      --flist=[string]                  a file containing the filenames of Grp
+                                        files, these Grp files should be created
+                                        by the Group tool. Each line should
+                                        contain one file name.
+      --grp-folder=[string]             a folder that contains the Grp files.
+      --out-folder=[string]             a folder to put the generated SeqOthello
+                                        map.
+```
+    You may execute the following command in ``example`` folder
 
     ```
     mkdir -p map
 
-    ../build/bin/Build \
-    --flist=tmp/grp_list \
-    --folder=tmp/grp/ \
-    --out-folder=map/
+    ../build/bin/Build --flist=tmp/grp_list --grp-folder=tmp/grp/ --out-folder=map/
 
     ```
 
@@ -270,5 +262,9 @@ For questions running __SeqOthello__, please post to [SeqOthello Google Group](h
 
 ## Known issues
 
-Usually, on Linux systems, there is a limit on the number of files that can be opened simutaiously. The Build program of SeqOthello may hit such limit. To edit this limit, set ulimit to larger numbers. e.g,
+- Linux systems often have a limit on the number of files that can be opened simutaneously. When there exists a large number of experiment files, the Build program of SeqOthello may hit the limit. You may set it to larger numbers by using ``limit``. e.g,
 ``ulimit -nS 4096``
+
+- The maximum size of k-mers supported as of now is 31.
+
+- Each of binary file is associated with a xml file, the xml files should be put in the same folder with the binary files. Similarly, please put the associated xml files for the group files in the same folder with the group files.
