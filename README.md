@@ -243,13 +243,13 @@ Use the following command to start a server on the machine, (e.g., on TCP port 3
 --start-server-port 3322
 ```
 
-Open a new terminal, run the Client program for containment query.
+Open a new terminal, run the Client program for _k_-mer hit query.
 
 ```
 ../build/bin/Client \
 --transcript=transcripts.fa \
 --output=online.query.txt \
---containment \
+--kmer-hit \
 --port=3322
 ```
 
