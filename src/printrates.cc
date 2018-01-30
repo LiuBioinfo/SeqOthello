@@ -18,9 +18,9 @@ using namespace std;
 
 
 int main(int argc, char ** argv) {
-    args::ArgumentParser parser("Query SeqOthello! \n");
-    args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<string> argSeqOthName(parser, "string", "the path contains SeqOthello mapping file.", {"map-folder"});
+    args::ArgumentParser parser("Query SeqOthello。 \n");
+    args::HelpFlag help(parser, "help", "Display the help menu.", {'h', "help"});
+    args::ValueFlag<string> argSeqOthName(parser, "string", "The directory to SeqOthello map.", {"map-folder"});
     args::ValueFlag<int> argL2(parser, "int", "L2 Node ID", {"L2"});
     try
     {
