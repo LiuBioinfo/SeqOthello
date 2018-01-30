@@ -22,7 +22,7 @@ int main(int argc, char ** argv) {
     args::ArgumentParser parser("Build SeqOthello map from Group files.\n");
     args::HelpFlag help(parser, "help", "Display the help menu.", {'h', "help"});
     args::ValueFlag<string> argInputname(parser, "string", "The file list containing the names of Group files created by the Group function.", {"flist"});
-    args::ValueFlag<string> argFolder(parser, "string", "The directory to the Group files.", {"folder","in-folder"});
+    args::ValueFlag<string> argFolder(parser, "string", "The directory to the Group files.", {"folder","grp-folder"});
     args::ValueFlag<string> argOutputname(parser, "string", "The directory to the SeqOthello map.", {"out-folder"});
     //args::ValueFlag<int> argThread(parser, "int", "number of parallel threads to build SeqOthello", {"thread"});
     args::ValueFlag<int> argLimit(parser, "int", "Nuumber of kmers used to estimate the distribution. Default 10485760.", {"estimate-limit"});
