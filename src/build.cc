@@ -52,7 +52,8 @@ int main(int argc, char ** argv) {
         return 1;
     }
     if (!(argInputname && argFolder && argOutputname)) {
-        std::cerr << "must specify args" << std::endl;
+        // std::cerr << "must specify args" << std::endl;
+        std::cerr << parser;
         return 1;
     }
     int nThreads = 1;

@@ -63,7 +63,8 @@ int main(int argc, char ** argv) {
         return 1;
     }
     if (!(argFname && argFolder && argOut)) {
-        std::cerr << "Must specify args. Try --help." << std::endl;
+        // std::cerr << "Must specify args. Try --help." << std::endl;
+        std::cerr << parser;
         return 1;
     }
     int limit = 0x7FFFFFFF;

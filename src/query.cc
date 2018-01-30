@@ -347,7 +347,8 @@ int main(int argc, char ** argv) {
     }
     else {
         if (!(argSeqOthName && argTranscriptName && resultsName)) {
-            std::cerr << "must specify args" << std::endl;
+            // std::cerr << "must specify args" << std::endl;
+            std::cerr << parser;
             return 1;
         }
     }
