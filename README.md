@@ -64,8 +64,11 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
 
 1. Extract _k_-mer count using [Jellyfish](https://github.com/gmarcais/Jellyfish)
 
+    You may need to install [Jellyfish](https://github.com/gmarcais/Jellyfish) first.
+    
     First, use Jellyfish to generate _k_-mer files for the experiments included in ``experiments_list.10.txt`` and save them in the temporary folder ``tmp/kmers``. This setup may take about 10 seconds. For the given example, we provide a shell scripts for this step ``STEP1_Jellyfish.sh``. The You may execute the script in ``example`` folder:
     ```
+    cd example
     ./STEP1_Jellyfish.sh
     ```
 
@@ -102,6 +105,22 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
     ```
    And then you will find the SeqOthello mapping in the ``map`` folder. The file ``map.xml`` provides the metadata of the SeqOthello structure. 
 
+
+## Build __SeqOthello__ with custom experiments
+    To build __SeqOthello__ with custom experiments, please use Jellyfish you may use the script generator ``genBuildFromJellyfishKmers.sh``
+    
+```
+    ./genBuildFromJellyfishKmers.sh
+```
+    For all prompted input questions, use the default value for the example data set, or, enter custom values for custom experiments. Then three scripts will be generated and you can execute them one by one.
+```
+    ./ConvertToBinary.sh   
+    ./MakeGroup.sh
+    ./BuildSeqOthello.sh
+```
+    The generated SeqOthello file can be found in out folder.
+
+    
 ### Transcripts Query
 
 __SeqOthello__ ``Query`` takes ``.fa`` files as input and can generate output in the following two format.
