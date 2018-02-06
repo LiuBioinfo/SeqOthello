@@ -3,7 +3,7 @@
 
 __SeqOthello__ is an ultra-fast and memory-efficient indexing structure to support arbitrary sequence query against large collections of RNA-seq experiments. Taking a sequence as query input, SeqOthello returns either the total _k_-mer hits of the query sequence or the detailed presence/absence information of individual k-mers across all the indexed experiments.
 
-
+A preprint of the paper describing SeqOthello is available [here](https://www.biorxiv.org/content/biorxiv/early/2018/02/01/258772.full.pdf).
 
 ## SeqOthello Installation
 
@@ -107,7 +107,7 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
 
 
 ## Build __SeqOthello__ with custom experiments
-    To build __SeqOthello__ with custom experiments, please use Jellyfish you may use the script generator ``genBuildFromJellyfishKmers.sh``
+  To build __SeqOthello__ with custom experiments, please use Jellyfish you may use the script generator ``genBuildFromJellyfishKmers.sh``
     
 ```
     ./genBuildFromJellyfishKmers.sh
@@ -235,6 +235,8 @@ parallel ../build/bin/Group \
 ```
 ## License
 Please refer to LICENSE.TXT.
+
+## Citation
 
 
 ## Getting help
