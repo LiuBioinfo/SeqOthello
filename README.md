@@ -107,18 +107,20 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
 
 
 ## Build __SeqOthello__ with custom experiments
-  To build __SeqOthello__ with custom experiments, please use Jellyfish you may use the script generator ``genBuildFromJellyfishKmers.sh``
+
+To build __SeqOthello__ with custom experiments, please use Jellyfish you may use the script generator ``genBuildFromJellyfishKmers.sh``
     
 ```
     ./genBuildFromJellyfishKmers.sh
 ```
-    For all prompted input questions, use the default value for the example data set, or, enter custom values for custom experiments. Then three scripts will be generated and you can execute them one by one.
+
+For all prompted input questions, use the default value for the example data set, or, enter custom values for custom experiments. Then three scripts will be generated and you can execute them one by one.
+    
 ```
     ./ConvertToBinary.sh   
     ./MakeGroup.sh
     ./BuildSeqOthello.sh
 ```
-    The generated SeqOthello file can be found in out folder.
 
     
 ### Transcripts Query
@@ -237,7 +239,11 @@ parallel ../build/bin/Group \
 Please refer to LICENSE.TXT.
 
 ## Citation
-
+```
+    SeqOthello: Query over RNA-seq experiments at scale
+    Ye Yu, Jinpeng Liu, Xinan Liu, Yi Zhang, Eamonn Magner, Chen Qian, Jinze Liu
+    bioRxiv 258772; doi: https://doi.org/10.1101/258772
+```
 
 ## Getting help
 For questions running __SeqOthello__, please post to [SeqOthello Google Group](https://groups.google.com/forum/#!forum/seqothello)
