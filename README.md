@@ -182,6 +182,10 @@ grep "ENST" transcripts.fa
     CCATCCGCCGTGGGAGTCGCC +....+.+.+
     ```
 
+    You may also use the gnu __datamash__ tool to view the transposed representation of this file.
+    ```
+    ./transpose.sh ENST00000431542.hits.txt
+    ```
 ## SeqOthello Online
 
 __SeqOthello__ also accommodates online features for small-batch queries. Online queries preload the entire index into memory prior to querying, and can be executed in approximately 0.09 seconds per transcript.
