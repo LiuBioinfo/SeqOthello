@@ -3,7 +3,7 @@
 
 __SeqOthello__ is an ultra-fast and memory-efficient indexing structure to support arbitrary sequence query against large collections of RNA-seq experiments. Taking a sequence as query input, SeqOthello returns either the total _k_-mer hits of the query sequence or the detailed presence/absence information of individual k-mers across all the indexed experiments.
 
-
+A preprint of the paper describing SeqOthello is available [here](https://www.biorxiv.org/content/biorxiv/early/2018/02/01/258772.full.pdf).
 
 ## SeqOthello Installation
 
@@ -64,8 +64,11 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
 
 1. Extract _k_-mer count using [Jellyfish](https://github.com/gmarcais/Jellyfish)
 
+    You may need to install [Jellyfish](https://github.com/gmarcais/Jellyfish) first.
+    
     First, use Jellyfish to generate _k_-mer files for the experiments included in ``experiments_list.10.txt`` and save them in the temporary folder ``tmp/kmers``. This setup may take about 10 seconds. For the given example, we provide a shell scripts for this step ``STEP1_Jellyfish.sh``. The You may execute the script in ``example`` folder:
     ```
+    cd example
     ./STEP1_Jellyfish.sh
     ```
 
@@ -73,20 +76,22 @@ For demonstration purpose, we provide an ``example/`` project  including 10 simu
 
     The second step is to convert k-mer files to SeqOthello binary format using ``PreProcess``.
     For the given example, we provide a shell scripts for this step ``STEP2_Binary.sh``. You may execute the script in ``example`` folder
+    
     ```
     ./STEP2_Binary.sh
     ```
 
 
 1. Make __SeqOthello__  group files
-In the third step, binary files are grouped by the ``Group`` tool, into small subsets for further process. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, we build two groups in tmp/grp/, where ``Grp_00`` contains experiments specified in ``tmp/binary_list.part00``, which is corresponds to the first 5 lines of ``experiments_list.10.txt``. The reset 5 examples are included in ``Grp_01``. We put these two filenames in ``tmp/grp_list``. 
+   In the third step, binary files are grouped by the ``Group`` tool, into small subsets for further process. Generally, each group contains approximately 50 samples. Since we only have 10 samples in this example, we build two groups in tmp/grp/, where ``Grp_00`` contains experiments specified in ``tmp/binary_list.part00``, which is corresponds to the first 5 lines of ``experiments_list.10.txt``. The reset 5 examples are included in ``Grp_01``. We put these two filenames in ``tmp/grp_list``. 
 
-For the given example, we provide a shell scripts for this step ``STEP3_Group.sh``. You may execute the script in ``example`` folder
+   For the given example, we provide a shell scripts for this step ``STEP3_Group.sh``. You may execute the script in ``example`` folder
+
     ```
     ./STEP3_Group.sh
     ```
-    
-    
+
+
 1. Build __SeqOthello__ mapping
 
     Now, we can build the __SeqOthello__ mapping between the entire set of _k_-mers and their experiment ids using the ``Build`` tool. The indexes groups are speicified by ``--flist`` parameter, order of group files essentially determines the orders of the experiments stored in SeqOthello.
@@ -98,9 +103,10 @@ For the given example, we provide a shell scripts for this step ``STEP3_Group.sh
     ../build/bin/Build --flist=tmp/grp_list --grp-folder=tmp/grp/ --out-folder=map/
 
     ```
-And then you will find the SeqOthello mapping in the ``map`` folder. The file ``map.xml`` provides the metadata of the SeqOthello structure. 
+   And then you will find the SeqOthello mapping in the ``map`` folder. The file ``map.xml`` provides the metadata of the SeqOthello structure. 
 
-1. Build __SeqOthello__ with additional experiments.
+
+1. An example of adding new experiments to existing __SeqOthello__.
   
    In some cases the users may choose to add additional experiments to exisiting SeqOthello mapping. We recommend the users keep the __group files__ generated during SeqOthello construction, so that it can be reused for further reconstruction.
    
@@ -115,6 +121,23 @@ And then you will find the SeqOthello mapping in the ``map`` folder. The file ``
 
     ../build/bin/Build --flist=tmp/grp_list_a --grp-folder=tmp/grp/ --out-folder=mapa/
     ```
+
+## Build __SeqOthello__ with custom experiments
+
+To build __SeqOthello__ with custom experiments, please use Jellyfish you may use the script generator ``genBuildFromJellyfishKmers.sh``
+    
+```
+    ./genBuildFromJellyfishKmers.sh
+```
+
+For all prompted input questions, use the default value for the example data set, or, enter custom values for custom experiments. Then three scripts will be generated and you can execute them one by one.
+    
+```
+    ./ConvertToBinary.sh   
+    ./MakeGroup.sh
+    ./BuildSeqOthello.sh
+```
+
 ### Transcripts Query
 
 __SeqOthello__ ``Query`` takes ``.fa`` files as input and can generate output in the following two format.
@@ -234,6 +257,12 @@ parallel ../build/bin/Group \
 ## License
 Please refer to LICENSE.TXT.
 
+## Citation
+```
+    SeqOthello: Query over RNA-seq experiments at scale
+    Ye Yu, Jinpeng Liu, Xinan Liu, Yi Zhang, Eamonn Magner, Chen Qian, Jinze Liu
+    bioRxiv 258772; doi: https://doi.org/10.1101/258772
+```
 
 ## Getting help
 For questions running __SeqOthello__, please post to [SeqOthello Google Group](https://groups.google.com/forum/#!forum/seqothello)
