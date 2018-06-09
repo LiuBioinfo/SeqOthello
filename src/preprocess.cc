@@ -7,6 +7,7 @@
 #include <args.hxx>
 #include <io_helper.hpp>
 #include <tinyxml2.h>
+#include <jellyfish_helper.hpp>
 
 using namespace std;
 int main(int argc, char * argv[]) {
@@ -17,6 +18,7 @@ int main(int argc, char * argv[]) {
     args::ValueFlag<int> argKmerlength(parser, "integer", "k, length of kmer", {"k"});
     args::ValueFlag<int> nCutoff(parser, "integer", "Optional value. Only k-mers with at least [cutoff] counts are kept for building SeqOthello. ", {"cutoff"});
     args::Flag   argHistogram(parser, "",  "Use this command to generate a histogram of k-mer expression.", {"histogram"});
+    args::Flag   argJellyfishOutput(parser, "", "use jellyfish output file.", {"jellyfish"});
 
     try
     {
@@ -57,7 +59,12 @@ int main(int argc, char * argv[]) {
     if (nCutoff)
         cutoff = args::get(nCutoff);
     printf("Read files from %s\n", finName.c_str());
-    freader = new KmerFileReader< uint64_t,uint32_t > (finName.c_str(), &iohelper,false);
+    if (argJellyfishOutput) {
+        freader = new JellyfishFileReader<uint64_t, uint32_t>(finName.c_str());
+    } 
+    else {
+        freader = new KmerFileReader<uint64_t,uint32_t> (finName.c_str(), &iohelper,false);
+    }
     uint32_t minInputExpression = 0x7FFFFFFF;
     uint64_t k;
     uint32_t v;
