@@ -51,7 +51,7 @@ int main(int argc, char ** argv) {
         std::cerr << parser;
         return 1;
     }
-    if (!(argInputname && argFolder && argOutputname)) {
+    if (!(argInputname && argOutputname)) {
         std::cerr << parser;
         return 1;
     }

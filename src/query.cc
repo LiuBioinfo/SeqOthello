@@ -360,6 +360,8 @@ int main(int argc, char ** argv) {
 
     shared_ptr<SeqOthello>  seqoth;
     string filename = args::get(argSeqOthName);
+    if (*(filename.rbegin()) != '/') 
+        filename = filename + "/";
     seqoth = make_shared<SeqOthello> (filename, nqueryThreads ,false);
     if (argStartServer) {
         printf("Load SeqOthello. \n");

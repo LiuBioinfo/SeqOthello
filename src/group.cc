@@ -60,7 +60,7 @@ int main(int argc, char ** argv) {
         std::cerr << parser;
         return 1;
     }
-    if (!(argFname && argFolder && argOut)) {
+    if (!(argFname &&  argOut)) {
         // std::cerr << "Must specify args. Try --help." << std::endl;
         std::cerr << parser;
         return 1;
@@ -69,7 +69,9 @@ int main(int argc, char ** argv) {
     if (argMaxKmerCount) {
         limit = args::get(argMaxKmerCount);
     }
-    string prefix = args::get(argFolder);
+    string prefix="";
+    if (argFolder) 
+        prefix = args::get(argFolder);
     FILE * ffnames = fopen(args::get(argFname).c_str(), "r");
     char buf[4096];
     vector<string> fnames;
