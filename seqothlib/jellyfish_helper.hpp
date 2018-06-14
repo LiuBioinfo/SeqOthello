@@ -17,14 +17,14 @@
 #include <jellyfish/jellyfish.hpp>
 
 
-template <typename keyType, typename valueType> 
+template <typename keyType, typename valueType>
 class JellyfishFileReader : public FileReader<keyType, valueType> {
     jellyfish::file_header header;
     std::ifstream ifs;
     ConstantLengthKmerHelper<keyType, valueType> *io_helper;
     binary_reader *reader;
-public:    
-    int kmerlength = 0; 
+public:
+    int kmerlength = 0;
     JellyfishFileReader(const char * fname) : ifs(fname) {
         header.read(ifs);
         jellyfish::mer_dna::k(header.key_len() / 2);
@@ -35,17 +35,20 @@ public:
     void finish() {
     }
     void reset() {
-       ifs.clear();
-       ifs.seekg(0);
-       header.read(ifs); 
+        ifs.clear();
+        ifs.seekg(0);
+        header.read(ifs);
     }
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
     bool getNext(keyType *T, valueType *V) {
         if (!reader->next()) return false;
 //        stringstream ss; ss<< reader->key();
 //        string s;
 //        ss >> s;
-        *T = *(reader->key().data());
+//        string s = reader->key();
         *V = reader->val();
+        *T = *(reader->key().data());
 //        keyType T2; valueType V2;
 //        char buf[60];
 //        strcpy(buf, s.c_str());
@@ -53,6 +56,7 @@ public:
 //        cout << "Reader: " << reader->key();
 //        cout << "Reader key:" << *T << " Reconstruct" << T2 << endl;
     }
+#pragma GCC pop_options
     bool getFileIsSorted() {
         return false;
     }
