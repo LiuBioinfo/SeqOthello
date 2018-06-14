@@ -10,9 +10,9 @@ do
     # -s [10M] Bloom filter size used in Jellyfish. You may need to use larger values for real experiments.
     # -m 21 Length of kmers
 
-    jellyfish dump -t -L 1 \
+    jellyfish dump -t -L 3 \
     -c tmp/kmers/${exp}.jf \
     -o tmp/kmers/${exp}.kmer;
 
-    rm tmp/kmers/${exp}.jf;
+#    rm tmp/kmers/${exp}.jf;
 done < experiments_list.10.txt
