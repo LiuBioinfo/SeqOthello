@@ -60,7 +60,9 @@ int main(int argc, char * argv[]) {
         cutoff = args::get(nCutoff);
     printf("Read files from %s\n", finName.c_str());
     if (argJellyfishOutput) {
-        freader = new JellyfishFileReader<uint64_t, uint32_t>(finName.c_str());
+        auto p =  new JellyfishFileReader<uint64_t, uint32_t>(finName.c_str());
+        freader = p;
+        kmerlength = p->kmerlength; 
     } 
     else {
         freader = new KmerFileReader<uint64_t,uint32_t> (finName.c_str(), &iohelper,false);
