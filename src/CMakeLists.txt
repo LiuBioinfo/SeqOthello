@@ -33,6 +33,4 @@ TARGET_LINK_LIBRARIES(Client pthread smalltcp)
 ADD_EXECUTABLE(Test testL1Node.cpp)
 TARGET_LINK_LIBRARIES(Test tinyxml2 z pthread libL2Node libL1Node)
 
-ADD_EXECUTABLE(Dump dump_main.cc)
-TARGET_LINK_LIBRARIES(Dump Jellyfish_Json Jellyfish_Matrix Jellyfish_Mer_DNA)
 
